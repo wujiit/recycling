@@ -36,46 +36,81 @@
 
 ---
 
-## 📁 目录结构概览
+## 📱 小程序端获取说明
+
+> 💡 **温馨提示**：本 GitHub 开源仓库为系统的**后端服务核心工程（`backend/`）**。
+> 
+> Uni-app 跨端工程（包含**微信小程序端**与**移动端手机 H5 网页端**完整源码、页面组件及样式素材）未随本仓库直接上传。如需获取小程序端完整工程源码，请加入**官方 QQ 交流群：16966111** 免费进群登记获取！
+
+---
+
+## 📁 仓库目录结构
 
 ```text
-回收系统/
-├── backend/            # 后端服务端系统工程
-│   ├── app/            # 核心业务逻辑 (MVC / Service / Model)
-│   ├── config/         # 数据库与 Redis 配置文件
-│   ├── install/        # 图形化安装向导核心与初始化 SQL
-│   ├── public/         # Web 根目录 (Nginx root 指向此目录，包含 PC前台、后台 /admin/、H5 /h5/)
+.
+├── backend/            # 后端服务端核心源码 (开源主体)
+│   ├── app/            # 核心业务逻辑 (MVC 控制器 / 业务 Service / 数据模型)
+│   ├── config/         # 数据库与 Redis 配置文件目录
+│   ├── install/        # 图形化安装向导核心与初始化数据库 SQL
+│   ├── public/         # Web 网站公共根目录 (Nginx root 必须指向此处)
+│   │   ├── admin/      # 管理后台单页界面资源与入口
+│   │   ├── uploads/    # 附件上传目录 (机型图片、验机照等)
+│   │   ├── index.html  # PC 官网首页入口
+│   │   ├── index.php   # 核心调度入口、路由分发与 API 总入口
+│   │   └── sf_*.php    # 顺丰速运开放平台 Webhook 直达入口 (免伪静态)
 │   └── runtime/        # 运行时缓存与运行日志
-├── miniapp/            # Uni-app 跨端移动应用工程源码 (微信小程序 / 移动端 H5)
-│   ├── common/         # API 统一请求与域名配置文件
-│   ├── pages/          # 小程序各业务页面 (估价/下单/订单中心/领券等)
-│   └── manifest.json   # 小程序 AppID 与跨端打包配置
-├── DEPLOYMENT.md       # 生产环境一键部署与全流程运维手册 (含完整 Nginx 规则)
-└── README.md           # 项目开源说明与使用手册
+└── README.md           # 项目开源说明与部署手册
 ```
 
 ---
 
-## 🚀 快速上手
+## 🚀 快速上手部署（宝塔面板 / qlnmp 环境）
 
-### 1. 后端部署（只需 4 步）
-1. **添加站点**：在宝塔面板或 LNMP 中创建网站，将 `backend` 源码上传并解压；
-2. **设置运行目录**：将网站运行目录（Web Root）设置为 `/public`（即 `.../backend/public`）；
-3. **配置 Nginx 伪静态**：
+### 1. 服务器环境需求
+* **操作系统**：Linux (CentOS 7.9+ / Ubuntu 20.04+ / Debian 11+ / Alibaba Cloud Linux)
+* **Web 服务器**：Nginx 1.18+ (推荐 1.22 ~ 1.24+)
+* **PHP 版本**：PHP 7.4 / 8.0 / 8.1 / 8.2（推荐 PHP 8.0 或 8.1）
+* **必需 PHP 扩展**：`pdo`、`pdo_mysql`、`curl`、`mbstring`、`openssl`、`gd`、`fileinfo`（宝塔后台一键安装）
+* **数据库**：MySQL 5.7+ 或 8.0（字符集编码：`utf8mb4`）
+* **缓存服务**：Redis 5.0+（可选，未安装时系统自动降级为本地文件高速缓存）
+
+### 2. 部署极简 4 步走
+1. **添加站点与上传源码**：在宝塔面板或 qlnmp 环境中创建站点，将本仓库 `backend` 目录文件上传至站点根目录；
+2. **【重要】设置网站运行目录**：进入站点设置 ➔【网站目录】，将**运行目录**修改选择为 `/public`（即站点根目录下的 `backend/public` 目录），点击保存；
+3. **配置目录读写权限**：确保以下目录具备 Web 用户（`www`）写入权限（`chmod -R 775`）：
+   - `backend/runtime/`
+   - `backend/config/`
+   - `backend/public/uploads/`
+4. **配置 Nginx 伪静态与安全规则**：进入站点设置 ➔【配置文件】或【伪静态】，填入以下核心规则：
    ```nginx
+   # 1. 核心伪静态路由转发
    location / {
        try_files $uri $uri/ /index.php?$query_string;
    }
+
+   # 2. 顺丰速运直达推送入口（免伪静态直接执行，请根据 PHP 版本调整 socket）
+   location ~* ^/(sf_push|sf_route|sf_state)\.php$ {
+       try_files $uri =404;
+       fastcgi_pass unix:/tmp/php-cgi-80.sock;
+       fastcgi_index index.php;
+       fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
+       include fastcgi_params;
+   }
+
+   # 3. 附件目录安全防线：严格禁止执行 PHP 脚本，防范木马上传
+   location ~* ^/uploads/.*\.php$ {
+       deny all;
+   }
+
+   # 4. 禁止直接访问敏感配置与锁定文件
+   location ~* \.(env|git|sql|bak|log|lock)$ {
+       deny all;
+   }
    ```
-4. **一键安装**：浏览器访问 `https://您的域名/`，按照图形化安装向导检测环境并完成数据库初始化。
-
-> 📖 **完整详尽的 Nginx 生产配置、目录权限、顺丰直达规则及运维排错指南，请查阅 [DEPLOYMENT.md](DEPLOYMENT.md)**。
-
-### 2. 小程序端编译与发布
-1. 使用 **HBuilderX** 导入 `miniapp` 项目；
-2. 打开 `miniapp/common/config.js`，将 `baseUrl` 改为您线上服务器的 HTTPS 域名；
-3. 打开 `miniapp/manifest.json`，在【微信小程序配置】中填入您的小程序 `AppID`；
-4. 点击【运行】➔【运行到小程序模拟器】➔【微信开发者工具】进行联调预览与上传发布。
+5. **图形化一键安装**：
+   - 在浏览器中直接打开您的站点网址：`http(s)://您的域名/`；
+   - 系统将自动重定向进入可视化安装向导，按照界面提示完成环境自检、输入数据库账号密码；
+   - 点击【开始一键初始化安装】，自动建表并装载数据，完成后即可直接登录后台（`https://您的域名/admin/`）开展运营！
 
 ---
 
