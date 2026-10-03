@@ -1,0 +1,1205 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title id="page-title">启灵通用回收服务平台 · 涵盖数码/废品/汽车/奢侈品/家电</title>
+    <meta name="keywords" id="page-keywords" content="二手回收,手机数码回收,废旧金属,再生资源,二手车回收,名表黄金回收,家电回收">
+    <meta name="description" id="page-description" content="专业通用全品类回收服务平台，支持数码3C、废旧金属废品再生、二手汽车与报废车辆、名表黄金奢侈品、旧家电等全行业回收。">
+    <!-- 全站模块化样式体系 -->
+    <link rel="stylesheet" href="assets/css/home_base.css">
+    <link rel="stylesheet" href="assets/css/home_marketing.css">
+    <link rel="stylesheet" href="assets/css/home_catalog.css">
+    <link rel="stylesheet" href="assets/css/home_appraisal.css">
+    <link rel="stylesheet" href="assets/css/home_responsive.css">
+</head>
+<body>
+
+    <!-- 顶部导航 -->
+    <header class="navbar">
+        <div class="container">
+            <div class="nav-inner">
+                <a href="javascript:void(0)" class="brand" id="brand-home-link" onclick="window.returnHome(event)" title="启灵回收 · 点击返回首页">
+                    <img id="brand-logo-img" src="/uploads/default/site_logo.svg" alt="平台Logo" class="brand-logo-img" onerror="this.style.display='none'; document.getElementById('brand-icon').style.display='flex';">
+                    <div class="brand-logo-icon" id="brand-icon" style="display:none;">启</div>
+                    <span class="brand-text" id="brand-text">启灵回收</span>
+                </a>
+                <nav class="nav-categories" id="nav-categories-box">
+                    <span class="nav-cat-item active" data-cat="0">全部行业品类</span>
+                </nav>
+                <div class="nav-actions">
+                    <!-- 会员中心状态挂载点 -->
+                    <div id="nav-user-box" style="display:flex;align-items:center;">
+                        <button class="btn btn-outline" id="btn-open-auth">
+                            <svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor" style="margin-right:6px;"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+                            登录 / 注册
+                        </button>
+                    </div>
+
+                    <button class="btn btn-outline" id="btn-open-coupons" onclick="window.openCouponCenterModal()" style="border-color:#fdba74;color:#ea580c;background:#fff7ed;">
+                        <svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor" style="margin-right:6px;"><path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4c-1.1 0-2 .9-2 2s.9 2 2 2v4H4v-4c1.1 0 2-.9 2-2s-.9-2-2-2V6h16v2z"/></svg>
+                        领加价券
+                    </button>
+                    <button class="btn btn-outline" id="btn-open-orders">
+                        <svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor" style="margin-right:6px;"><path d="M20 6h-4V4c0-1.11-.89-2-2-2h-4c-1.11 0-2 .89-2 2v2H4c-1.11 0-1.99.89-1.99 2L2 19c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V8c0-1.11-.89-2-2-2zm-6 0h-4V4h4v2z"/></svg>
+                        查回收单
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- 顶部横幅与搜索 (支持模式 A: 极速搜索模式 vs 模式 B: 品牌画卷轮播 Banner 双引擎) -->
+    <section class="hero-banner" id="hero-banner">
+        <!-- 模式 A: 科技沉浸 · 极速搜索流容器 -->
+        <div class="container hero-search-mode-container" id="hero-search-container">
+            <div class="hero-badge-wrap" id="hero-badge-wrap">
+                <span class="hero-badge" id="hero-badge">
+                    <span class="hero-badge-dot"></span>
+                    <span id="hero-badge-text">官方自营 · 顺丰免费上门 · 10秒快速估价 · 秒级放款到账</span>
+                </span>
+            </div>
+            <h1 class="hero-title" id="hero-title">全品类高价回收 · 10秒快速估价</h1>
+            <p class="hero-subtitle" id="hero-subtitle">官方标准透明报价 · 顺丰免费上门包邮 · 个人隐私安全清除</p>
+            <div class="search-wrap" id="main-search-wrap">
+                <div class="search-box">
+                    <span class="search-icon-box">
+                        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="#94a3b8" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                    </span>
+                    <input type="text" id="main-search-input" placeholder="输入您要回收的商品或型号，如：iPhone 15 Pro, Mate 60, 小米14, 联想电脑..." autocomplete="off">
+                    <button id="btn-main-search">
+                        <span id="btn-main-search-text">立即估价</span>
+                        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+                    </button>
+                </div>
+                <div class="hero-hot-tags" id="hero-hot-tags">
+                    <span class="hot-label"><svg viewBox="0 0 24 24" width="13" height="13" fill="currentColor" style="vertical-align:-1px;margin-right:2px;"><path d="M12 23c6.075 0 11-4.925 11-11C23 5.4 18.667 1.5 12 1 12 7 9 9 9 9s-3-2-3-4C3 8 2 10.5 2 12c0 6.075 4.925 11 10 11z"/></svg>热门搜索：</span>
+                    <span class="hot-chip" onclick="window.quickSearch('iPhone 15 Pro')">iPhone 15 Pro</span>
+                    <span class="hot-chip" onclick="window.quickSearch('Mate 60 Pro')">Mate 60 Pro</span>
+                    <span class="hot-chip" onclick="window.quickSearch('小米14')">小米 14</span>
+                    <span class="hot-chip" onclick="window.quickSearch('MacBook')">MacBook Pro</span>
+                    <span class="hot-chip" onclick="window.quickSearch('iPad')">iPad Pro</span>
+                </div>
+            </div>
+
+            <!-- 平台核心承诺指标 -->
+            <div class="hero-metrics-grid" id="hero-metrics-grid">
+                <div class="hero-metric-item">
+                    <div class="hero-metric-val">120万+</div>
+                    <div class="hero-metric-lbl">累计完成回收</div>
+                </div>
+                <div class="hero-metric-item">
+                    <div class="hero-metric-val">10秒</div>
+                    <div class="hero-metric-lbl">快速精准估价</div>
+                </div>
+                <div class="hero-metric-item">
+                    <div class="hero-metric-val">0元</div>
+                    <div class="hero-metric-lbl">顺丰双向保价包邮</div>
+                </div>
+                <div class="hero-metric-item">
+                    <div class="hero-metric-val">100%</div>
+                    <div class="hero-metric-lbl">隐私安全保障</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 模式 B: 品牌画卷 · 轮播大图 Banner 容器 (开启模式 B 时动态激活) -->
+        <div class="hero-carousel-wrapper" id="hero-carousel-wrapper" style="display:none;">
+            <div class="banner-carousel-track" id="banner-carousel-track">
+                <!-- 动态渲染 Banner 轮播卡片 -->
+            </div>
+            <button type="button" class="carousel-arrow carousel-arrow-prev" id="carousel-prev-btn" aria-label="上一张">
+                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
+            </button>
+            <button type="button" class="carousel-arrow carousel-arrow-next" id="carousel-next-btn" aria-label="下一张">
+                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+            </button>
+            <div class="carousel-indicators" id="carousel-indicators"></div>
+
+            <!-- 模式 B: 悬浮快速估价卡片容器 (完全置于 Banner 轮播图内部，位于大图之上) -->
+            <div class="container hero-floating-container" id="hero-floating-container" style="display:none;">
+                <!-- 模式 B 激活且开启悬浮估价时，动态转移主搜索框与指标卡片至此处 -->
+            </div>
+        </div>
+    </section>
+
+    <!-- 实时动态播报栏 -->
+    <div class="live-ticker-bar">
+        <div class="container">
+            <div class="ticker-inner">
+                <span class="ticker-tag">
+                    <span class="ticker-dot"></span>
+                    <span>实时动态</span>
+                </span>
+                <div class="ticker-content" id="live-ticker-wrap">
+                    <span class="ticker-text" id="live-ticker-text">刚刚 [138****6821] 成功回收 iPhone 15 Pro Max · 极速放款 ¥5,800 到账</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 行业专属特色板块宿主 (废品行情看板 / 贵金属牌价等) -->
+    <div id="industry-feature-container" style="display:none;"></div>
+
+    <!-- 回收加价补贴券 · 限时领券专区 (对标转转/爱回收同款补贴) -->
+    <section class="coupon-showcase-bar" id="coupon-showcase-bar">
+        <div class="container">
+            <div class="coupon-bar-header">
+                <div class="coupon-bar-title-box">
+                    <div class="coupon-bar-title">
+                        <span style="font-size:18px;">🔥</span> 回收加价补贴专区
+                    </div>
+                    <span class="coupon-bar-badge">限时加价 · 最高立补 ¥300 现金</span>
+                    <span class="coupon-bar-sub">透明报价 + 平台加价补贴 · 先领券后交投 · 极速打款到账</span>
+                </div>
+                <div class="coupon-bar-more" onclick="window.openCouponCenterModal()">
+                    <span>查看全部加价券 / 我的卡包</span>
+                    <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6-1.41-1.41z"/></svg>
+                </div>
+            </div>
+            <div class="coupon-showcase-grid" id="coupon-showcase-grid">
+                <!-- 动态由 loadCouponsShowcase() 实时渲染 -->
+            </div>
+        </div>
+    </section>
+
+    <!-- 品牌筛选栏 -->
+    <section class="brand-filter-bar">
+        <div class="container">
+            <div class="brand-pills" id="brand-pills-box">
+                <span class="brand-pill active" data-brand="0">全部品牌</span>
+            </div>
+        </div>
+    </section>
+
+    <!-- 主展示区：商品列表 -->
+    <main class="main-container">
+        <div class="container">
+            <div class="section-header">
+                <div class="section-title">
+                    <span style="display:inline-flex;align-items:center;color:var(--primary);"><svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M16 6l2.29 2.29-4.88 4.88-4-4L2 16.59 3.41 18l6-6 4 4 6.3-6.29L22 12V6z"/></svg></span>
+                    <span id="current-list-title">回收商品列表</span>
+                </div>
+                <span style="font-size:13px;color:var(--text-muted);" id="device-count-tag">加载中...</span>
+            </div>
+
+            <!-- 商品卡片网格 -->
+            <div class="device-grid" id="devices-grid-box">
+                <div style="grid-column:1/-1;text-align:center;padding:50px;color:var(--text-muted);">正在加载商品列表...</div>
+            </div>
+
+            <!-- 3步极速回收服务流程 -->
+            <section class="steps-section" id="home-process-section">
+                <div class="steps-header">
+                    <h2 class="steps-title" id="home-process-title">简单3步 · 闲置极速变现</h2>
+                    <p class="steps-subtitle" id="home-process-subtitle">顺丰免费上门 / 官方专业质检 / 确认后秒级极速放款</p>
+                </div>
+                <div class="steps-grid" id="home-process-grid">
+                    <div class="step-card">
+                        <div class="step-num">01</div>
+                        <div class="step-icon-wrap" style="color:var(--primary);background:#eff6ff;">
+                            <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+                        </div>
+                        <div class="step-title" id="home-step1-title">在线智能精准估价</div>
+                        <div class="step-desc" id="home-step1-desc">快速勾选机况成色，系统自动匹配最新市场行情价，满意后再提交。</div>
+                    </div>
+                    <div class="step-card">
+                        <div class="step-num">02</div>
+                        <div class="step-icon-wrap" style="color:#0284c7;background:#f0f9ff;">
+                            <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
+                        </div>
+                        <div class="step-title" id="home-step2-title">顺丰免费上门 · 包邮</div>
+                        <div class="step-desc" id="home-step2-desc">顺丰小哥免费上门当面装箱封签，全国往返双向包邮且全程保价，您无需支付任何运费。</div>
+                    </div>
+                    <div class="step-card">
+                        <div class="step-num">03</div>
+                        <div class="step-icon-wrap" style="color:#10b981;background:#ecfdf5;">
+                            <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                        </div>
+                        <div class="step-title" id="home-step3-title">官方质检 · 秒级放款</div>
+                        <div class="step-desc" id="home-step3-desc">全程无死角高清监控录像验机，绝不恶意压价；确认价格后，微信或支付宝秒级直达账户。</div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 平台特色信任保障区 -->
+            <div class="trust-section">
+                <div class="trust-grid">
+                    <div class="trust-card">
+                        <div class="trust-icon-box" style="background:#eff6ff;color:var(--primary);">
+                            <svg viewBox="0 0 24 24" width="28" height="28" fill="currentColor"><path d="M20 8h-3V4H1v13h2c0 1.66 1.34 3 3 3s3-1.34 3-3h6c0 1.66 1.34 3 3 3s3-1.34 3-3h2v-5l-3-4zM6 18.5c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zm13.5-9l1.96 2.5H17V9.5h2.5zm-1.5 9c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5z"/></svg>
+                        </div>
+                        <div class="trust-title">顺丰免费上门 / 全程包邮</div>
+                        <div class="trust-desc">专业顺丰小哥免费上门，专人过磅拖运或快递打包，全程双向保价0费用</div>
+                    </div>
+                    <div class="trust-card">
+                        <div class="trust-icon-box" style="background:#f0fdf4;color:#10b981;">
+                            <svg viewBox="0 0 24 24" width="28" height="28" fill="currentColor"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm-2 16l-4-4 1.41-1.41L10 14.17l6.59-6.59L18 9l-8 8z"/></svg>
+                        </div>
+                        <div class="trust-title">官方透明质检 · 绝无压价</div>
+                        <div class="trust-desc">全程高清录像监控专业拆机核验，如实描述即享预估全款，杜绝虚报与恶意扣减</div>
+                    </div>
+                    <div class="trust-card">
+                        <div class="trust-icon-box" style="background:#fefce8;color:#ca8a04;">
+                            <svg viewBox="0 0 24 24" width="28" height="28" fill="currentColor"><path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/></svg>
+                        </div>
+                        <div class="trust-title">个人数据清除 · 隐私保障</div>
+                        <div class="trust-desc">采用专业数据清除技术对设备进行全面清理，确保个人信息不残留</div>
+                    </div>
+                    <div class="trust-card">
+                        <div class="trust-icon-box" style="background:#fff7ed;color:#ea580c;">
+                            <svg viewBox="0 0 24 24" width="28" height="28" fill="currentColor"><path d="M7 2v11h3v9l7-12h-4l4-8z"/></svg>
+                        </div>
+                        <div class="trust-title">秒级极速放款 · 资金直达</div>
+                        <div class="trust-desc">质检结果双方确认一致后，系统秒级自动放款，微信零钱或支付宝即刻到账</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 常见问题与答疑 -->
+            <section class="faq-section" id="home-faq-section">
+                <div class="steps-header">
+                    <h2 class="steps-title" id="home-faq-title">回收常见问题解答</h2>
+                    <p class="steps-subtitle" id="home-faq-subtitle">解答您的疑惑，让每一笔回收都透明安心</p>
+                </div>
+                <div class="faq-grid" id="home-faq-grid">
+                    <div class="faq-item" onclick="window.toggleFaq(this)">
+                        <div class="faq-q">
+                            <span>Q1. 提交估价后的价格会随意变动吗？</span>
+                            <span class="faq-arrow">▼</span>
+                        </div>
+                        <div class="faq-a">我们承诺 7 天价格锁定保障！在您提交订单后的7天内，只要实际质检情况与您提交的评估描述一致，我们将 100% 按照预估价格全额放款，绝不坐地降价。</div>
+                    </div>
+                    <div class="faq-item" onclick="window.toggleFaq(this)">
+                        <div class="faq-q">
+                            <span>Q2. 寄送顺丰快递的运费由谁承担？</span>
+                            <span class="faq-arrow">▼</span>
+                        </div>
+                        <div class="faq-a">全场所有品类均享受【顺丰包邮】服务！顺丰小哥上门取件时直接选择“到付”即可，往返运费均由平台全额承担，您不需要掏一分钱。</div>
+                    </div>
+                    <div class="faq-item" onclick="window.toggleFaq(this)">
+                        <div class="faq-q">
+                            <span>Q3. 设备里的照片和个人隐私会被泄露吗？</span>
+                            <span class="faq-arrow">▼</span>
+                        </div>
+                        <div class="faq-a">请完全放心！平台质检入库后将对设备进行专业数据清除，确保所有照片、账号、聊天记录安全清除不残留！</div>
+                    </div>
+                    <div class="faq-item" onclick="window.toggleFaq(this)">
+                        <div class="faq-q">
+                            <span>Q4. 质检复核后如果我不认可最终成交价怎么办？</span>
+                            <span class="faq-arrow">▼</span>
+                        </div>
+                        <div class="faq-a">我们充分尊重用户的自主选择权！若您对质检复核金额不满意，可在会员中心一键点击“拒绝成交”，我们将通过顺丰包邮将原机原封退还给您，退运保价运费由平台承担，无需您付费！</div>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <!-- 右侧快捷浮动导航 -->
+    <div class="float-widget">
+        <div class="float-btn" id="btn-float-orders" onclick="document.getElementById('btn-open-orders').click()" title="查回收单">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M20 6h-4V4c0-1.11-.89-2-2-2h-4c-1.11 0-2 .89-2 2v2H4c-1.11 0-1.99.89-1.99 2L2 19c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V8c0-1.11-.89-2-2-2zm-6 0h-4V4h4v2z"/></svg>
+            <span>查单</span>
+        </div>
+        <div class="float-btn" id="btn-float-top" onclick="window.scrollTo({top:0, behavior:'smooth'})" title="回到顶部" style="display:none;">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 15l-6-6-6 6"/></svg>
+            <span>顶部</span>
+        </div>
+    </div>
+
+    <!-- 商业级多功能全景页脚 (Mega Footer) -->
+    <footer class="footer-mega">
+        <div class="container">
+            <div class="footer-mega-top">
+                <!-- 列 1：品牌愿景与信任证书 -->
+                <div class="footer-col-brand">
+                    <a href="/" class="footer-brand-title" id="mega-brand-link">
+                        <img id="mega-brand-logo" src="/uploads/default/site_logo.svg" class="footer-brand-logo" alt="品牌Logo">
+                        <span id="mega-brand-name">启灵回收</span>
+                    </a>
+                    <p class="footer-brand-desc" id="mega-footer-desc">
+                        官方直营全品类数字化回收服务平台。官方标准透明报价，顺丰免费上门包邮，专业质检快速放款，个人数据安全清除，致力共创安全、透明、绿色的循环生态。
+                    </p>
+                    <div class="footer-trust-tags" id="mega-trust-tags">
+                        <span class="footer-trust-tag">
+                            <svg viewBox="0 0 24 24" width="13" height="13" fill="currentColor"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm-2 16l-4-4 1.41-1.41L10 14.17l6.59-6.59L18 9l-8 8z"/></svg>
+                            顺丰速运合作伙伴
+                        </span>
+                        <span class="footer-trust-tag">
+                            <svg viewBox="0 0 24 24" width="13" height="13" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
+                            中国物资再生倡导
+                        </span>
+                        <span class="footer-trust-tag">
+                            <svg viewBox="0 0 24 24" width="13" height="13" fill="currentColor"><path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/></svg>
+                            数据安全清除保障
+                        </span>
+                    </div>
+                </div>
+
+                <!-- 列 2：平台服务与合规条款 (纯净单列垂直排布，严格4栏对齐) -->
+                <div class="footer-col-links">
+                    <div class="footer-col-title">平台服务与条款</div>
+                    <ul class="footer-links-list" id="mega-links-all">
+                        <!-- 真实默认条款保底，由 JS 动态读取后台文章库全量同步更新 -->
+                        <li><a class="footer-link" onclick="window.openArticleModal('sf-guide')">顺丰包邮与寄送指南</a></li>
+                        <li><a class="footer-link" onclick="window.openArticleModal('quality-payout')">质检评级与放款细则</a></li>
+                        <li><a class="footer-link" onclick="window.openArticleModal('about')">关于我们</a></li>
+                        <li><a class="footer-link" onclick="window.openArticleModal('disclaimer')">免责声明</a></li>
+                        <li><a class="footer-link" onclick="window.openArticleModal('agreement')">用户服务协议</a></li>
+                        <li><a class="footer-link" onclick="window.openArticleModal('privacy')">隐私保护政策</a></li>
+                    </ul>
+                </div>
+
+                <!-- 列 3：客户服务与支持联系 (专职呈现客服通道) -->
+                <div class="footer-col-contact">
+                    <div class="footer-col-title">客服热线与咨询</div>
+                    <div class="footer-contact-box">
+                        <div class="footer-contact-item">
+                            <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M20 15.5c-1.25 0-2.45-.2-3.57-.57-.35-.11-.74-.03-1.02.24l-2.2 2.2c-2.83-1.44-5.15-3.75-6.59-6.59l2.2-2.21c.28-.26.36-.65.25-1C8.7 6.45 8.5 5.25 8.5 4c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1 0 9.39 7.61 17 17 17 .55 0 1-.45 1-1v-3.5c0-.55-.45-1-1-1z"/></svg>
+                            <div>
+                                <div class="footer-contact-tel" id="mega-footer-tel">400-800-8888</div>
+                                <div style="font-size:11px;color:#94a3b8;margin-top:2px;" id="mega-footer-time">周一至周日 09:00 - 21:00 (节假日不休)</div>
+                            </div>
+                        </div>
+                        <div class="footer-contact-item">
+                            <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/></svg>
+                            <span id="mega-footer-email">service@qilingrecycle.com</span>
+                        </div>
+                        <div class="footer-contact-item">
+                            <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
+                            <span id="mega-footer-address">深圳市南山区高新南一道科兴科学园B座质检收发中心</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 列 4：官方专属扫码咨询 (二维码独立专栏，自适应单码大图/双码并排) -->
+                <div class="footer-col-qr">
+                    <div class="footer-col-title">官方扫码咨询</div>
+                    <div class="footer-qr-container single-qr" id="mega-footer-qr-container">
+                        <div class="footer-qr-card" id="mega-qr-wechat-box">
+                            <img id="mega-qr-wechat-img" class="footer-qr-img" src="/uploads/default/qrcode_placeholder.svg" alt="微信客服二维码">
+                            <div class="footer-qr-title" id="mega-qr-wechat-title">专属微信客服</div>
+                            <div class="footer-qr-sub">1对1极速咨询</div>
+                        </div>
+                        <div class="footer-qr-card" id="mega-qr-mp-box" style="display:none;">
+                            <img id="mega-qr-mp-img" class="footer-qr-img" src="/uploads/default/qrcode_placeholder.svg" alt="官方公众号二维码">
+                            <div class="footer-qr-title" id="mega-qr-mp-title">官方公众号</div>
+                            <div class="footer-qr-sub">最新行情活动</div>
+                        </div>
+                    </div>
+                    <div class="footer-qr-tip" id="mega-qr-tip">
+                        <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
+                        <span>微信扫码快速接入人工质检客服</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 页脚底部版权与网安备案条 -->
+            <div class="footer-mega-bottom">
+                <div class="footer-bottom-copyright" id="mega-footer-copyright">
+                    <span id="footer-site-name" style="display:none;"></span>
+                    <span id="footer-service-tel">© 2026 启灵智能回收数字化平台 · 保留所有权利</span>
+                </div>
+                <div class="footer-bottom-filings" id="mega-footer-filings">
+                    <span id="footer-filings"></span>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- ======================================================== -->
+    <!-- 模态框 1：机型互动评估问答面板 (Valuation Modal) -->
+    <!-- ======================================================== -->
+    <div id="modal-appraisal" class="modal-overlay" style="display:none;">
+        <div class="modal-card">
+            <div class="drawer-bar"></div>
+            <div class="modal-header">
+                <span id="eval-modal-title">精准回收估价评估</span>
+                <span class="modal-close-btn" onclick="closeAppraisalModal()">✕</span>
+            </div>
+            <div class="modal-body">
+                <div class="eval-device-info">
+                    <img id="eval-img" src="" class="eval-device-img" alt="商品图片">
+                    <div>
+                        <h3 id="eval-name" style="font-size:16px;font-weight:700;"></h3>
+                        <p style="font-size:12px;color:var(--text-muted);margin-top:2px;">基础回收价：<strong style="color:var(--primary);font-size:14px;" id="eval-guide-price"></strong></p>
+                    </div>
+                </div>
+
+                <!-- 双模式估价切换 Tab -->
+                <div class="eval-mode-tabs">
+                    <button type="button" id="tab-mode-quick" class="eval-mode-tab active" onclick="window.switchAppraisalMode('quick')">
+                        <span class="mode-icon">⚡</span>
+                        <div class="mode-text">
+                            <span class="mode-title">极速估价</span>
+                            <span class="mode-tag">3秒快速出价</span>
+                        </div>
+                    </button>
+                    <button type="button" id="tab-mode-pro" class="eval-mode-tab" onclick="window.switchAppraisalMode('pro')">
+                        <span class="mode-icon">🔬</span>
+                        <div class="mode-text">
+                            <span class="mode-title">专业精准自测</span>
+                            <span class="mode-tag">逐项精细质检</span>
+                        </div>
+                    </button>
+                </div>
+
+                <!-- 极速成色估价容器 -->
+                <div id="eval-quick-container" style="display:block;">
+                    <div style="font-size:13px;font-weight:600;color:var(--text-main);margin-bottom:10px;">选择您的机器成色档位：</div>
+                    <div id="quick-tiers-box" class="quick-tiers-list">
+                        <!-- 动态渲染 5 档成色卡片 -->
+                    </div>
+                </div>
+
+                <!-- 专业精准自测试题容器 -->
+                <div id="eval-pro-container" style="display:none;">
+                    <div id="eval-questions-container">
+                        <div style="text-align:center;padding:30px;color:var(--text-muted);">正在加载质检评估选项...</div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <div>
+                    <span style="font-size:12px;color:var(--text-muted);">预估回收总价值</span>
+                    <div style="display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;">
+                        <div style="font-size:24px;font-weight:800;color:var(--primary);" id="eval-calc-price">¥ 0.00</div>
+                        <div id="eval-coupon-badge" class="eval-coupon-badge" style="display:none;"></div>
+                    </div>
+                </div>
+                <button class="btn btn-primary" id="btn-proceed-order" style="height:44px;padding:0 24px;font-size:15px;">
+                    立即提交 · 预约回收 →
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ======================================================== -->
+    <!-- 模态框 2：填写回收订单面板 (Order Placement Modal) -->
+    <!-- ======================================================== -->
+    <div id="modal-order" class="modal-overlay" style="display:none;">
+        <div class="modal-card" style="max-width:560px;">
+            <div class="drawer-bar"></div>
+            <div class="modal-header">
+                <span>提交回收订单</span>
+                <span class="modal-close-btn" onclick="closeOrderModal()">✕</span>
+            </div>
+            <div class="modal-body">
+                <div style="display:flex;justify-content:space-between;align-items:center;background:#f1f5f9;padding:12px 16px;border-radius:10px;margin-bottom:18px;">
+                    <div>
+                        <div id="order-dev-name" style="font-weight:700;font-size:14px;"></div>
+                        <div style="font-size:12px;color:var(--text-muted);" id="order-sub-desc">免费上门服务 · 专业核验</div>
+                    </div>
+                    <div style="text-align:right;">
+                        <span style="font-size:11px;color:var(--text-muted);">预估放款总额</span>
+                        <div id="order-est-price" style="font-size:18px;font-weight:800;color:var(--primary);">¥ 0.00</div>
+                        <div id="order-coupon-summary-tip" style="font-size:11px;color:#ea580c;font-weight:600;display:none;"></div>
+                    </div>
+                </div>
+
+                <!-- 加价补贴券专区选择 -->
+                <div class="form-group" id="order-coupon-group" style="margin-bottom:16px;">
+                    <label class="form-label" style="display:flex;justify-content:space-between;align-items:center;">
+                        <span style="display:flex;align-items:center;gap:4px;">
+                            <span style="color:#ea580c;">🧧</span> 回收加价补贴券
+                        </span>
+                        <span id="order-coupon-benefit-tip" style="font-size:12px;color:#ea580c;font-weight:600;"></span>
+                    </label>
+                    <div id="order-coupon-box" class="order-coupon-box">
+                        <!-- 动态渲染匹配的卡券选项 -->
+                    </div>
+                </div>
+
+                <!-- 履约模式选择 (动态渲染与自定义) -->
+                <div class="form-group">
+                    <label class="form-label" id="fulfillment-label">选择服务方式</label>
+                    <div class="mode-cards" id="mode-cards-container">
+                        <!-- 由 JS renderFulfillmentCards() 动态渲染 -->
+                    </div>
+                </div>
+
+                <!-- 快递寄送专属方式选择 (顺丰上门取件 vs 自行寄送) -->
+                <div class="form-group" id="mail-sub-group" style="display:none;">
+                    <label class="form-label" style="display:flex;justify-content:space-between;align-items:center;">
+                        <span>快递寄送方式</span>
+                        <a href="javascript:void(0)" onclick="window.showFreightRuleModal()" style="font-size:12px;color:var(--primary);font-weight:600;display:flex;align-items:center;gap:3px;text-decoration:underline;">
+                            <svg viewBox="0 0 24 24" width="13" height="13" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg>
+                            运费规则说明
+                        </a>
+                    </label>
+                    <div class="mail-sub-cards" id="mail-sub-cards-container">
+                        <!-- 动态渲染顺丰上门取件与自行寄送卡片 -->
+                    </div>
+                    <!-- 顺丰官方上门保障提示 (非绝对化，动态结合后台政策) -->
+                    <div id="sf-pickup-info-card" style="display:none;background:#f0f9ff;border:1px solid #bae6fd;border-radius:8px;padding:10px 14px;margin-bottom:12px;font-size:12px;color:#0369a1;line-height:1.6;">
+                        <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;">
+                            <div style="flex:1;" id="sf-pickup-info-text">
+                                🚀 <strong>顺丰官方上门：</strong>提交订单后系统将自动为您预约顺丰小哥上门取件，平台支持运费补贴/报销政策。
+                            </div>
+                            <button type="button" class="btn btn-outline" style="height:24px;padding:0 8px;font-size:11px;color:#0284c7;border-color:#7dd3fc;background:#fff;white-space:nowrap;" onclick="window.showFreightRuleModal()">规则详情</button>
+                        </div>
+                    </div>
+                    <!-- 自行寄送官方收件中心信息展示卡片 -->
+                    <div id="self-delivery-info-card" style="display:none;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:12px 14px;margin-bottom:12px;">
+                        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+                            <span style="font-weight:700;color:#166534;font-size:13px;display:flex;align-items:center;gap:6px;">
+                                <span>📦</span> 平台质检收件中心地址
+                            </span>
+                            <button type="button" class="btn btn-outline" style="height:24px;padding:0 8px;font-size:11px;color:#16a34a;border-color:#86efac;background:#fff;" onclick="window.copyPlatformAddress()">复制收件信息</button>
+                        </div>
+                        <div style="font-size:12px;color:#15803d;line-height:1.6;" id="self-delivery-address-text">
+                            <!-- 动态填充收件人、电话、地址 -->
+                        </div>
+                        <div style="font-size:11px;color:#166534;margin-top:6px;padding-top:6px;border-top:1px dashed #bbf7d0;display:flex;justify-content:space-between;align-items:center;">
+                            <span>💡 妥善打包并通过任意快递寄出，在【订单进度】录入单号享运费补贴。</span>
+                            <a href="javascript:void(0)" onclick="window.showFreightRuleModal()" style="color:#16a34a;font-weight:600;text-decoration:underline;white-space:nowrap;margin-left:6px;">运费细则 &gt;</a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 联系人信息 -->
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+                    <div class="form-group">
+                        <label class="form-label">联系人姓名</label>
+                        <input type="text" id="order-name" class="form-input" placeholder="您的姓名" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">手机号码 (接收通知与放款)</label>
+                        <input type="tel" id="order-mobile" class="form-input" placeholder="11位手机号码" required>
+                    </div>
+                </div>
+
+                <div class="form-group" id="addr-group">
+                    <label class="form-label" id="addr-label">详细地址 (必填)</label>
+                    <input type="text" id="order-address" class="form-input" placeholder="省、市、区、街道及详细门牌号">
+                </div>
+
+                <!-- 线下门店/网点选择区域 (当选择“线下门店自送”时显示) -->
+                <div class="form-group" id="store-select-group" style="display:none;">
+                    <label class="form-label" style="display:flex;justify-content:space-between;align-items:center;">
+                        <span>选择回收服务门店</span>
+                        <span id="store-count-tip" style="font-size:12px;color:var(--text-muted);font-weight:normal;"></span>
+                    </label>
+                    <div id="store-cards-container" style="display:flex;flex-direction:column;gap:8px;max-height:220px;overflow-y:auto;padding:2px;">
+                        <!-- 动态渲染门店列表卡片 -->
+                    </div>
+                </div>
+
+                <div class="form-group" id="time-group">
+                    <label class="form-label" id="time-label">期望服务时间</label>
+                    <select id="order-time" class="form-input">
+                        <option value="今天 极速安排">今天 极速安排</option>
+                        <option value="今天 下午 (14:00-18:00)">今天 下午 (14:00-18:00)</option>
+                        <option value="明天 上午 (09:00-12:00)">明天 上午 (09:00-12:00)</option>
+                        <option value="明天 下午 (14:00-18:00)">明天 下午 (14:00-18:00)</option>
+                    </select>
+                </div>
+
+                <!-- 收款结算方式与指定账户 (高度自定义与用户自选) -->
+                <div class="form-group">
+                    <label class="form-label">选择款项结算方式</label>
+                    <div class="payout-cards" id="payout-cards-container">
+                        <!-- 由 JS renderPayoutCards() 动态渲染 -->
+                    </div>
+                    <!-- 动态收款账户输入区域 -->
+                    <div id="payout-fields-box" class="payout-fields-box">
+                        <!-- 动态渲染收款账号输入表单 -->
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">回收备注说明 (选填)</label>
+                    <input type="text" id="order-remark" class="form-input" placeholder="如方便联系的时间段、特殊成色说明等">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-outline" onclick="closeOrderModal()">返回修改</button>
+                <button class="btn btn-primary" id="btn-submit-order" style="height:44px;padding:0 28px;font-size:15px;">
+                    确认提交回收单
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ======================================================== -->
+    <!-- 模态框 3：下单成功通知 (Success Modal) -->
+    <!-- ======================================================== -->
+    <div id="modal-success" class="modal-overlay" style="display:none;">
+        <div class="modal-card" style="max-width:440px;text-align:center;">
+            <div class="modal-body" style="padding:36px 24px;">
+                <div style="width:64px;height:64px;background:#dcfce7;color:#15803d;border-radius:50%;margin:0 auto 16px auto;display:flex;align-items:center;justify-content:center;">
+                    <svg viewBox="0 0 24 24" width="34" height="34" fill="currentColor"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+                </div>
+                <h3 style="font-size:20px;font-weight:800;color:var(--text-main);margin-bottom:8px;">回收单提交成功！</h3>
+                <p style="font-size:13px;color:var(--text-muted);margin-bottom:16px;">专员将尽快与您电话联系确认交接与核验事宜</p>
+                <div style="background:#f8fafc;padding:12px;border-radius:8px;font-size:13px;margin-bottom:24px;text-align:left;">
+                    <p>业务单号：<strong id="success-sn" style="color:var(--text-main);"></strong></p>
+                    <p>预估金额：<strong id="success-price" style="color:var(--primary);"></strong></p>
+                    <p id="success-express-row" style="display:none;margin-top:6px;padding-top:6px;border-top:1px dashed #cbd5e1;">
+                        顺丰单号：<strong id="success-express-sn" style="color:#0284c7;font-family:monospace;font-size:14px;"></strong>
+                        <span class="badge" style="background:#e0f2fe;color:#0369a1;font-size:11px;margin-left:6px;padding:2px 6px;">已预约顺丰小哥上门取件</span>
+                    </p>
+                </div>
+                <div style="display:flex;gap:10px;">
+                    <button class="btn btn-outline" style="flex:1;" onclick="document.getElementById('modal-success').style.display='none'">继续浏览</button>
+                    <button class="btn btn-primary" style="flex:1;" id="btn-success-check-orders">查看订单进度</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ======================================================== -->
+    <!-- 模态框 4：我的回收单进度查询 (Tracking Modal) -->
+    <!-- ======================================================== -->
+    <div id="modal-my-orders" class="modal-overlay" style="display:none;">
+        <div class="modal-card" style="max-width:680px;">
+            <div class="modal-header">
+                <span>我的回收订单进度查询</span>
+                <span class="modal-close-btn" onclick="document.getElementById('modal-my-orders').style.display='none'">✕</span>
+            </div>
+            <div class="modal-body">
+                <div style="display:flex;gap:10px;margin-bottom:16px;">
+                    <input type="tel" id="query-mobile-input" class="form-input" placeholder="输入下单时填写的手机号码" style="flex:1;">
+                    <button class="btn btn-primary" id="btn-do-query-mobile">查询回收进度</button>
+                </div>
+                <div id="my-orders-result-box">
+                    <div style="text-align:center;padding:40px;color:var(--text-muted);">请输入手机号码查询您的回收订单进度</div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="document.getElementById('modal-my-orders').style.display='none'">关闭</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ======================================================== -->
+    <!-- 模态框：填写/修改寄件快递单号 (Express Input Modal) -->
+    <!-- ======================================================== -->
+    <div id="modal-express-input" class="modal-overlay" style="display:none; z-index:1150;">
+        <div class="modal-card" style="max-width:480px;">
+            <div class="modal-header">
+                <span id="express-modal-title" style="font-weight:700;">填写/修改寄件快递单号</span>
+                <span class="modal-close-btn" onclick="window.closeExpressModal()">✕</span>
+            </div>
+            <div class="modal-body" style="padding:20px;">
+                <input type="hidden" id="express-modal-order-id" value="">
+                <input type="hidden" id="express-modal-order-sn" value="">
+                <input type="hidden" id="express-modal-mobile" value="">
+
+                <div style="background:#f8fafc;padding:10px 14px;border-radius:8px;border:1px solid var(--border);margin-bottom:14px;font-size:13px;">
+                    <div>回收订单单号：<strong id="express-modal-sn-display" style="font-family:monospace;color:var(--text-main);"></strong></div>
+                </div>
+
+                <div class="form-group" style="margin-bottom:12px;">
+                    <label class="form-label">选择快递承运公司</label>
+                    <select id="express-company-select" class="form-input">
+                        <option value="顺丰速运">顺丰速运 (推荐/官方承运)</option>
+                        <option value="京东快递">京东快递</option>
+                        <option value="中通快递">中通快递</option>
+                        <option value="圆通速递">圆通速递</option>
+                        <option value="韵达快递">韵达快递</option>
+                        <option value="极兔速递">极兔速递</option>
+                        <option value="申通快递">申通快递</option>
+                        <option value="德邦快递">德邦快递</option>
+                        <option value="中国邮政EMS">中国邮政 / EMS</option>
+                        <option value="其他快递">其他快递</option>
+                    </select>
+                </div>
+
+                <div class="form-group" style="margin-bottom:14px;">
+                    <label class="form-label">寄件快递单号</label>
+                    <input type="text" id="express-sn-input" class="form-input" placeholder="请输入寄出后获得的快递运单号" style="font-family:monospace;font-size:15px;font-weight:600;">
+                </div>
+
+                <!-- 平台官方收件地址提示，方便寄件时查看 -->
+                <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:10px 12px;font-size:12px;line-height:1.5;color:#166534;">
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
+                        <strong>📦 平台质检收件中心收件地址</strong>
+                        <button type="button" class="btn btn-outline" style="height:22px;padding:0 6px;font-size:11px;color:#16a34a;border-color:#86efac;background:#fff;" onclick="window.copyPlatformAddress()">复制</button>
+                    </div>
+                    <div id="express-modal-receive-info">
+                        <!-- 动态展示平台收件人、手机、地址 -->
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-outline" onclick="window.closeExpressModal()">取消</button>
+                <button class="btn btn-primary" id="btn-submit-express-sn" style="height:38px;padding:0 20px;">确认提交单号</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ======================================================== -->
+    <!-- 模态框：平台寄送与运费承担规则说明 (Freight Rule Modal) -->
+    <!-- ======================================================== -->
+    <div id="modal-freight-rule" class="modal-overlay" style="display:none; z-index:1200;">
+        <div class="modal-card" style="max-width:520px;">
+            <div class="modal-header">
+                <span style="font-weight:700;display:flex;align-items:center;gap:6px;">
+                    <span>📜</span> 平台寄送与运费规则说明
+                </span>
+                <span class="modal-close-btn" onclick="window.closeFreightRuleModal()">✕</span>
+            </div>
+            <div class="modal-body" style="padding:18px 20px;max-height:65vh;overflow-y:auto;font-size:13px;line-height:1.8;color:var(--text-main);">
+                <div id="freight-rule-content-box" style="white-space:pre-wrap;background:#f8fafc;padding:14px 16px;border-radius:8px;border:1px solid var(--border);color:#334155;font-size:13px;"></div>
+                <div style="margin-top:12px;font-size:12px;background:#fffbeb;border:1px solid #fef3c7;border-radius:6px;padding:10px 12px;color:#92400e;line-height:1.6;">
+                    🔒 <strong>隐私与寄件特别提示：</strong>寄出前请提前退出您的个人云账号（如各类ID、手机锁屏密码），并备份抹除数据。如无法解锁或山寨机退回，往返运费需用户自理。
+                </div>
+            </div>
+            <div class="modal-footer" style="padding:12px 20px;">
+                <button class="btn btn-primary" style="width:100%;height:38px;" onclick="window.closeFreightRuleModal()">我已了解</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ======================================================== -->
+    <!-- 模态框 5：质检标准图例大图预览 (Reference Image Lightbox) -->
+    <!-- ======================================================== -->
+    <div id="modal-ref-image" class="modal-overlay" style="display:none; z-index:1100;">
+        <div class="modal-card" style="max-width:540px; text-align:center; padding:0; overflow:hidden;">
+            <div class="modal-header" style="background:#fff;">
+                <span id="ref-modal-title" style="font-weight:700;">质检标准图例</span>
+                <span class="modal-close-btn" onclick="window.closeRefImageModal()">✕</span>
+            </div>
+            <div class="modal-body" style="padding:16px; background:#000;">
+                <img id="ref-modal-img" src="" alt="参考示意图" style="max-width:100%; max-height:65vh; object-fit:contain; display:block; margin:0 auto; border-radius:4px;">
+            </div>
+            <div style="background:#fff; padding:14px 20px; text-align:left; border-top:1px solid var(--border);">
+                <p id="ref-modal-desc" style="font-size:13px; color:var(--text-muted); line-height:1.5;"></p>
+                <button class="btn btn-secondary" style="width:100%; margin-top:10px;" onclick="window.closeRefImageModal()">我已知晓，关闭图例</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ======================================================== -->
+    <!-- 模态框 6：会员登录 / 注册 / 快捷验证 (User Auth Modal) -->
+    <!-- ======================================================== -->
+    <div id="modal-user-auth" class="modal-overlay" style="display:none; z-index:1100;">
+        <div class="modal-card" style="max-width:440px;">
+            <div class="modal-header">
+                <div style="display:flex;align-items:center;gap:8px;">
+                    <div style="width:28px;height:28px;background:var(--primary);border-radius:6px;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:bold;font-size:14px;">启</div>
+                    <span id="auth-modal-title" style="font-weight:700;">会员用户服务</span>
+                </div>
+                <span class="modal-close-btn" onclick="document.getElementById('modal-user-auth').style.display='none'">✕</span>
+            </div>
+            <div class="modal-body" style="padding:20px 24px;">
+                <!-- 切换 Tab -->
+                <div style="display:flex;background:#f1f5f9;border-radius:8px;padding:3px;margin-bottom:20px;">
+                    <div class="auth-tab" id="tab-auth-login" onclick="window.switchAuthTab('login')" style="flex:1;text-align:center;padding:8px 0;font-size:13px;font-weight:600;border-radius:6px;cursor:pointer;background:#fff;color:var(--primary);box-shadow:0 1px 3px rgba(0,0,0,0.05);">账号登录</div>
+                    <div class="auth-tab" id="tab-auth-register" onclick="window.switchAuthTab('register')" style="flex:1;text-align:center;padding:8px 0;font-size:13px;font-weight:600;border-radius:6px;cursor:pointer;color:#64748b;">注册新账号</div>
+                    <div class="auth-tab" id="tab-auth-fast" onclick="window.switchAuthTab('fast')" style="flex:1;text-align:center;padding:8px 0;font-size:13px;font-weight:600;border-radius:6px;cursor:pointer;color:#64748b;">免密快捷登录</div>
+                </div>
+
+                <!-- 1. 账号密码登录表单 -->
+                <form id="form-auth-login">
+                    <div style="margin-bottom:14px;">
+                        <label class="form-label" style="font-size:13px;">手机号码</label>
+                        <input type="tel" id="auth-login-mobile" class="form-input" placeholder="输入11位注册手机号" required>
+                    </div>
+                    <div style="margin-bottom:18px;">
+                        <label class="form-label" style="font-size:13px;">登录密码</label>
+                        <input type="password" id="auth-login-password" class="form-input" placeholder="输入登录密码" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary" style="width:100%;height:44px;font-size:15px;" id="btn-submit-login">立即登录</button>
+                </form>
+
+                <!-- 2. 账号注册表单 -->
+                <form id="form-auth-register" style="display:none;">
+                    <div style="margin-bottom:12px;">
+                        <label class="form-label" style="font-size:13px;">手机号码 <span style="color:#ef4444;">*</span></label>
+                        <input type="tel" id="auth-reg-mobile" class="form-input" placeholder="输入您的11位手机号码" required>
+                    </div>
+                    <div style="margin-bottom:12px;">
+                        <label class="form-label" style="font-size:13px;">设置登录密码 <span style="color:#ef4444;">*</span></label>
+                        <input type="password" id="auth-reg-password" class="form-input" placeholder="不少于6位字母或数字" required minlength="6">
+                    </div>
+                    <div style="margin-bottom:18px;">
+                        <label class="form-label" style="font-size:13px;">用户昵称 / 姓名 (选填)</label>
+                        <input type="text" id="auth-reg-nickname" class="form-input" placeholder="如：张先生 / 数码达人">
+                    </div>
+                    <button type="submit" class="btn btn-primary" style="width:100%;height:44px;font-size:15px;" id="btn-submit-register">立即注册并登录</button>
+                </form>
+
+                <!-- 3. 免密快捷登录表单 -->
+                <form id="form-auth-fast" style="display:none;">
+                    <div style="margin-bottom:14px;">
+                        <label class="form-label" style="font-size:13px;">手机号码 <span style="color:#ef4444;">*</span></label>
+                        <input type="tel" id="auth-fast-mobile" class="form-input" placeholder="输入联系手机号" required>
+                    </div>
+                    <div style="margin-bottom:18px;">
+                        <label class="form-label" style="font-size:13px;">您的称呼 / 姓名 (选填)</label>
+                        <input type="text" id="auth-fast-name" class="form-input" placeholder="如：李女士">
+                    </div>
+                    <button type="submit" class="btn btn-primary" style="width:100%;height:44px;font-size:15px;" id="btn-submit-fast">一键免密快捷进入</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- ======================================================== -->
+    <!-- 模态框：移动端品类子菜单与分类快捷抽屉面板 (Mobile Nav Submenu Drawer) -->
+    <!-- ======================================================== -->
+    <div id="modal-nav-submenu" class="modal-overlay" style="display:none; z-index:1180;">
+        <div class="modal-card nav-submenu-drawer-card" style="max-width:540px;">
+            <div class="drawer-bar"></div>
+            <div class="modal-header" style="background:#fff; border-bottom:1px solid var(--border); padding:14px 18px;">
+                <div style="display:flex;align-items:center;gap:8px;">
+                    <span id="nav-submenu-drawer-icon" style="font-size:18px;">📱</span>
+                    <div>
+                        <div class="modal-title" id="nav-submenu-drawer-title" style="font-size:16px;font-weight:700;color:var(--text-main);">品类子菜单</div>
+                        <div style="font-size:11px;color:var(--text-muted);margin-top:2px;" id="nav-submenu-drawer-desc">点击查看全部或挑选心仪品牌规格</div>
+                    </div>
+                </div>
+                <span class="modal-close-btn" onclick="window.closeNavSubmenuModal()">✕</span>
+            </div>
+            <div class="modal-body" style="padding:16px 18px 24px 18px;max-height:68vh;overflow-y:auto;" id="nav-submenu-drawer-body">
+                <!-- 动态由 home_catalog.js 注入 -->
+            </div>
+            <div class="modal-footer" style="padding:12px 18px;background:#f8fafc;display:flex;justify-content:flex-end;">
+                <button class="btn btn-secondary" style="height:36px;padding:0 20px;font-size:13px;" onclick="window.closeNavSubmenuModal()">关闭</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ======================================================== -->
+    <!-- 模态框 5：加价补贴券领券中心与我的卡券包 (Coupon Center Modal) -->
+    <!-- ======================================================== -->
+    <div id="modal-coupon-center" class="modal-overlay" style="display:none; z-index:1120;">
+        <div class="modal-card" style="max-width:680px;">
+            <div class="modal-header" style="background:linear-gradient(135deg, #fff7ed 0%, #fff 100%);border-bottom:1px solid #fed7aa;">
+                <div style="display:flex;align-items:center;gap:8px;">
+                    <span style="font-size:20px;">🧧</span>
+                    <span style="font-weight:800;color:#9a3412;">平台高价回收 · 加价补贴中心</span>
+                </div>
+                <span class="modal-close-btn" onclick="window.closeCouponCenterModal()">✕</span>
+            </div>
+            <!-- 领券中心与我的卡包 Tab 切换 -->
+            <div class="coupon-modal-tabs">
+                <button type="button" class="coupon-tab-btn active" id="tab-coupon-market" onclick="window.switchCouponModalTab('market')">
+                    领券中心 (加价补贴)
+                </button>
+                <button type="button" class="coupon-tab-btn" id="tab-coupon-mine" onclick="window.switchCouponModalTab('mine')">
+                    我的卡券包 <span id="coupon-tab-count" style="display:none;" class="badge badge-warning">0</span>
+                </button>
+            </div>
+            <div class="modal-body" style="padding:18px 20px;max-height:60vh;overflow-y:auto;" id="coupon-modal-body">
+                <!-- 动态由 loadCouponsShowcase 渲染 -->
+            </div>
+            <div class="modal-footer" style="padding:12px 20px;background:#f8fafc;display:flex;justify-content:space-between;align-items:center;">
+                <span style="font-size:12px;color:var(--text-muted);">
+                    💡 提示：加价补贴券在估价提交订单时自动匹配核销，最终现金直接打款到账！
+                </span>
+                <button class="btn btn-secondary" onclick="window.closeCouponCenterModal()">关闭</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ======================================================== -->
+    <!-- 模态框 7：会员个人中心全功能工作台 (User Center Modal) -->
+    <!-- ======================================================== -->
+    <div id="modal-user-center" class="modal-overlay" style="display:none; z-index:1090;">
+        <div class="modal-card" style="max-width:880px; padding:0; overflow:hidden;">
+            <div class="modal-header" style="background:#fff; border-bottom:1px solid var(--border); padding:16px 24px;">
+                <div style="display:flex;align-items:center;gap:10px;">
+                    <div class="user-avatar-circle" style="width:36px;height:36px;font-size:16px;" id="uc-header-avatar">用</div>
+                    <div>
+                        <div style="font-size:16px;font-weight:700;color:var(--text-main);" id="uc-header-name">会员个人中心</div>
+                        <div style="font-size:12px;color:var(--text-muted);" id="uc-header-mobile">手机号已绑定</div>
+                    </div>
+                </div>
+                <span class="modal-close-btn" onclick="document.getElementById('modal-user-center').style.display='none'">✕</span>
+            </div>
+            
+            <div class="user-center-layout">
+                <!-- 侧边导航 -->
+                <div class="uc-sidebar">
+                    <div class="uc-tab-btn active" id="uc-tab-overview" onclick="window.switchUcTab('overview')">
+                        <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/></svg>
+                        <span>账户概览</span>
+                    </div>
+                    <div class="uc-tab-btn" id="uc-tab-orders" onclick="window.switchUcTab('orders')">
+                        <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M19 3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-2 10h-4v4h-2v-4H7v-2h4V7h2v4h4v2z"/></svg>
+                        <span>我的回收单</span>
+                    </div>
+                    <div class="uc-tab-btn" id="uc-tab-coupons" onclick="window.switchUcTab('coupons')">
+                        <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4c-1.1 0-2 .9-2 2s.9 2 2 2v4H4v-4c1.1 0 2-.9 2-2s-.9-2-2-2V6h16v2z"/></svg>
+                        <span>我的加价券</span>
+                    </div>
+                    <div class="uc-tab-btn" id="uc-tab-payout" onclick="window.switchUcTab('payout')">
+                        <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M21 18v1c0 1.1-.9 2-2 2H5c-1.11 0-2-.9-2-2V5c0-1.1.89-2 2-2h14c1.1 0 2 .9 2 2v1h-9c-1.11 0-2 .9-2 2v8c0 1.1.89 2 2 2h9zm-9-2h10V8H12v8zm4-2.5c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5z"/></svg>
+                        <span>常用收款账户</span>
+                    </div>
+                    <div class="uc-tab-btn" id="uc-tab-address" onclick="window.switchUcTab('address')">
+                        <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
+                        <span>常用地址</span>
+                    </div>
+                    <div class="uc-tab-btn" id="uc-tab-security" onclick="window.switchUcTab('security')">
+                        <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/></svg>
+                        <span>密码与安全</span>
+                    </div>
+                    <div class="uc-tab-btn tab-danger" id="uc-tab-deregister" onclick="window.switchUcTab('deregister')">
+                        <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
+                        <span>账号注销</span>
+                    </div>
+                </div>
+
+                <!-- 内容面板 -->
+                <div class="uc-content">
+                    <!-- 面板 1：概览与数据 -->
+                    <div id="uc-panel-overview">
+                        <div class="uc-stat-grid">
+                            <div class="uc-stat-card">
+                                <div class="uc-stat-val" style="color:#1e58ff;" id="uc-stat-pending">0</div>
+                                <div class="uc-stat-label">待寄出/上门</div>
+                            </div>
+                            <div class="uc-stat-card">
+                                <div class="uc-stat-val" style="color:#0284c7;" id="uc-stat-inspecting">0</div>
+                                <div class="uc-stat-label">专业质检中</div>
+                            </div>
+                            <div class="uc-stat-card">
+                                <div class="uc-stat-val" style="color:#f59e0b;" id="uc-stat-confirming">0</div>
+                                <div class="uc-stat-label">待确认差价</div>
+                            </div>
+                            <div class="uc-stat-card">
+                                <div class="uc-stat-val" style="color:#10b981;" id="uc-stat-income">¥ 0.00</div>
+                                <div class="uc-stat-label">累计成交放款</div>
+                            </div>
+                            <div class="uc-stat-card" style="cursor:pointer;" onclick="window.switchUcTab('coupons')">
+                                <div class="uc-stat-val" style="color:#ea580c;" id="uc-stat-coupons">0</div>
+                                <div class="uc-stat-label">可用加价券(张)</div>
+                            </div>
+                        </div>
+
+                        <div class="card" style="border:1px solid var(--border);border-radius:12px;padding:18px;margin-bottom:16px;">
+                            <div style="font-weight:700;font-size:14px;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center;">
+                                <span>基本资料设置</span>
+                                <button class="btn btn-outline" style="height:28px;padding:0 12px;font-size:12px;" onclick="window.saveBasicProfile()">保存资料</button>
+                            </div>
+                            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+                                <div>
+                                    <label class="form-label" style="font-size:12px;">用户昵称</label>
+                                    <input type="text" id="uc-profile-nickname" class="form-input" style="height:38px;font-size:13px;">
+                                </div>
+                                <div>
+                                    <label class="form-label" style="font-size:12px;">真实姓名 (用于收款实名核验)</label>
+                                    <input type="text" id="uc-profile-realname" class="form-input" style="height:38px;font-size:13px;" placeholder="姓名与收款账户一致">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 面板 2：我的回收单列表 -->
+                    <div id="uc-panel-orders" style="display:none;">
+                        <div id="uc-orders-list-box">加载回收订单中...</div>
+                    </div>
+
+                    <!-- 面板：我的加价券列表 -->
+                    <div id="uc-panel-coupons" style="display:none;">
+                        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+                            <div>
+                                <div style="font-weight:700;font-size:15px;color:#0f172a;">我的回收加价补贴券</div>
+                                <div style="font-size:12px;color:#64748b;margin-top:2px;">预约交投或在线估价时，将自动匹配抵用最高额度现金补贴</div>
+                            </div>
+                            <button class="btn btn-outline" style="border-color:#fdba74;color:#ea580c;background:#fff7ed;font-size:12px;padding:4px 12px;" onclick="window.openCouponCenterModal('market')">
+                                领更多补贴券 +
+                            </button>
+                        </div>
+                        <div id="uc-coupons-list-box">正在加载您的卡包...</div>
+                    </div>
+
+                    <!-- 面板 3：常用收款账户设置 -->
+                    <div id="uc-panel-payout" style="display:none;">
+                        <div style="font-weight:700;font-size:15px;margin-bottom:6px;">常用收款结算方式预设</div>
+                        <p style="font-size:13px;color:var(--text-muted);margin-bottom:16px;">设置后，在全站进行任何品类回收估价下单时，系统将极速自动填入，免去重复输入的繁琐。</p>
+                        
+                        <div style="display:flex;gap:14px;margin-bottom:16px;flex-wrap:wrap;">
+                            <label style="display:flex;align-items:center;gap:4px;font-size:13px;cursor:pointer;"><input type="radio" name="uc-payout-type" value="alipay" checked onchange="window.onUcPayoutTypeChange('alipay')"> 支付宝</label>
+                            <label style="display:flex;align-items:center;gap:4px;font-size:13px;cursor:pointer;"><input type="radio" name="uc-payout-type" value="wechat" onchange="window.onUcPayoutTypeChange('wechat')"> 微信零钱</label>
+                            <label style="display:flex;align-items:center;gap:4px;font-size:13px;cursor:pointer;"><input type="radio" name="uc-payout-type" value="bank" onchange="window.onUcPayoutTypeChange('bank')"> 银行卡</label>
+                            <label style="display:flex;align-items:center;gap:4px;font-size:13px;cursor:pointer;"><input type="radio" name="uc-payout-type" value="cash" onchange="window.onUcPayoutTypeChange('cash')"> 现场结清</label>
+                        </div>
+
+                        <div id="uc-payout-inputs">
+                            <div style="margin-bottom:12px;">
+                                <label class="form-label" style="font-size:12px;">收款人实名</label>
+                                <input type="text" id="uc-payout-name" class="form-input" style="height:38px;font-size:13px;" placeholder="真实姓名">
+                            </div>
+                            <div style="margin-bottom:12px;">
+                                <label class="form-label" style="font-size:12px;">收款账号</label>
+                                <input type="text" id="uc-payout-account" class="form-input" style="height:38px;font-size:13px;" placeholder="支付宝账号 / 微信绑定手机 / 银行卡号">
+                            </div>
+                            <div id="uc-payout-bank-box" style="margin-bottom:12px;display:none;">
+                                <label class="form-label" style="font-size:12px;">开户银行</label>
+                                <input type="text" id="uc-payout-bank" class="form-input" style="height:38px;font-size:13px;" placeholder="如：招商银行、工商银行">
+                            </div>
+                        </div>
+
+                        <button class="btn btn-primary" style="height:38px;padding:0 20px;margin-top:10px;" onclick="window.saveDefaultPayout()">保存常用收款账户</button>
+                    </div>
+
+                    <!-- 面板 4：常用地址 -->
+                    <div id="uc-panel-address" style="display:none;">
+                        <div style="font-weight:700;font-size:15px;margin-bottom:6px;">常用地址 (上门取件/退货寄回)</div>
+                        <p style="font-size:13px;color:var(--text-muted);margin-bottom:16px;">师傅免费上门或退货原路寄回时使用的详细门牌号。</p>
+                        <div style="margin-bottom:16px;">
+                            <label class="form-label" style="font-size:12px;">详细地址 (省市区县及街道门牌号)</label>
+                            <input type="text" id="uc-default-address" class="form-input" style="height:40px;font-size:13px;" placeholder="如：北京市海淀区中关村南大街1号院3号楼801室">
+                        </div>
+                        <button class="btn btn-primary" style="height:38px;padding:0 20px;" onclick="window.saveDefaultAddress()">保存常用地址</button>
+                    </div>
+
+                    <!-- 面板 5：安全与密码 -->
+                    <div id="uc-panel-security" style="display:none;">
+                        <div style="font-weight:700;font-size:15px;margin-bottom:6px;">修改登录密码</div>
+                        <p style="font-size:13px;color:var(--text-muted);margin-bottom:16px;">保障您的账号资金与估价隐私安全。</p>
+                        <div style="max-width:360px;">
+                            <div style="margin-bottom:12px;">
+                                <label class="form-label" style="font-size:12px;">原登录密码 (初次设置可留空)</label>
+                                <input type="password" id="uc-old-pwd" class="form-input" style="height:38px;font-size:13px;" placeholder="输入当前使用的密码">
+                            </div>
+                            <div style="margin-bottom:12px;">
+                                <label class="form-label" style="font-size:12px;">新登录密码</label>
+                                <input type="password" id="uc-new-pwd" class="form-input" style="height:38px;font-size:13px;" placeholder="不少于6位新密码" minlength="6">
+                            </div>
+                            <div style="margin-bottom:16px;">
+                                <label class="form-label" style="font-size:12px;">确认新密码</label>
+                                <input type="password" id="uc-confirm-pwd" class="form-input" style="height:38px;font-size:13px;" placeholder="再次确认新密码">
+                            </div>
+                            <button class="btn btn-primary" style="height:38px;padding:0 20px;" onclick="window.saveNewPassword()">立即修改密码</button>
+                        </div>
+                    </div>
+
+                    <!-- 面板 6：账号注销 -->
+                    <div id="uc-panel-deregister" style="display:none;">
+                        <div style="font-weight:700;font-size:15px;margin-bottom:6px;color:#ef4444;">账号注销申请</div>
+                        <p style="font-size:13px;color:var(--text-muted);margin-bottom:16px;">
+                            根据《个人信息保护法》及相关合规规定，提交注销申请后，平台管理员将在核验后为您清除个人信息及登录凭据。
+                        </p>
+
+                        <!-- 状态卡片 1：审核中 -->
+                        <div id="uc-deregister-pending-box" style="display:none;background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:16px;margin-bottom:16px;">
+                            <div style="display:flex;align-items:center;gap:8px;font-weight:700;color:#b45309;font-size:14px;margin-bottom:8px;">
+                                <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm.5-13H11v6l5.2 3.2.8-1.3-4.5-2.7V7z"/></svg>
+                                <span>您的注销申请正在平台审核中</span>
+                            </div>
+                            <div style="font-size:13px;color:#78350f;line-height:1.6;margin-bottom:12px;">
+                                申请提交时间：<span id="uc-deregister-pending-time">--</span><br>
+                                注销申请原因：<span id="uc-deregister-pending-reason">--</span>
+                            </div>
+                            <div style="font-size:12px;color:#92400e;margin-bottom:12px;background:#fef3c7;padding:8px 12px;border-radius:6px;line-height:1.6;">
+                                审核通过后，该账号的所有个人资料、优惠券将彻底清空并永久停用。如需继续使用服务，您可以点击下方按钮撤回申请。
+                            </div>
+                            <button class="btn btn-outline" style="border-color:#d97706;color:#b45309;height:34px;padding:0 16px;font-size:13px;" onclick="window.cancelDeregisterApply()">
+                                撤回注销申请
+                            </button>
+                        </div>
+
+                        <!-- 状态卡片 2：已驳回提示 -->
+                        <div id="uc-deregister-rejected-box" style="display:none;background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:16px;margin-bottom:16px;">
+                            <div style="display:flex;align-items:center;gap:8px;font-weight:700;color:#b91c1c;font-size:14px;margin-bottom:6px;">
+                                <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
+                                <span>您上次的注销申请已被管理员驳回</span>
+                            </div>
+                            <div style="font-size:13px;color:#991b1b;margin-bottom:6px;">
+                                驳回原因：<span id="uc-deregister-rejected-reason" style="font-weight:600;">--</span>
+                            </div>
+                            <div style="font-size:12px;color:#b91c1c;">
+                                您可以在处理完相关事项后，重新填写信息发起申请。
+                            </div>
+                        </div>
+
+                        <!-- 状态卡片 3：申请表单 -->
+                        <div id="uc-deregister-form-box" style="max-width:440px;">
+                            <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:14px;margin-bottom:16px;">
+                                <div style="font-weight:600;font-size:13px;color:#334155;margin-bottom:8px;">⚠️ 注销前请确认以下事项：</div>
+                                <ul style="margin:0;padding-left:18px;font-size:12px;color:#64748b;line-height:1.8;">
+                                    <li>账号当前无正在履约中的回收订单（如待寄出、质检中、差价确认中）。</li>
+                                    <li>注销后，账号关联的个人信息、收件地址、收款账户将彻底清除。</li>
+                                    <li>账号持有的未使用优惠券及专享权益将自动失效且无法恢复。</li>
+                                    <li>注销为不可逆操作，审核通过后该手机号如需再次使用需重新注册。</li>
+                                </ul>
+                            </div>
+
+                            <div style="margin-bottom:12px;">
+                                <label class="form-label" style="font-size:12px;">请选择注销原因 <span style="color:#ef4444;">*</span></label>
+                                <select id="uc-deregister-reason-select" class="form-input" style="height:38px;font-size:13px;" onchange="window.onDeregisterReasonSelect(this.value)">
+                                    <option value="需要更换手机号码重新绑定">需要更换手机号码重新绑定</option>
+                                    <option value="设备已成功回收，近期不再使用平台">设备已成功回收，近期不再使用平台</option>
+                                    <option value="存在多个账号，申请注销多余账号">存在多个账号，申请注销多余账号</option>
+                                    <option value="保护个人隐私，清除账号留存信息">保护个人隐私，清除账号留存信息</option>
+                                    <option value="other">其他原因（自定义填写）</option>
+                                </select>
+                            </div>
+
+                            <div id="uc-deregister-reason-custom-box" style="display:none;margin-bottom:12px;">
+                                <label class="form-label" style="font-size:12px;">详细原因说明</label>
+                                <textarea id="uc-deregister-custom-reason" class="form-input" style="height:70px;padding:8px;font-size:13px;" placeholder="请详细说明您的注销原因（50字以内）" maxlength="100"></textarea>
+                            </div>
+
+                            <div style="margin-bottom:16px;">
+                                <label style="display:flex;align-items:flex-start;gap:8px;cursor:pointer;font-size:12px;color:#475569;line-height:1.5;">
+                                    <input type="checkbox" id="uc-deregister-agree" style="margin-top:2px;">
+                                    <span>我已认真阅读上述注销须知，清楚知晓注销后数据权益不可恢复，自愿提交注销申请。</span>
+                                </label>
+                            </div>
+
+                            <button class="btn btn-danger" style="height:38px;padding:0 24px;background:#ef4444;color:#fff;border:none;border-radius:6px;font-weight:600;font-size:13px;cursor:pointer;" onclick="window.submitDeregisterApply()">
+                                确认提交注销申请
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ======================================================== -->
+    <!-- 模态框：文章与条款协议极速阅读器 (Article Reader Modal) -->
+    <!-- ======================================================== -->
+    <div id="modal-article-reader" class="modal-overlay" style="display:none;">
+        <div class="modal-card article-reader-card">
+            <div class="drawer-bar"></div>
+            <div class="modal-header">
+                <span id="article-reader-title" style="font-size:16px;font-weight:700;">文章详情</span>
+                <span class="modal-close-btn" onclick="window.closeArticleModal()">✕</span>
+            </div>
+            <div class="article-reader-meta">
+                <span id="article-reader-category" class="article-badge">条款说明</span>
+                <span id="article-reader-time">更新时间：--</span>
+                <span id="article-reader-views">阅读量：0</span>
+                <a id="article-reader-newtab" href="#" target="_blank" class="article-newtab-link">
+                    新窗口打开 ↗
+                </a>
+            </div>
+            <div class="modal-body article-reader-body" id="article-reader-content">
+                <div style="text-align:center;padding:40px;color:var(--text-light, #94a3b8);">
+                    <div class="loading-spinner"></div>
+                    <p style="margin-top:12px;">正在加载内容...</p>
+                </div>
+            </div>
+            <div class="modal-footer" style="padding:12px 20px;border-top:1px solid #e2e8f0;display:flex;justify-content:flex-end;">
+                <button type="button" class="btn btn-secondary" onclick="window.closeArticleModal()">关闭窗口</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 页面右下角悬浮领券加价挂件 -->
+    <div class="floating-coupon-widget" id="floating-coupon-widget" onclick="window.openCouponCenterModal()" title="点击领取平台回收加价补贴券">
+        <div class="floating-coupon-icon">🧧</div>
+        <div class="floating-coupon-text">
+            <div class="floating-coupon-tit">加价补贴券</div>
+            <div class="floating-coupon-sub">最高立加¥300</div>
+        </div>
+    </div>
+
+    <!-- 前端脚本调度 (模块化架构：底座、用户认证、券包营销、履约交割、品类估价、主流程调度) -->
+    <script src="assets/js/home_core.js"></script>
+    <script src="assets/js/home_auth.js"></script>
+    <script src="assets/js/home_coupons.js"></script>
+    <script src="assets/js/home_fulfillment.js"></script>
+    <script src="assets/js/home_catalog.js"></script>
+    <script src="assets/js/home.js"></script>
+</body>
+</html>

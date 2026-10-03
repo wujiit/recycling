@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+  <defs>
+    <linearGradient id="acBg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ecfeff"/>
+      <stop offset="100%" stop-color="#cffafe"/>
+    </linearGradient>
+    <linearGradient id="acCase" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="100%" stop-color="#e2e8f0"/>
+    </linearGradient>
+  </defs>
+  <rect width="200" height="200" rx="20" fill="url(#acBg)"/>
+  <!-- Wall Split AC Unit -->
+  <rect x="25" y="65" width="150" height="60" rx="8" fill="url(#acCase)" stroke="#cbd5e1" stroke-width="2"/>
+  <!-- Top Vent Grille -->
+  <line x1="35" y1="74" x2="165" y2="74" stroke="#cbd5e1" stroke-width="2"/>
+  <line x1="35" y1="79" x2="165" y2="79" stroke="#cbd5e1" stroke-width="2"/>
+  <!-- Bottom Air Louver -->
+  <path d="M30 112 L170 112 L165 122 L35 122 Z" fill="#94a3b8"/>
+  <!-- Digital Temperature Display -->
+  <rect x="145" y="88" width="22" height="12" rx="2" fill="#0891b2"/>
+  <text x="156" y="97" font-family="-apple-system, sans-serif" font-size="8" font-weight="bold" fill="#ffffff" text-anchor="middle">26°C</text>
+  <!-- Brand logo mark -->
+  <circle cx="100" cy="94" r="3" fill="#0891b2"/>
+  <!-- Air Flow Breeze Waves -->
+  <path d="M45 136 C65 150 75 142 95 156" fill="none" stroke="#06b6d4" stroke-width="2" stroke-linecap="round" opacity="0.7"/>
+  <path d="M75 136 C95 150 105 142 125 156" fill="none" stroke="#06b6d4" stroke-width="2" stroke-linecap="round" opacity="0.7"/>
+  <path d="M105 136 C125 150 135 142 155 156" fill="none" stroke="#06b6d4" stroke-width="2" stroke-linecap="round" opacity="0.7"/>
+</svg>

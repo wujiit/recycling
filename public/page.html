@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>文章详情 · 启灵回收</title>
+    <link rel="icon" type="image/svg+xml" id="page-favicon" href="/uploads/default/site_favicon.svg">
+    <style>
+        :root {
+            --primary: #1e58ff;
+            --primary-hover: #1645cf;
+            --primary-light: #eff6ff;
+            --text-main: #0f172a;
+            --text-body: #334155;
+            --text-muted: #64748b;
+            --border-color: #e2e8f0;
+            --bg-page: #f8fafc;
+            --bg-card: #ffffff;
+        }
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "WenQuanYi Micro Hei", sans-serif;
+            background-color: var(--bg-page);
+            color: var(--text-body);
+            line-height: 1.7;
+            -webkit-font-smoothing: antialiased;
+        }
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        /* 顶部导航 */
+        .page-header {
+            background: #ffffff;
+            border-bottom: 1px solid var(--border-color);
+            position: sticky;
+            top: 0;
+            z-index: 50;
+            backdrop-filter: blur(8px);
+        }
+        .header-inner {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            height: 64px;
+        }
+        .brand-link {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            text-decoration: none;
+            color: var(--text-main);
+            font-size: 17px;
+            font-weight: 800;
+        }
+        .brand-logo {
+            width: 32px;
+            height: 32px;
+            object-fit: contain;
+            border-radius: 6px;
+        }
+        .nav-actions {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .btn-back-home {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 7px 16px;
+            border-radius: 8px;
+            background: var(--primary-light);
+            color: var(--primary);
+            font-size: 13px;
+            font-weight: 600;
+            text-decoration: none;
+            transition: all 0.2s;
+            border: 1px solid #bfdbfe;
+        }
+        .btn-back-home:hover {
+            background: var(--primary);
+            color: #ffffff;
+        }
+
+        /* 文章主体 */
+        .article-main {
+            padding: 36px 0 60px;
+        }
+        .article-card {
+            background: var(--bg-card);
+            border-radius: 16px;
+            border: 1px solid var(--border-color);
+            box-shadow: 0 4px 20px rgba(15, 23, 42, 0.04);
+            padding: 40px 48px;
+        }
+
+        /* 面包屑与分类标签 */
+        .article-top-bar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        .category-badge {
+            display: inline-block;
+            padding: 3px 10px;
+            border-radius: 6px;
+            background: var(--primary-light);
+            color: var(--primary);
+            font-size: 12px;
+            font-weight: 700;
+            border: 1px solid #bfdbfe;
+        }
+        .article-title {
+            font-size: 26px;
+            font-weight: 800;
+            color: var(--text-main);
+            line-height: 1.4;
+            margin-bottom: 16px;
+        }
+        .article-meta-row {
+            display: flex;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 16px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid var(--border-color);
+            font-size: 13px;
+            color: var(--text-muted);
+        }
+        .meta-item {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        /* 导语摘要区 */
+        .article-summary-box {
+            background: #f8fafc;
+            border-left: 4px solid var(--primary);
+            padding: 14px 18px;
+            border-radius: 0 8px 8px 0;
+            margin: 24px 0 28px;
+            font-size: 14px;
+            color: #475569;
+            line-height: 1.6;
+        }
+
+        /* 正文排版 */
+        .article-content {
+            font-size: 15px;
+            line-height: 1.9;
+            color: #334155;
+        }
+        .article-content h1, .article-content h2, .article-content h3 {
+            color: var(--text-main);
+            margin: 28px 0 14px;
+            font-weight: 700;
+            line-height: 1.4;
+        }
+        .article-content h2 {
+            font-size: 20px;
+            border-bottom: 1px solid #f1f5f9;
+            padding-bottom: 8px;
+        }
+        .article-content h3 {
+            font-size: 17px;
+        }
+        .article-content p {
+            margin-bottom: 16px;
+        }
+        .article-content ul, .article-content ol {
+            padding-left: 22px;
+            margin-bottom: 18px;
+        }
+        .article-content li {
+            margin-bottom: 8px;
+        }
+        .article-content table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            font-size: 13px;
+        }
+        .article-content th, .article-content td {
+            border: 1px solid var(--border-color);
+            padding: 10px 14px;
+            text-align: left;
+        }
+        .article-content th {
+            background: #f8fafc;
+            font-weight: 700;
+            color: var(--text-main);
+        }
+        .article-content blockquote {
+            border-left: 4px solid #cbd5e1;
+            padding: 10px 16px;
+            margin: 16px 0;
+            background: #f8fafc;
+            color: #64748b;
+            border-radius: 0 6px 6px 0;
+        }
+
+        /* 页面底部与版权 */
+        .page-footer {
+            background: #0f172a;
+            color: #94a3b8;
+            padding: 32px 0;
+            font-size: 13px;
+            text-align: center;
+            border-top: 1px solid #1e293b;
+        }
+        .page-footer a {
+            color: #94a3b8;
+            text-decoration: none;
+            margin: 0 8px;
+        }
+        .page-footer a:hover {
+            color: #ffffff;
+        }
+
+        /* 移动端适配 */
+        @media (max-width: 768px) {
+            .article-card {
+                padding: 24px 20px;
+                border-radius: 12px;
+            }
+            .article-title {
+                font-size: 20px;
+            }
+            .article-main {
+                padding: 20px 0 40px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- 顶部导航 -->
+    <header class="page-header">
+        <div class="container header-inner">
+            <a href="/" class="brand-link" id="page-brand-link">
+                <img id="page-brand-logo" src="/uploads/default/site_logo.svg" class="brand-logo" alt="品牌Logo">
+                <span id="page-brand-name">启灵回收</span>
+            </a>
+            <div class="nav-actions">
+                <a href="/" class="btn-back-home">
+                    <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
+                    返回首页
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <!-- 文章正文主体 -->
+    <main class="article-main">
+        <div class="container">
+            <article class="article-card">
+                <div class="article-top-bar">
+                    <span class="category-badge" id="article-category">条款说明</span>
+                    <span style="font-size:12px;color:var(--text-muted);" id="article-id-label">官方公示</span>
+                </div>
+
+                <h1 class="article-title" id="article-title">正在加载文章内容...</h1>
+
+                <div class="article-meta-row">
+                    <span class="meta-item">
+                        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+                        <span id="article-updated-time">更新时间：--</span>
+                    </span>
+                    <span class="meta-item">
+                        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                        <span id="article-views">阅读量：--</span>
+                    </span>
+                </div>
+
+                <div class="article-summary-box" id="article-summary" style="display:none;"></div>
+
+                <div class="article-content" id="article-content">
+                    <div style="text-align:center;padding:50px 0;color:var(--text-muted);">
+                        正在获取并校验文档数据...
+                    </div>
+                </div>
+            </article>
+        </div>
+    </main>
+
+    <!-- 页脚版权 -->
+    <footer class="page-footer">
+        <div class="container">
+            <p id="page-footer-copyright">© 2026 启灵智能回收数字化平台 · 保留所有权利</p>
+            <p id="page-footer-filings" style="margin-top:8px;font-size:12px;color:#64748b;"></p>
+        </div>
+    </footer>
+
+    <script>
+        (function() {
+            'use strict';
+
+            function getQueryParam(key) {
+                const params = new URLSearchParams(window.location.search);
+                return params.get(key) || '';
+            }
+
+            function escapeHtml(str) {
+                if (str === null || str === undefined) return '';
+                return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+            }
+
+            async function loadPlatformMeta() {
+                try {
+                    const res = await fetch('/index.php?s=/api/appraisal/getPlatformInfo');
+                    const json = await res.json();
+                    if (json && json.code === 200 && json.data) {
+                        const meta = json.data;
+                        const brand = meta.brand_name || meta.site_name || '启灵回收';
+                        const brandEl = document.getElementById('page-brand-name');
+                        if (brandEl) brandEl.innerText = brand;
+                        const logoEl = document.getElementById('page-brand-logo');
+                        if (logoEl && meta.site_logo) logoEl.src = meta.site_logo;
+
+                        const copyEl = document.getElementById('page-footer-copyright');
+                        if (copyEl) copyEl.innerText = meta.copyright || `© 2026 ${brand} · 保留所有权利`;
+
+                        const filingsEl = document.getElementById('page-footer-filings');
+                        if (filingsEl) {
+                            let icpHtml = meta.icp_beian ? `<a href="${escapeHtml(meta.icp_url || 'https://beian.miit.gov.cn/')}" target="_blank" rel="noopener noreferrer">${escapeHtml(meta.icp_beian)}</a>` : '';
+                            let gonganHtml = meta.gong_an_beian ? `<span>${escapeHtml(meta.gong_an_beian)}</span>` : '';
+                            filingsEl.innerHTML = [icpHtml, gonganHtml].filter(Boolean).join(' · ');
+                        }
+                    }
+                } catch(e) {
+                    console.warn('获取平台元数据异常', e);
+                }
+            }
+
+            async function loadArticle() {
+                let slug = getQueryParam('slug');
+                const id = getQueryParam('id');
+
+                // 兼容性智能别名映射
+                if (slug === 'about-us') slug = 'about';
+                if (slug === 'inspection-rules') slug = 'quality-payout';
+
+                let query = '';
+                if (slug) {
+                    query = `slug=${encodeURIComponent(slug)}`;
+                } else if (id) {
+                    query = `id=${encodeURIComponent(id)}`;
+                } else {
+                    query = `slug=sf-guide`; // 默认展示指引
+                }
+
+                try {
+                    const res = await fetch(`/index.php?s=/api/article/detail&${query}`);
+                    const json = await res.json();
+                    if (json && json.code === 200 && json.data) {
+                        const art = json.data;
+                        document.title = `${art.title} · 启灵回收`;
+
+                        const titleEl = document.getElementById('article-title');
+                        if (titleEl) titleEl.innerText = art.title;
+
+                        const catMap = {
+                            'guide': '回收指南',
+                            'about': '平台条款',
+                            'legal': '法律条款',
+                            'help': '帮助中心',
+                            'notice': '官方公告'
+                        };
+                        const catEl = document.getElementById('article-category');
+                        if (catEl) catEl.innerText = catMap[art.category] || '文章详情';
+
+                        const timeEl = document.getElementById('article-updated-time');
+                        let dateStr = '最近';
+                        const ts = art.updated_at || art.created_at;
+                        if (ts) {
+                            if (typeof ts === 'number') {
+                                const d = new Date(ts * 1000);
+                                const y = d.getFullYear();
+                                const m = String(d.getMonth() + 1).padStart(2, '0');
+                                const day = String(d.getDate()).padStart(2, '0');
+                                dateStr = `${y}-${m}-${day}`;
+                            } else if (typeof ts === 'string') {
+                                dateStr = ts.substring(0, 10);
+                            }
+                        }
+                        if (timeEl) timeEl.innerText = `最后更新：${dateStr}`;
+
+                        const viewsEl = document.getElementById('article-views');
+                        if (viewsEl) viewsEl.innerText = `浏览量：${art.view_count || 1} 次`;
+
+                        const summaryEl = document.getElementById('article-summary');
+                        if (summaryEl) {
+                            if (art.summary) {
+                                summaryEl.style.display = 'block';
+                                summaryEl.innerText = art.summary;
+                            } else {
+                                summaryEl.style.display = 'none';
+                            }
+                        }
+
+                        const contentEl = document.getElementById('article-content');
+                        if (contentEl) {
+                            contentEl.innerHTML = art.content || '<p style="color:#94a3b8;">暂无正文内容</p>';
+                        }
+                    } else {
+                        const contentEl = document.getElementById('article-content');
+                        if (contentEl) {
+                            contentEl.innerHTML = `
+                                <div style="text-align:center;padding:50px 0;">
+                                    <div style="font-size:18px;color:#ef4444;font-weight:700;margin-bottom:8px;">未找到对应文章内容</div>
+                                    <p style="color:#64748b;font-size:13px;">${escapeHtml(json?.msg || '该单页可能已被下架或链接有误，请返回首页浏览。')}</p>
+                                    <a href="/" class="btn-back-home" style="margin-top:20px;display:inline-block;">返回首页</a>
+                                </div>
+                            `;
+                        }
+                    }
+                } catch(e) {
+                    console.error('加载文章详情异常', e);
+                    const contentEl = document.getElementById('article-content');
+                    if (contentEl) {
+                        contentEl.innerHTML = `
+                            <div style="text-align:center;padding:50px 0;color:#ef4444;">
+                                网络请求失败，请稍后刷新重试。
+                            </div>
+                        `;
+                    }
+                }
+            }
+
+            loadPlatformMeta();
+            loadArticle();
+        })();
+    </script>
+</body>
+</html>

@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+  <defs>
+    <linearGradient id="evBg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#f8fafc"/>
+      <stop offset="100%" stop-color="#e2e8f0"/>
+    </linearGradient>
+    <linearGradient id="evBody" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#dc2626"/>
+      <stop offset="50%" stop-color="#b91c1c"/>
+      <stop offset="100%" stop-color="#7f1d1d"/>
+    </linearGradient>
+  </defs>
+  <rect width="200" height="200" rx="20" fill="url(#evBg)"/>
+  <!-- Aerodynamic EV Fastback -->
+  <path d="M48 98 Q72 58 110 58 Q140 58 174 98 Z" fill="#0f172a"/>
+  <path d="M54 96 Q74 64 108 64 L114 64 L114 96 Z" fill="#38bdf8" opacity="0.75"/>
+  <path d="M120 64 L138 64 Q156 74 168 96 L120 96 Z" fill="#38bdf8" opacity="0.75"/>
+  <!-- Chassis Body -->
+  <path d="M20 118 Q18 100 38 98 L170 98 Q188 100 190 116 L186 132 L24 132 Z" fill="url(#evBody)"/>
+  <!-- LED Headlight -->
+  <path d="M174 100 L188 104 L180 110 Z" fill="#38bdf8"/>
+  <!-- Door Handles flush -->
+  <rect x="80" y="104" width="12" height="2" rx="1" fill="#f8fafc"/>
+  <rect x="126" y="104" width="12" height="2" rx="1" fill="#f8fafc"/>
+  <!-- Sport Aero Wheels -->
+  <circle cx="56" cy="132" r="18" fill="#18181b"/>
+  <circle cx="56" cy="132" r="12" fill="#71717a" stroke="#d4d4d8" stroke-width="2"/>
+  <circle cx="152" cy="132" r="18" fill="#18181b"/>
+  <circle cx="152" cy="132" r="12" fill="#71717a" stroke="#d4d4d8" stroke-width="2"/>
+</svg>

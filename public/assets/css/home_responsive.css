@@ -1,0 +1,420 @@
+        /* 移动端 (H5/Mobile) 深度体验重构：底部半屏抽屉交互、手指触控区、无溢出排版 */
+        @media (max-width: 768px) {
+            .navbar {
+                height: auto;
+                padding: 10px 0;
+            }
+            .nav-inner {
+                flex-wrap: wrap;
+                gap: 10px;
+            }
+            .brand {
+                font-size: 17px;
+            }
+            .brand-logo-icon {
+                width: 32px;
+                height: 32px;
+                font-size: 16px;
+                border-radius: 8px;
+            }
+            .nav-categories {
+                order: 3;
+                width: 100%;
+                gap: 6px;
+                overflow-x: auto;
+                scrollbar-width: none;
+                -webkit-overflow-scrolling: touch;
+                padding: 4px 0 6px 0;
+                justify-content: flex-start;
+            }
+            .nav-categories::-webkit-scrollbar {
+                display: none;
+            }
+            .nav-cat-item {
+                font-size: 13px;
+                padding: 6px 12px;
+                border-radius: 16px;
+            }
+            /* 移动端彻底屏蔽桌面 hover 浮动菜单，改由原生底部抽屉安全承载，杜绝顶栏溢出与残影 */
+            .nav-dropdown-menu {
+                display: none !important;
+            }
+            .nav-dropdown-menu::before {
+                display: none !important;
+            }
+
+            /* 移动端专属品类与子菜单快捷抽屉样式 */
+            .nav-submenu-drawer-card {
+                max-height: 82vh;
+            }
+            .nav-drawer-primary-btn {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                padding: 13px 16px;
+                background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+                border: 1px solid #bfdbfe;
+                border-radius: 12px;
+                color: var(--primary);
+                font-size: 14px;
+                font-weight: 600;
+                cursor: pointer;
+                transition: transform 0.15s ease, opacity 0.15s ease;
+                user-select: none;
+            }
+            .nav-drawer-primary-btn:active {
+                transform: scale(0.98);
+                opacity: 0.9;
+            }
+            .nav-drawer-section-label {
+                font-size: 12px;
+                font-weight: 600;
+                color: #64748b;
+                margin-bottom: 10px;
+                display: flex;
+                align-items: center;
+                gap: 6px;
+            }
+            .nav-drawer-grid {
+                display: grid;
+                grid-template-columns: repeat(3, 1fr);
+                gap: 10px;
+            }
+            .nav-drawer-chip {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                padding: 11px 8px;
+                background: #f8fafc;
+                border: 1px solid #e2e8f0;
+                border-radius: 10px;
+                font-size: 13px;
+                font-weight: 500;
+                color: #334155;
+                text-decoration: none;
+                cursor: pointer;
+                text-align: center;
+                transition: all 0.15s ease;
+                min-height: 44px;
+                position: relative;
+            }
+            .nav-drawer-chip:active {
+                transform: scale(0.97);
+                background: #eff6ff;
+            }
+            .nav-drawer-chip.active {
+                background: #eff6ff;
+                border-color: var(--primary);
+                color: var(--primary);
+                font-weight: 600;
+            }
+            .nav-drawer-chip .chip-badge {
+                position: absolute;
+                top: -5px;
+                right: -4px;
+                background: #ef4444;
+                color: #fff;
+                font-size: 9px;
+                font-weight: 600;
+                padding: 1px 5px;
+                border-radius: 8px;
+            }
+            .nav-drawer-more-group {
+                margin-bottom: 16px;
+                padding-bottom: 12px;
+                border-bottom: 1px dashed #e2e8f0;
+            }
+            .nav-drawer-more-group:last-child {
+                margin-bottom: 0;
+                padding-bottom: 0;
+                border-bottom: none;
+            }
+            .nav-drawer-more-title {
+                font-size: 13px;
+                font-weight: 600;
+                color: #1e293b;
+                margin-bottom: 8px;
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                cursor: pointer;
+                padding: 4px 0;
+            }
+            .hero-banner {
+                padding: 26px 0 32px 0;
+            }
+            .hero-title {
+                font-size: 21px;
+                margin-bottom: 6px;
+            }
+            .hero-subtitle {
+                font-size: 13px;
+                margin-bottom: 18px;
+            }
+            .search-box {
+                padding: 4px;
+                border-radius: 10px;
+            }
+            .search-box input {
+                height: 42px;
+                font-size: 13px;
+                padding: 0 12px;
+            }
+            .search-box button {
+                height: 42px;
+                padding: 0 16px;
+                font-size: 14px;
+                border-radius: 6px;
+            }
+            .main-container {
+                padding: 24px 0 48px 0;
+            }
+            .device-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 10px;
+            }
+            .device-card {
+                padding: 14px 10px;
+                border-radius: 10px;
+            }
+            .device-img-wrap {
+                height: 90px;
+                margin-bottom: 8px;
+            }
+            .device-img {
+                max-height: 80px;
+            }
+            .device-name {
+                font-size: 13px;
+                margin-bottom: 4px;
+            }
+            .device-price-label {
+                font-size: 11px;
+            }
+            .device-price-num {
+                font-size: 16px;
+                margin-bottom: 10px;
+            }
+            .btn-evaluate {
+                height: 36px;
+                font-size: 12px;
+            }
+
+            /* 3步极速服务流程移动端精致自适应排版 (告别拥挤挤压，宽敞单列卡片流) */
+            .steps-section {
+                margin: 24px 0 12px 0;
+            }
+            .steps-header {
+                margin-bottom: 16px;
+            }
+            .steps-title {
+                font-size: 19px;
+                letter-spacing: -0.3px;
+                margin-bottom: 5px;
+            }
+            .steps-subtitle {
+                font-size: 12px;
+                line-height: 1.5;
+                padding: 0 10px;
+            }
+            .steps-grid {
+                grid-template-columns: 1fr;
+                gap: 12px;
+            }
+            .step-card {
+                padding: 18px 20px;
+                border-radius: 14px;
+            }
+            .step-num {
+                top: 14px;
+                right: 18px;
+                font-size: 26px;
+                font-weight: 900;
+                color: #e2e8f0;
+            }
+            .step-icon-wrap {
+                width: 44px;
+                height: 44px;
+                margin-bottom: 12px;
+                border-radius: 10px;
+            }
+            .step-icon-wrap svg {
+                width: 24px;
+                height: 24px;
+            }
+            .step-title {
+                font-size: 16px;
+                margin-bottom: 6px;
+                line-height: 1.4;
+            }
+            .step-desc {
+                font-size: 13px;
+                line-height: 1.6;
+            }
+
+            .trust-section {
+                padding: 20px 14px;
+                margin-top: 28px;
+                border-radius: 12px;
+            }
+            .trust-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 14px;
+            }
+            .trust-title {
+                font-size: 13px;
+            }
+            .trust-desc {
+                font-size: 11px;
+            }
+
+            /* 移动端原生半屏底部抽屉 (Bottom Sheet Drawer) 弹窗标准体验 */
+            .modal-overlay {
+                align-items: flex-end;
+                padding: 0;
+                backdrop-filter: blur(8px);
+            }
+            .modal-card {
+                width: 100%;
+                max-width: 100%;
+                border-radius: 20px 20px 0 0;
+                max-height: 86vh;
+                margin: 0;
+                box-shadow: 0 -10px 30px rgba(15, 23, 42, 0.2);
+                animation: slideUpBottomDrawer 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+            }
+            @keyframes slideUpBottomDrawer {
+                from { transform: translateY(100%); }
+                to { transform: translateY(0); }
+            }
+            .drawer-bar {
+                display: block;
+            }
+            .modal-header {
+                padding: 12px 18px;
+            }
+            .modal-body {
+                padding: 16px 18px;
+                -webkit-overflow-scrolling: touch;
+            }
+            .modal-footer {
+                padding: 14px 18px;
+                padding-bottom: max(14px, env(safe-area-inset-bottom, 14px));
+                position: sticky;
+                bottom: 0;
+                z-index: 10;
+                background: #ffffff;
+                box-shadow: 0 -3px 10px rgba(0, 0, 0, 0.04);
+            }
+            .eval-options-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 8px;
+            }
+            .eval-option-item {
+                min-height: 46px;
+                padding: 8px 10px;
+                font-size: 12px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+            .eval-option-item.has-img {
+                justify-content: flex-start;
+            }
+            .mode-cards {
+                grid-template-columns: 1fr;
+                gap: 8px;
+            }
+            .mail-sub-cards {
+                grid-template-columns: 1fr;
+                gap: 8px;
+            }
+            .form-input {
+                height: 44px;
+                font-size: 14px;
+            }
+            .btn {
+                min-height: 42px;
+            }
+
+            /* 底部 Mega Footer 移动端折叠适配 */
+            .footer-mega {
+                padding-top: 36px;
+            }
+            .footer-mega-top {
+                grid-template-columns: 1fr;
+                gap: 28px;
+                padding-bottom: 28px;
+            }
+            .footer-col-links .footer-links-list {
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 10px 16px;
+            }
+            .footer-col-qr {
+                text-align: center;
+                padding-top: 10px;
+                border-top: 1px dashed rgba(255, 255, 255, 0.08);
+            }
+            .footer-col-qr .footer-col-title {
+                justify-content: center;
+            }
+            .footer-col-qr .footer-col-title::before {
+                display: none;
+            }
+            .footer-qr-container,
+            .footer-qr-grid {
+                justify-content: center;
+                margin: 0 auto;
+            }
+            .footer-qr-container.single-qr,
+            .footer-qr-grid.single-qr {
+                justify-content: center;
+            }
+            .footer-qr-container.single-qr .footer-qr-card,
+            .footer-qr-grid.single-qr .footer-qr-card {
+                width: 170px;
+                max-width: 180px;
+                margin: 0 auto;
+                padding: 14px 12px;
+            }
+            .footer-qr-container.single-qr .footer-qr-img,
+            .footer-qr-grid.single-qr .footer-qr-img {
+                width: 105px;
+                height: 105px;
+            }
+            .footer-qr-container.double-qr,
+            .footer-qr-grid.double-qr {
+                display: flex;
+                justify-content: center;
+                gap: 12px;
+                max-width: 320px;
+                margin: 0 auto;
+            }
+            .footer-qr-container.double-qr .footer-qr-card,
+            .footer-qr-grid.double-qr .footer-qr-card {
+                flex: 1;
+                max-width: 145px;
+                padding: 10px;
+            }
+            .footer-qr-tip {
+                justify-content: center;
+                text-align: center;
+                margin-top: 10px;
+            }
+            .footer-mega-bottom {
+                flex-direction: column;
+                text-align: center;
+                gap: 8px;
+                padding: 18px 0 24px;
+            }
+            .article-reader-card {
+                max-height: 84vh;
+                width: 100%;
+                border-radius: 20px 20px 0 0;
+            }
+            .article-reader-body {
+                padding: 16px 18px;
+            }
+        }

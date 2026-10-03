@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+  <defs>
+    <linearGradient id="mbpbg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#f8fafc"/>
+      <stop offset="100%" stop-color="#e2e8f0"/>
+    </linearGradient>
+    <linearGradient id="mbpscreen" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1e1e24"/>
+      <stop offset="100%" stop-color="#0b0b0e"/>
+    </linearGradient>
+  </defs>
+  <rect width="200" height="200" rx="20" fill="url(#mbpbg)"/>
+  <!-- Display Lid -->
+  <rect x="36" y="40" width="128" height="88" rx="8" fill="#475569"/>
+  <rect x="40" y="44" width="120" height="80" rx="4" fill="url(#mbpscreen)"/>
+  <circle cx="100" cy="46" r="1.5" fill="#94a3b8"/>
+  <!-- Screen Glow / Wallpaper -->
+  <ellipse cx="100" cy="84" rx="44" ry="24" fill="#3b82f6" opacity="0.35"/>
+  <!-- Base Keyboard Chasis -->
+  <path d="M22 132 L178 132 L172 144 L28 144 Z" fill="#64748b"/>
+  <rect x="22" y="144" width="156" height="5" rx="2" fill="#334155"/>
+  <rect x="86" y="133" width="28" height="3" rx="1.5" fill="#1e293b"/>
+</svg>

@@ -1,0 +1,40 @@
+[2026-09-29 22:27:53] SQLSTATE[42S22]: Column not found: 1054 Unknown column 'unit' in 'field list' in /data/wwwroot/huish/app/model/Database.php:135
+Stack Trace:
+#0 /data/wwwroot/huish/app/model/Database.php(135): PDO->prepare()
+#1 /data/wwwroot/huish/app/model/DeviceModel.php(28): App\Model\Database->fetchAll()
+#2 /data/wwwroot/huish/app/controller/admin/DeviceController.php(67): App\Model\DeviceModel->getCategoryList()
+#3 /data/wwwroot/huish/public/index.php(113): App\Controller\Admin\DeviceController->categories()
+#4 {main}
+
+[2026-09-29 22:27:54] SQLSTATE[42S22]: Column not found: 1054 Unknown column 'd.unit' in 'field list' in /data/wwwroot/huish/app/model/Database.php:135
+Stack Trace:
+#0 /data/wwwroot/huish/app/model/Database.php(135): PDO->prepare()
+#1 /data/wwwroot/huish/app/model/DeviceModel.php(100): App\Model\Database->fetchAll()
+#2 /data/wwwroot/huish/app/controller/admin/DeviceController.php(43): App\Model\DeviceModel->searchDevices()
+#3 /data/wwwroot/huish/public/index.php(113): App\Controller\Admin\DeviceController->list()
+#4 {main}
+
+[2026-09-29 22:27:54] SQLSTATE[42S22]: Column not found: 1054 Unknown column 'unit' in 'field list' in /data/wwwroot/huish/app/model/Database.php:135
+Stack Trace:
+#0 /data/wwwroot/huish/app/model/Database.php(135): PDO->prepare()
+#1 /data/wwwroot/huish/app/model/DeviceModel.php(28): App\Model\Database->fetchAll()
+#2 /data/wwwroot/huish/app/controller/admin/DeviceController.php(67): App\Model\DeviceModel->getCategoryList()
+#3 /data/wwwroot/huish/public/index.php(113): App\Controller\Admin\DeviceController->categories()
+#4 {main}
+
+[2026-09-29 22:27:55] SQLSTATE[42S22]: Column not found: 1054 Unknown column 'd.unit' in 'field list' in /data/wwwroot/huish/app/model/Database.php:135
+Stack Trace:
+#0 /data/wwwroot/huish/app/model/Database.php(135): PDO->prepare()
+#1 /data/wwwroot/huish/app/model/DeviceModel.php(100): App\Model\Database->fetchAll()
+#2 /data/wwwroot/huish/app/controller/admin/DeviceController.php(43): App\Model\DeviceModel->searchDevices()
+#3 /data/wwwroot/huish/public/index.php(113): App\Controller\Admin\DeviceController->list()
+#4 {main}
+
+[2026-09-29 22:27:58] SQLSTATE[42S22]: Column not found: 1054 Unknown column 'd.unit' in 'field list' in /data/wwwroot/huish/app/model/Database.php:135
+Stack Trace:
+#0 /data/wwwroot/huish/app/model/Database.php(135): PDO->prepare()
+#1 /data/wwwroot/huish/app/model/DeviceModel.php(100): App\Model\Database->fetchAll()
+#2 /data/wwwroot/huish/app/controller/admin/DeviceController.php(43): App\Model\DeviceModel->searchDevices()
+#3 /data/wwwroot/huish/public/index.php(113): App\Controller\Admin\DeviceController->list()
+#4 {main}
+

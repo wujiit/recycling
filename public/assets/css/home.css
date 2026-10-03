@@ -1,0 +1,9 @@
+/**
+ * 启灵回收系统 - 前台全站样式主入口 (模块化聚合)
+ * 编码：UTF-8 无 BOM
+ */
+@import url('home_base.css');
+@import url('home_marketing.css');
+@import url('home_catalog.css');
+@import url('home_appraisal.css');
+@import url('home_responsive.css');

@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+  <defs>
+    <linearGradient id="camBg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#f8fafc"/>
+      <stop offset="100%" stop-color="#e2e8f0"/>
+    </linearGradient>
+    <linearGradient id="lensReflect" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0284c7"/>
+      <stop offset="50%" stop-color="#1e1b4b"/>
+      <stop offset="100%" stop-color="#f43f5e"/>
+    </linearGradient>
+  </defs>
+  <rect width="200" height="200" rx="20" fill="url(#camBg)"/>
+  <!-- Camera Body -->
+  <rect x="35" y="65" width="130" height="85" rx="10" fill="#1e293b"/>
+  <!-- Grip & Top Bump / Viewfinder -->
+  <path d="M85 65 L95 48 L125 48 L135 65 Z" fill="#0f172a"/>
+  <rect x="145" y="70" width="16" height="75" rx="6" fill="#0f172a"/>
+  <!-- Shutter Button & Dial -->
+  <rect x="48" y="58" width="14" height="7" rx="3" fill="#64748b"/>
+  <rect x="70" y="60" width="10" height="5" rx="2" fill="#d97706"/>
+  <!-- Lens Mount & Big Glass Lens -->
+  <circle cx="95" cy="108" r="42" fill="#0f172a" stroke="#cbd5e1" stroke-width="2"/>
+  <circle cx="95" cy="108" r="34" fill="#1e293b"/>
+  <circle cx="95" cy="108" r="26" fill="url(#lensReflect)"/>
+  <ellipse cx="88" cy="98" rx="8" ry="4" fill="#ffffff" opacity="0.6" transform="rotate(-30 88 98)"/>
+  <circle cx="138" cy="80" r="4" fill="#ef4444"/>
+</svg>

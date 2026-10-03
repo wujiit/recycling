@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+  <defs>
+    <linearGradient id="carBg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#eff6ff"/>
+      <stop offset="100%" stop-color="#dbeafe"/>
+    </linearGradient>
+    <linearGradient id="carBody" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#3b82f6"/>
+      <stop offset="50%" stop-color="#1d4ed8"/>
+      <stop offset="100%" stop-color="#1e3a8a"/>
+    </linearGradient>
+  </defs>
+  <rect width="200" height="200" rx="20" fill="url(#carBg)"/>
+  <!-- Sedan Car Silhouette -->
+  <!-- Windows / Roof -->
+  <path d="M50 100 Q65 65 95 65 L135 65 Q155 75 170 100 Z" fill="#1e293b"/>
+  <path d="M56 98 Q68 70 94 70 L115 70 L115 98 Z" fill="#93c5fd" opacity="0.8"/>
+  <path d="M120 70 L134 70 Q150 78 162 98 L120 98 Z" fill="#93c5fd" opacity="0.8"/>
+  <!-- Car Main Chassis -->
+  <path d="M22 120 Q20 102 36 100 L55 100 L70 98 L165 98 Q182 102 186 118 L182 132 L26 132 Z" fill="url(#carBody)"/>
+  <!-- Headlights -->
+  <path d="M175 102 L185 106 L178 114 Z" fill="#fef08a"/>
+  <!-- Tail Lights -->
+  <path d="M22 104 L30 106 L24 114 Z" fill="#ef4444"/>
+  <!-- Wheels -->
+  <!-- Left Wheel -->
+  <circle cx="56" cy="132" r="18" fill="#1e293b"/>
+  <circle cx="56" cy="132" r="11" fill="#94a3b8" stroke="#cbd5e1" stroke-width="2"/>
+  <circle cx="56" cy="132" r="4" fill="#0f172a"/>
+  <!-- Right Wheel -->
+  <circle cx="150" cy="132" r="18" fill="#1e293b"/>
+  <circle cx="150" cy="132" r="11" fill="#94a3b8" stroke="#cbd5e1" stroke-width="2"/>
+  <circle cx="150" cy="132" r="4" fill="#0f172a"/>
+</svg>

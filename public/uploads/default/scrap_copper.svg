@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+  <defs>
+    <linearGradient id="copBg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fff7ed"/>
+      <stop offset="100%" stop-color="#fed7aa"/>
+    </linearGradient>
+    <linearGradient id="copper" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ea580c"/>
+      <stop offset="50%" stop-color="#f97316"/>
+      <stop offset="100%" stop-color="#c2410c"/>
+    </linearGradient>
+    <linearGradient id="copperShine" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#ffedd5"/>
+      <stop offset="100%" stop-color="#ea580c"/>
+    </linearGradient>
+  </defs>
+  <rect width="200" height="200" rx="20" fill="url(#copBg)"/>
+  <!-- Copper Coil Bundle -->
+  <ellipse cx="100" cy="115" rx="65" ry="32" fill="#9a3412"/>
+  <ellipse cx="100" cy="105" rx="65" ry="32" fill="url(#copper)"/>
+  <ellipse cx="100" cy="95" rx="65" ry="32" fill="url(#copperShine)"/>
+  <ellipse cx="100" cy="85" rx="65" ry="32" fill="url(#copper)"/>
+  <ellipse cx="100" cy="75" rx="65" ry="32" fill="url(#copperShine)"/>
+  <ellipse cx="100" cy="75" rx="35" ry="16" fill="#7c2d12"/>
+  <ellipse cx="100" cy="78" rx="32" ry="14" fill="#9a3412"/>
+  <!-- Metallic Gleam -->
+  <path d="M140 60 Q150 90 145 120" stroke="#ffffff" stroke-width="4" stroke-linecap="round" opacity="0.6"/>
+  <circle cx="100" cy="40" r="16" fill="#ea580c"/>
+  <text x="100" y="44" font-family="-apple-system, sans-serif" font-size="10" font-weight="bold" fill="#ffffff" text-anchor="middle">Cu</text>
+</svg>

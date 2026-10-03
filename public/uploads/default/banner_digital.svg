@@ -1,0 +1,77 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 500" width="1200" height="500">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0b132b"/>
+      <stop offset="40%" stop-color="#1c2541"/>
+      <stop offset="100%" stop-color="#1e3a8a"/>
+    </linearGradient>
+    <linearGradient id="glowGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#3b82f6" stop-opacity="0.8"/>
+      <stop offset="50%" stop-color="#60a5fa" stop-opacity="0.9"/>
+      <stop offset="100%" stop-color="#93c5fd" stop-opacity="0.8"/>
+    </linearGradient>
+    <linearGradient id="accentGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#38bdf8"/>
+      <stop offset="100%" stop-color="#2563eb"/>
+    </linearGradient>
+    <filter id="softGlow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="25" result="blur"/>
+      <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+    </filter>
+  </defs>
+
+  <!-- Background Base -->
+  <rect width="1200" height="500" fill="url(#bgGrad)"/>
+
+  <!-- Futuristic Ambient Mesh & Wave Lines -->
+  <path d="M-100 450 C 300 300, 600 550, 1300 350 L 1300 500 L -100 500 Z" fill="#1d4ed8" fill-opacity="0.2"/>
+  <path d="M-50 480 C 400 380, 800 520, 1250 400 L 1250 500 L -50 500 Z" fill="#2563eb" fill-opacity="0.3"/>
+
+  <!-- Cyber Grid Lines -->
+  <g stroke="#ffffff" stroke-opacity="0.04" stroke-width="1">
+    <line x1="100" y1="0" x2="100" y2="500"/>
+    <line x1="250" y1="0" x2="250" y2="500"/>
+    <line x1="400" y1="0" x2="400" y2="500"/>
+    <line x1="550" y1="0" x2="550" y2="500"/>
+    <line x1="700" y1="0" x2="700" y2="500"/>
+    <line x1="850" y1="0" x2="850" y2="500"/>
+    <line x1="1000" y1="0" x2="1000" y2="500"/>
+    <line x1="0" y1="120" x2="1200" y2="120"/>
+    <line x1="0" y1="260" x2="1200" y2="260"/>
+    <line x1="0" y1="390" x2="1200" y2="390"/>
+  </g>
+
+  <!-- Glowing Tech Orbs -->
+  <circle cx="980" cy="220" r="160" fill="#3b82f6" fill-opacity="0.25" filter="url(#softGlow)"/>
+  <circle cx="820" cy="320" r="110" fill="#06b6d4" fill-opacity="0.2" filter="url(#softGlow)"/>
+
+  <!-- Right Visual Illustration: Phone & Laptop Sleek Silhouette -->
+  <!-- Laptop Stand & Screen -->
+  <g transform="translate(820, 150)">
+    <rect x="0" y="40" width="260" height="160" rx="12" fill="#0f172a" stroke="#60a5fa" stroke-width="2.5" stroke-opacity="0.8"/>
+    <rect x="12" y="52" width="236" height="136" rx="6" fill="#1e293b"/>
+    <!-- Laptop Base -->
+    <path d="M -30 200 L 290 200 L 270 214 L -10 214 Z" fill="#334155" stroke="#94a3b8" stroke-width="1.5"/>
+    <rect x="100" y="202" width="60" height="5" rx="2.5" fill="#64748b"/>
+    <!-- Screen Content: Growth Wave -->
+    <path d="M 25 150 Q 80 80, 130 120 T 230 70" fill="none" stroke="url(#glowGrad)" stroke-width="4" stroke-linecap="round"/>
+    <circle cx="230" cy="70" r="5" fill="#60a5fa"/>
+  </g>
+
+  <!-- Floating Smartphone -->
+  <g transform="translate(730, 170) rotate(-8)">
+    <rect x="0" y="0" width="105" height="205" rx="20" fill="#020617" stroke="#38bdf8" stroke-width="3" filter="url(#softGlow)"/>
+    <rect x="6" y="6" width="93" height="193" rx="15" fill="#0f172a"/>
+    <rect x="36" y="14" width="33" height="8" rx="4" fill="#020617"/>
+    <!-- Chip Icon inside phone -->
+    <rect x="26" y="65" width="53" height="53" rx="12" fill="url(#accentGrad)" fill-opacity="0.9"/>
+    <path d="M 40 85 L 50 95 L 68 75" fill="none" stroke="#ffffff" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
+    <text x="53" y="142" font-family="-apple-system,BlinkMacSystemFont,sans-serif" font-size="11" font-weight="bold" fill="#93c5fd" text-anchor="middle">10S FAST VALUATION</text>
+  </g>
+
+  <!-- Ambient Light Stream / Particles -->
+  <circle cx="700" cy="120" r="3" fill="#67e8f9" opacity="0.8"/>
+  <circle cx="750" cy="90" r="4" fill="#38bdf8" opacity="0.6"/>
+  <circle cx="1110" cy="180" r="3" fill="#93c5fd" opacity="0.7"/>
+  <circle cx="1060" cy="380" r="4" fill="#60a5fa" opacity="0.5"/>
+</svg>

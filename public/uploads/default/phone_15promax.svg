@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+  <defs>
+    <linearGradient id="p15bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#eff6ff"/>
+      <stop offset="100%" stop-color="#dbeafe"/>
+    </linearGradient>
+    <linearGradient id="p15screen" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1e293b"/>
+      <stop offset="100%" stop-color="#0f172a"/>
+    </linearGradient>
+    <linearGradient id="p15frame" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#94a3b8"/>
+      <stop offset="100%" stop-color="#64748b"/>
+    </linearGradient>
+  </defs>
+  <rect width="200" height="200" rx="20" fill="url(#p15bg)"/>
+  <!-- Phone Body -->
+  <rect x="56" y="24" width="88" height="152" rx="20" fill="url(#p15frame)"/>
+  <rect x="59" y="27" width="82" height="146" rx="17" fill="url(#p15screen)"/>
+  <!-- Dynamic Island -->
+  <rect x="85" y="34" width="30" height="9" rx="4.5" fill="#000000"/>
+  <!-- Screen Wallpaper Flow -->
+  <circle cx="100" cy="100" r="32" fill="#3b82f6" opacity="0.3" filter="blur(8px)"/>
+  <circle cx="108" cy="115" r="26" fill="#8b5cf6" opacity="0.3" filter="blur(8px)"/>
+  <!-- Apple-like Lock Bar -->
+  <rect x="84" y="164" width="32" height="3" rx="1.5" fill="#ffffff" opacity="0.7"/>
+</svg>

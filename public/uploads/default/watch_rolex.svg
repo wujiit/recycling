@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+  <defs>
+    <linearGradient id="wBg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fffbeb"/>
+      <stop offset="100%" stop-color="#fef3c7"/>
+    </linearGradient>
+    <linearGradient id="goldCase" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#f59e0b"/>
+      <stop offset="50%" stop-color="#fbbf24"/>
+      <stop offset="100%" stop-color="#b45309"/>
+    </linearGradient>
+    <linearGradient id="bracelet" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#64748b"/>
+      <stop offset="50%" stop-color="#cbd5e1"/>
+      <stop offset="100%" stop-color="#475569"/>
+    </linearGradient>
+  </defs>
+  <rect width="200" height="200" rx="20" fill="url(#wBg)"/>
+  <!-- Steel Bracelet (Top & Bottom) -->
+  <path d="M78 20 L122 20 L120 60 L80 60 Z" fill="url(#bracelet)"/>
+  <path d="M80 140 L120 140 L122 180 L78 180 Z" fill="url(#bracelet)"/>
+  <!-- Center Gold Links -->
+  <rect x="92" y="20" width="16" height="40" fill="url(#goldCase)"/>
+  <rect x="92" y="140" width="16" height="40" fill="url(#goldCase)"/>
+  <!-- Watch Case -->
+  <circle cx="100" cy="100" r="50" fill="url(#goldCase)" stroke="#78350f" stroke-width="2"/>
+  <!-- Fluted Bezel -->
+  <circle cx="100" cy="100" r="44" fill="#0f172a" stroke="#fbbf24" stroke-width="3"/>
+  <!-- Dial -->
+  <circle cx="100" cy="100" r="38" fill="#022c22"/>
+  <!-- Crown at 12 o'clock -->
+  <polygon points="100,68 96,73 104,73" fill="#fbbf24"/>
+  <!-- Cyclops Date Window at 3 o'clock -->
+  <rect x="120" y="94" width="12" height="12" rx="2" fill="#ffffff"/>
+  <text x="126" y="103" font-family="-apple-system, sans-serif" font-size="8" font-weight="bold" fill="#0f172a" text-anchor="middle">28</text>
+  <!-- Hands & Lume Markers -->
+  <line x1="100" y1="100" x2="100" y2="78" stroke="#ffffff" stroke-width="3" stroke-linecap="round"/>
+  <line x1="100" y1="100" x2="116" y2="100" stroke="#ffffff" stroke-width="3.5" stroke-linecap="round"/>
+  <line x1="100" y1="100" x2="88" y2="120" stroke="#f59e0b" stroke-width="1.5" stroke-linecap="round"/>
+  <circle cx="100" cy="100" r="3" fill="#f59e0b"/>
+</svg>

@@ -1,0 +1,69 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 500" width="1200" height="500">
+  <defs>
+    <linearGradient id="ecoBg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#064e3b"/>
+      <stop offset="50%" stop-color="#065f46"/>
+      <stop offset="100%" stop-color="#022c22"/>
+    </linearGradient>
+    <linearGradient id="ecoAccent" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#34d399"/>
+      <stop offset="100%" stop-color="#059669"/>
+    </linearGradient>
+    <linearGradient id="goldGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fbbf24"/>
+      <stop offset="100%" stop-color="#d97706"/>
+    </linearGradient>
+    <filter id="ecoGlow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="20" result="blur"/>
+      <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+    </filter>
+  </defs>
+
+  <!-- Background Base -->
+  <rect width="1200" height="500" fill="url(#ecoBg)"/>
+
+  <!-- Topographic / Ecology Flow Curves -->
+  <path d="M-50 420 C 250 280, 650 560, 1250 360 L 1250 500 L -50 500 Z" fill="#047857" fill-opacity="0.3"/>
+  <path d="M-80 460 C 350 380, 820 510, 1300 410 L 1300 500 L -80 500 Z" fill="#10b981" fill-opacity="0.25"/>
+
+  <!-- Soft Glowing Eco Centers -->
+  <circle cx="950" cy="240" r="160" fill="#10b981" fill-opacity="0.2" filter="url(#ecoGlow)"/>
+  <circle cx="800" cy="300" r="100" fill="#34d399" fill-opacity="0.15" filter="url(#ecoGlow)"/>
+
+  <!-- Right Visual Illustration: Circular Recycle Symbol & Weighing Truck/Scale -->
+  <g transform="translate(860, 150)">
+    <!-- Big Glowing Recycle Ring -->
+    <circle cx="100" cy="100" r="90" fill="none" stroke="url(#ecoAccent)" stroke-width="4" stroke-dasharray="14 8" opacity="0.6"/>
+    <circle cx="100" cy="100" r="70" fill="#064e3b" stroke="#34d399" stroke-width="2"/>
+    
+    <!-- Recycle 3-Arrows -->
+    <path d="M 100 50 A 50 50 0 0 1 145 80" fill="none" stroke="#6ee7b7" stroke-width="7" stroke-linecap="round"/>
+    <polygon points="145,68 155,84 135,84" fill="#6ee7b7"/>
+    <path d="M 145 118 A 50 50 0 0 1 100 150" fill="none" stroke="#6ee7b7" stroke-width="7" stroke-linecap="round"/>
+    <polygon points="108,157 95,150 106,138" fill="#6ee7b7"/>
+    <path d="M 75 138 A 50 50 0 0 1 55 100" fill="none" stroke="#6ee7b7" stroke-width="7" stroke-linecap="round"/>
+    <polygon points="56,112 46,95 66,98" fill="#6ee7b7"/>
+
+    <!-- Center Eco Leaf -->
+    <path d="M 100 80 C 88 88, 88 112, 100 120 C 112 112, 112 88, 100 80 Z" fill="url(#ecoAccent)"/>
+  </g>
+
+  <!-- Weighing Truck Graphic -->
+  <g transform="translate(730, 240)">
+    <!-- Truck Cabin -->
+    <rect x="0" y="20" width="70" height="60" rx="8" fill="#047857" stroke="#34d399" stroke-width="2"/>
+    <rect x="35" y="28" width="30" height="25" rx="3" fill="#6ee7b7" fill-opacity="0.7"/>
+    <!-- Truck Cargo -->
+    <rect x="75" y="5" width="110" height="75" rx="6" fill="#065f46" stroke="#10b981" stroke-width="2"/>
+    <!-- Wheels -->
+    <circle cx="35" cy="85" r="16" fill="#0f172a" stroke="#6ee7b7" stroke-width="3"/>
+    <circle cx="35" cy="85" r="6" fill="#94a3b8"/>
+    <circle cx="115" cy="85" r="16" fill="#0f172a" stroke="#6ee7b7" stroke-width="3"/>
+    <circle cx="115" cy="85" r="6" fill="#94a3b8"/>
+    <circle cx="155" cy="85" r="16" fill="#0f172a" stroke="#6ee7b7" stroke-width="3"/>
+    <circle cx="155" cy="85" r="6" fill="#94a3b8"/>
+    <!-- Weight Indicator Badge -->
+    <rect x="85" y="22" width="90" height="26" rx="13" fill="#022c22" stroke="url(#goldGradient)" stroke-width="1.5"/>
+    <text x="130" y="39" font-family="-apple-system,BlinkMacSystemFont,sans-serif" font-size="11" font-weight="bold" fill="#fde68a" text-anchor="middle">上门精密过磅</text>
+  </g>
+</svg>

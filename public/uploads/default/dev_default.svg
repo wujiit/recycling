@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+  <defs>
+    <linearGradient id="bgDev" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#f8fafc"/>
+      <stop offset="100%" stop-color="#e2e8f0"/>
+    </linearGradient>
+    <linearGradient id="screenDev" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1e58ff"/>
+      <stop offset="100%" stop-color="#3b82f6"/>
+    </linearGradient>
+  </defs>
+  <rect width="200" height="200" rx="20" fill="url(#bgDev)"/>
+  <!-- Isometric Gadget -->
+  <rect x="55" y="35" width="90" height="130" rx="14" fill="#334155"/>
+  <rect x="60" y="42" width="80" height="116" rx="8" fill="url(#screenDev)"/>
+  <circle cx="100" cy="50" r="3" fill="#ffffff" opacity="0.8"/>
+  <!-- Valuation badge inside screen -->
+  <circle cx="100" cy="98" r="24" fill="#ffffff" opacity="0.2"/>
+  <text x="100" y="104" font-family="-apple-system, sans-serif" font-size="20" font-weight="bold" fill="#ffffff" text-anchor="middle">¥</text>
+  <rect x="80" y="130" width="40" height="6" rx="3" fill="#ffffff" opacity="0.6"/>
+</svg>

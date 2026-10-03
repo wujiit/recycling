@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+  <defs>
+    <linearGradient id="papBg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fffbeb"/>
+      <stop offset="100%" stop-color="#fef3c7"/>
+    </linearGradient>
+    <linearGradient id="kraft" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#d97706"/>
+      <stop offset="50%" stop-color="#b45309"/>
+      <stop offset="100%" stop-color="#92400e"/>
+    </linearGradient>
+  </defs>
+  <rect width="200" height="200" rx="20" fill="url(#papBg)"/>
+  <!-- Cardboard Bale / Corrugated Boxes Stack -->
+  <g transform="translate(25, 35)">
+    <!-- Box 1 Bottom -->
+    <path d="M20 70 L90 50 L140 70 L70 90 Z" fill="#d97706"/>
+    <path d="M20 70 L20 120 L70 140 L70 90 Z" fill="#92400e"/>
+    <path d="M70 140 L140 120 L140 70 L70 90 Z" fill="#b45309"/>
+    <!-- Box 2 Top Stack -->
+    <path d="M30 35 L90 18 L130 35 L70 52 Z" fill="#f59e0b"/>
+    <path d="M30 35 L30 70 L70 87 L70 52 Z" fill="#b45309"/>
+    <path d="M70 87 L130 70 L130 35 L70 52 Z" fill="#d97706"/>
+    <!-- Packaging Straps -->
+    <path d="M50 43 L50 78 L90 61" stroke="#f1f5f9" stroke-width="3" fill="none"/>
+    <path d="M100 26 L100 61" stroke="#f1f5f9" stroke-width="3" fill="none"/>
+  </g>
+  <!-- Eco Recycling Emblem -->
+  <circle cx="150" cy="45" r="18" fill="#10b981"/>
+  <path d="M150 35 L155 42 L145 42 Z" fill="#ffffff"/>
+  <text x="150" y="55" font-family="-apple-system, sans-serif" font-size="8" font-weight="bold" fill="#ffffff" text-anchor="middle">RECYCLE</text>
+</svg>

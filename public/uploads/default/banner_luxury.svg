@@ -1,0 +1,73 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 500" width="1200" height="500">
+  <defs>
+    <linearGradient id="luxBg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#18181b"/>
+      <stop offset="50%" stop-color="#27272a"/>
+      <stop offset="100%" stop-color="#09090b"/>
+    </linearGradient>
+    <linearGradient id="pureGold" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fef08a"/>
+      <stop offset="35%" stop-color="#f59e0b"/>
+      <stop offset="70%" stop-color="#fbbf24"/>
+      <stop offset="100%" stop-color="#b45309"/>
+    </linearGradient>
+    <linearGradient id="amberGlow" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#d97706" stop-opacity="0.3"/>
+      <stop offset="100%" stop-color="#78350f" stop-opacity="0"/>
+    </linearGradient>
+    <filter id="luxGlow" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="22" result="blur"/>
+      <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+    </filter>
+  </defs>
+
+  <!-- Background Base -->
+  <rect width="1200" height="500" fill="url(#luxBg)"/>
+
+  <!-- Luxury Gold Lines & Geometric Diamond Mesh -->
+  <g stroke="url(#pureGold)" stroke-opacity="0.15" stroke-width="1">
+    <polygon points="950,50 1100,200 950,350 800,200"/>
+    <polygon points="950,90 1060,200 950,310 840,200"/>
+    <line x1="800" y1="200" x2="1100" y2="200"/>
+    <line x1="950" y1="50" x2="950" y2="350"/>
+  </g>
+
+  <!-- Golden Ambient Glows -->
+  <circle cx="950" cy="230" r="170" fill="#f59e0b" fill-opacity="0.15" filter="url(#luxGlow)"/>
+
+  <!-- Right Visual: High-end Watch & Gold Bar Graphic -->
+  <!-- Watch Bezel & Dial -->
+  <g transform="translate(860, 140)">
+    <!-- Watch Strap -->
+    <rect x="65" y="0" width="50" height="40" rx="4" fill="#3f3f46" stroke="url(#pureGold)" stroke-width="1.5"/>
+    <rect x="65" y="180" width="50" height="40" rx="4" fill="#3f3f46" stroke="url(#pureGold)" stroke-width="1.5"/>
+    <!-- Outer Case -->
+    <circle cx="90" cy="110" r="80" fill="#18181b" stroke="url(#pureGold)" stroke-width="5"/>
+    <circle cx="90" cy="110" r="70" fill="#09090b" stroke="#71717a" stroke-width="1"/>
+    <!-- Fluted Bezel Ring -->
+    <circle cx="90" cy="110" r="66" fill="none" stroke="url(#pureGold)" stroke-width="2" stroke-dasharray="3 3"/>
+    <!-- Watch Hands -->
+    <line x1="90" y1="110" x2="90" y2="60" stroke="#fef08a" stroke-width="3" stroke-linecap="round"/>
+    <line x1="90" y1="110" x2="130" y2="125" stroke="#fef08a" stroke-width="2.5" stroke-linecap="round"/>
+    <circle cx="90" cy="110" r="4" fill="#fbbf24"/>
+    <!-- Crown -->
+    <rect x="170" y="103" width="8" height="14" rx="2" fill="url(#pureGold)"/>
+  </g>
+
+  <!-- Gold Ingot / Bullion -->
+  <g transform="translate(730, 240)">
+    <polygon points="30,20 130,20 150,60 10,60" fill="url(#pureGold)" stroke="#fef08a" stroke-width="1.5" filter="url(#luxGlow)"/>
+    <polygon points="10,60 150,60 145,85 15,85" fill="#b45309" stroke="#78350f" stroke-width="1"/>
+    <text x="80" y="47" font-family="Georgia,serif" font-size="12" font-weight="bold" fill="#78350f" text-anchor="middle" letter-spacing="1">FINE GOLD 999.9</text>
+  </g>
+
+  <!-- Diamond Sparkle Accents -->
+  <g fill="#fef08a">
+    <!-- Star 1 -->
+    <path d="M 720 120 Q 720 135 735 135 Q 720 135 720 150 Q 720 135 705 135 Q 720 135 720 120" opacity="0.9"/>
+    <!-- Star 2 -->
+    <path d="M 1080 110 Q 1080 122 1092 122 Q 1080 122 1080 134 Q 1080 122 1068 122 Q 1080 122 1080 110" opacity="0.8"/>
+    <!-- Star 3 -->
+    <path d="M 1120 310 Q 1120 320 1130 320 Q 1120 320 1120 330 Q 1120 320 1110 320 Q 1120 320 1120 310" opacity="0.7"/>
+  </g>
+</svg>

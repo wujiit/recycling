@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+  <defs>
+    <linearGradient id="ipadbg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#faf5ff"/>
+      <stop offset="100%" stop-color="#f3e8ff"/>
+    </linearGradient>
+    <linearGradient id="ipadscreen" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#18181b"/>
+      <stop offset="100%" stop-color="#09090b"/>
+    </linearGradient>
+  </defs>
+  <rect width="200" height="200" rx="20" fill="url(#ipadbg)"/>
+  <!-- iPad Body -->
+  <rect x="42" y="30" width="116" height="142" rx="14" fill="#64748b"/>
+  <rect x="45" y="33" width="110" height="136" rx="11" fill="url(#ipadscreen)"/>
+  <!-- Apple Pencil on the side -->
+  <rect x="162" y="55" width="4" height="90" rx="2" fill="#ffffff" stroke="#cbd5e1" stroke-width="0.5"/>
+  <!-- Screen abstract colors -->
+  <circle cx="100" cy="95" r="38" fill="#a855f7" opacity="0.35"/>
+  <circle cx="115" cy="110" r="28" fill="#3b82f6" opacity="0.3"/>
+  <rect x="85" y="162" width="30" height="3" rx="1.5" fill="#ffffff" opacity="0.6"/>
+</svg>

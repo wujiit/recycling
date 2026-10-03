@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+  <defs>
+    <linearGradient id="goldBg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fffbeb"/>
+      <stop offset="100%" stop-color="#fef3c7"/>
+    </linearGradient>
+    <linearGradient id="goldBar" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fef08a"/>
+      <stop offset="35%" stop-color="#f59e0b"/>
+      <stop offset="70%" stop-color="#d97706"/>
+      <stop offset="100%" stop-color="#b45309"/>
+    </linearGradient>
+  </defs>
+  <rect width="200" height="200" rx="20" fill="url(#goldBg)"/>
+  <!-- Gold Bullion Ingot 1 -->
+  <g transform="translate(25, 45)">
+    <!-- Top Face -->
+    <path d="M40 30 L110 30 L135 70 L15 70 Z" fill="url(#goldBar)"/>
+    <!-- Left Face -->
+    <path d="M15 70 L40 30 L40 50 L15 95 Z" fill="#b45309"/>
+    <!-- Front Face -->
+    <path d="M15 70 L135 70 L145 105 L5 105 Z" fill="url(#goldBar)"/>
+    <!-- Right Face -->
+    <path d="M135 70 L110 30 L125 50 L145 105 Z" fill="#92400e"/>
+    <!-- Stamp -->
+    <text x="75" y="60" font-family="-apple-system, sans-serif" font-size="12" font-weight="900" fill="#78350f" text-anchor="middle">AU 999.9</text>
+    <text x="75" y="88" font-family="-apple-system, sans-serif" font-size="11" font-weight="bold" fill="#78350f" text-anchor="middle">FINE GOLD 100g</text>
+  </g>
+  <!-- Sparkles -->
+  <polygon points="150,35 153,42 160,45 153,48 150,55 147,48 140,45 147,42" fill="#fbbf24"/>
+  <polygon points="35,145 37,150 42,152 37,154 35,159 33,154 28,152 33,150" fill="#fbbf24"/>
+</svg>

@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 44" width="40" height="44">
+  <defs>
+    <linearGradient id="shieldGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#2563eb"/>
+      <stop offset="100%" stop-color="#1e3a8a"/>
+    </linearGradient>
+    <linearGradient id="goldGrad" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#fef08a"/>
+      <stop offset="50%" stop-color="#eab308"/>
+      <stop offset="100%" stop-color="#ca8a04"/>
+    </linearGradient>
+  </defs>
+  <!-- 外盾牌轮廓 -->
+  <path d="M20 2 L37 8 C37 26 28 38 20 42 C12 38 3 26 3 8 Z" fill="url(#shieldGrad)" stroke="url(#goldGrad)" stroke-width="2.5" stroke-linejoin="round"/>
+  <!-- 内部金边饰条 -->
+  <path d="M20 5 L34 10 C34 25 26 35 20 38.5 C14 35 6 25 6 10 Z" fill="none" stroke="#facc15" stroke-width="1" opacity="0.7"/>
+  <!-- 顶部红底小盾 -->
+  <path d="M20 7 L29 11 C29 19 25 24 20 26 C15 24 11 19 11 11 Z" fill="#dc2626" stroke="#fbbf24" stroke-width="1"/>
+  <!-- 五角星 -->
+  <polygon points="20,10 21.8,14.5 26.5,14.5 22.8,17.5 24.2,22 20,19.2 15.8,22 17.2,17.5 13.5,14.5 18.2,14.5" fill="#fef08a"/>
+  <!-- 长城烽火台浮雕象征 -->
+  <path d="M12 28 L15 26 L15 29 L18 29 L18 26 L22 26 L22 29 L25 29 L25 26 L28 28 C26 32 23 35 20 36.5 C17 35 14 32 12 28 Z" fill="url(#goldGrad)"/>
+  <rect x="18.5" y="30" width="3" height="4" rx="0.5" fill="#1e3a8a"/>
+</svg>

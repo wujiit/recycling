@@ -1,0 +1,410 @@
+        /* 品牌/规格筛选条 */
+        .brand-filter-bar {
+            background: #fff;
+            border-bottom: 1px solid var(--border);
+            padding: 12px 0;
+        }
+        .brand-pills {
+            display: flex;
+            gap: 8px;
+            overflow-x: auto;
+            scrollbar-width: none;
+            -webkit-overflow-scrolling: touch;
+            padding-bottom: 2px;
+            align-items: center;
+        }
+        .brand-pills::-webkit-scrollbar {
+            display: none;
+        }
+        .brand-pill {
+            padding: 6px 15px;
+            border-radius: 20px;
+            background: #f1f5f9;
+            color: #475569;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+            border: 1px solid transparent;
+        }
+        .brand-pill:hover {
+            color: var(--primary);
+            background: #e2e8f0;
+            transform: translateY(-1px);
+        }
+        .brand-pill.active {
+            background: var(--primary);
+            color: #fff;
+            box-shadow: 0 3px 10px rgba(30, 88, 255, 0.25);
+        }
+
+        /* 主体内容区 */
+        .main-container {
+            padding: 32px 0 60px 0;
+        }
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 22px;
+        }
+        .section-title {
+            font-size: 20px;
+            font-weight: 800;
+            color: var(--text-main);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            letter-spacing: -0.3px;
+        }
+
+        /* 商品卡片网格 */
+        .device-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(225px, 1fr));
+            gap: 20px;
+        }
+        .device-card {
+            background: #fff;
+            border-radius: 16px;
+            border: 1px solid #eef2f6;
+            padding: 20px 16px 16px 16px;
+            text-align: center;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
+            transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            position: relative;
+            cursor: pointer;
+        }
+        .device-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 14px 30px rgba(30, 88, 255, 0.12);
+            border-color: #cbd5e1;
+        }
+        .device-tag {
+            position: absolute;
+            top: 12px;
+            left: 12px;
+            background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+            color: #92400e;
+            font-size: 11px;
+            font-weight: 700;
+            padding: 3px 8px;
+            border-radius: 6px;
+            box-shadow: 0 2px 6px rgba(180, 83, 9, 0.12);
+            z-index: 1;
+        }
+        .device-img-wrap {
+            height: 135px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 14px;
+            background: #f8fafc;
+            border-radius: 12px;
+            padding: 10px;
+            transition: background 0.2s;
+        }
+        .device-card:hover .device-img-wrap {
+            background: #f1f5f9;
+        }
+        .device-img {
+            max-height: 115px;
+            max-width: 100%;
+            object-fit: contain;
+            transition: transform 0.25s ease;
+        }
+        .device-card:hover .device-img {
+            transform: scale(1.06);
+        }
+        .device-name {
+            font-size: 15px;
+            font-weight: 750;
+            color: var(--text-main);
+            margin-bottom: 8px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .device-price-label {
+            font-size: 11.5px;
+            color: var(--text-muted);
+            letter-spacing: 0.2px;
+        }
+        .device-price-num {
+            font-size: 21px;
+            font-weight: 850;
+            color: var(--primary);
+            margin-bottom: 12px;
+            letter-spacing: -0.4px;
+        }
+        .btn-evaluate {
+            width: 100%;
+            height: 38px;
+            background: var(--primary-light);
+            color: var(--primary);
+            border: 1px solid #bfdbfe;
+            border-radius: 10px;
+            font-size: 13px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+        }
+        .device-card:hover .btn-evaluate {
+            background: linear-gradient(135deg, var(--primary) 0%, #2563eb 100%);
+            color: #fff;
+            border-color: var(--primary);
+            box-shadow: 0 4px 12px rgba(30, 88, 255, 0.25);
+        }
+
+        /* 优雅空状态卡片 */
+        .empty-state-card {
+            grid-column: 1 / -1;
+            background: #fff;
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 48px 24px;
+            text-align: center;
+            box-shadow: var(--shadow-sm);
+        }
+        .empty-icon-wrap {
+            width: 72px;
+            height: 72px;
+            border-radius: 50%;
+            background: #f1f5f9;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 16px;
+            color: #94a3b8;
+        }
+        .empty-title {
+            font-size: 17px;
+            font-weight: 750;
+            color: var(--text-main);
+            margin-bottom: 6px;
+        }
+        .empty-desc {
+            font-size: 13px;
+            color: var(--text-muted);
+            max-width: 440px;
+            margin: 0 auto 20px auto;
+            line-height: 1.6;
+        }
+        .empty-actions {
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+        }
+
+        /* 3步极速回收服务流程 */
+        .steps-section {
+            margin-top: 56px;
+        }
+        .steps-header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .steps-title {
+            font-size: 24px;
+            font-weight: 800;
+            color: var(--text-main);
+            letter-spacing: -0.4px;
+            margin-bottom: 6px;
+        }
+        .steps-subtitle {
+            font-size: 14px;
+            color: var(--text-muted);
+        }
+        .steps-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+        }
+        .step-card {
+            background: #fff;
+            border-radius: 16px;
+            border: 1px solid var(--border);
+            padding: 28px 22px;
+            position: relative;
+            box-shadow: var(--shadow-sm);
+            transition: all 0.2s ease;
+        }
+        .step-card:hover {
+            transform: translateY(-3px);
+            box-shadow: var(--shadow-md);
+            border-color: #cbd5e1;
+        }
+        .step-num {
+            position: absolute;
+            top: 18px;
+            right: 22px;
+            font-size: 28px;
+            font-weight: 900;
+            color: #e2e8f0;
+            font-family: Arial, sans-serif;
+            line-height: 1;
+        }
+        .step-icon-wrap {
+            width: 52px;
+            height: 52px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 18px;
+        }
+        .step-title {
+            font-size: 16px;
+            font-weight: 750;
+            color: var(--text-main);
+            margin-bottom: 8px;
+        }
+        .step-desc {
+            font-size: 13px;
+            color: var(--text-muted);
+            line-height: 1.6;
+        }
+
+        /* 平台特色信任保障区 */
+        .trust-section {
+            background: #fff;
+            border-radius: 16px;
+            padding: 32px 24px;
+            margin-top: 48px;
+            border: 1px solid var(--border);
+            box-shadow: var(--shadow-sm);
+        }
+        .trust-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 20px;
+        }
+        .trust-card {
+            padding: 12px 10px;
+            text-align: center;
+        }
+        .trust-icon-box {
+            width: 54px;
+            height: 54px;
+            border-radius: 14px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 14px;
+            transition: transform 0.2s;
+        }
+        .trust-card:hover .trust-icon-box {
+            transform: scale(1.08);
+        }
+        .trust-title {
+            font-size: 15px;
+            font-weight: 750;
+            margin-bottom: 6px;
+            color: var(--text-main);
+        }
+        .trust-desc {
+            font-size: 12px;
+            color: var(--text-muted);
+            line-height: 1.6;
+        }
+
+        /* 常见问答 FAQ */
+        .faq-section {
+            margin-top: 56px;
+        }
+        .faq-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 16px;
+        }
+        .faq-item {
+            background: #fff;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 16px 20px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .faq-item:hover {
+            border-color: #cbd5e1;
+            box-shadow: var(--shadow-sm);
+        }
+        .faq-item.active {
+            border-color: var(--primary);
+            background: #fbfdff;
+        }
+        .faq-q {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 14px;
+            font-weight: 700;
+            color: var(--text-main);
+            gap: 10px;
+        }
+        .faq-arrow {
+            font-size: 10px;
+            color: #94a3b8;
+            transition: transform 0.2s;
+            flex-shrink: 0;
+        }
+        .faq-item.active .faq-arrow {
+            transform: rotate(180deg);
+            color: var(--primary);
+        }
+        .faq-a {
+            display: none;
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 1px dashed var(--border);
+            font-size: 13px;
+            color: #64748b;
+            line-height: 1.65;
+        }
+        .faq-item.active .faq-a {
+            display: block;
+            animation: fadeInMenu 0.15s ease-out;
+        }
+
+        /* 快捷右侧浮动导航 */
+        .float-widget {
+            position: fixed;
+            right: 20px;
+            bottom: 30px;
+            z-index: 90;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .float-btn {
+            width: 44px;
+            height: 44px;
+            background: #fff;
+            border: 1px solid var(--border);
+            border-radius: 50%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            box-shadow: var(--shadow-md);
+            cursor: pointer;
+            color: #475569;
+            transition: all 0.2s;
+            font-size: 10px;
+            gap: 2px;
+        }
+        .float-btn:hover {
+            background: var(--primary);
+            color: #fff;
+            border-color: var(--primary);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(30, 88, 255, 0.3);
+        }

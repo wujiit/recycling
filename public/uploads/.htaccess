@@ -1,0 +1,5 @@
+# 禁止附件目录执行任何脚本文件，彻底防范木马上传漏洞
+<FilesMatch "(?i)\.(php|php3|php4|php5|php7|php8|phtml|pl|py|cgi|asp|aspx|jsp|sh|bash)$">
+    Order Deny,Allow
+    Deny from all
+</FilesMatch>

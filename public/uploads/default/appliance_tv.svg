@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+  <defs>
+    <linearGradient id="tvBg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#f8fafc"/>
+      <stop offset="100%" stop-color="#e2e8f0"/>
+    </linearGradient>
+    <linearGradient id="tvScreen" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0f172a"/>
+      <stop offset="50%" stop-color="#1e1b4b"/>
+      <stop offset="100%" stop-color="#0284c7"/>
+    </linearGradient>
+  </defs>
+  <rect width="200" height="200" rx="20" fill="url(#tvBg)"/>
+  <!-- TV Screen Frame -->
+  <rect x="25" y="45" width="150" height="96" rx="4" fill="#09090b" stroke="#334155" stroke-width="2"/>
+  <rect x="29" y="49" width="142" height="88" rx="2" fill="url(#tvScreen)"/>
+  <!-- 4K Logo / Wallpaper Graphic -->
+  <ellipse cx="100" cy="93" rx="40" ry="20" fill="#a855f7" opacity="0.4" filter="blur(6px)"/>
+  <text x="100" y="98" font-family="-apple-system, sans-serif" font-size="14" font-weight="900" fill="#ffffff" text-anchor="middle" letter-spacing="2">4K HDR</text>
+  <!-- TV Stands -->
+  <polygon points="45,141 55,141 40,162 30,162" fill="#475569"/>
+  <polygon points="145,141 155,141 170,162 160,162" fill="#475569"/>
+</svg>

@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+  <defs>
+    <linearGradient id="washBg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#eff6ff"/>
+      <stop offset="100%" stop-color="#dbeafe"/>
+    </linearGradient>
+    <linearGradient id="doorGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0284c7"/>
+      <stop offset="50%" stop-color="#0369a1"/>
+      <stop offset="100%" stop-color="#082f49"/>
+    </linearGradient>
+  </defs>
+  <rect width="200" height="200" rx="20" fill="url(#washBg)"/>
+  <!-- Washing Machine Body -->
+  <rect x="45" y="30" width="110" height="140" rx="10" fill="#ffffff" stroke="#cbd5e1" stroke-width="2"/>
+  <!-- Control Panel -->
+  <rect x="45" y="30" width="110" height="34" rx="10" fill="#f8fafc" stroke="#cbd5e1" stroke-width="1"/>
+  <!-- Knob -->
+  <circle cx="100" cy="47" r="10" fill="#64748b"/>
+  <circle cx="100" cy="47" r="6" fill="#334155"/>
+  <rect x="99" y="40" width="2" height="5" fill="#38bdf8"/>
+  <!-- Detergent Drawer & Display -->
+  <rect x="54" y="40" width="24" height="14" rx="2" fill="#e2e8f0"/>
+  <rect x="122" y="39" width="24" height="16" rx="2" fill="#0f172a"/>
+  <text x="134" y="51" font-family="-apple-system, sans-serif" font-size="8" font-weight="bold" fill="#38bdf8" text-anchor="middle">45'</text>
+  <!-- Big Front Round Door -->
+  <circle cx="100" cy="115" r="42" fill="#334155" stroke="#cbd5e1" stroke-width="3"/>
+  <circle cx="100" cy="115" r="32" fill="url(#doorGrad)"/>
+  <ellipse cx="94" cy="106" rx="12" ry="6" fill="#ffffff" opacity="0.4" transform="rotate(-30 94 106)"/>
+</svg>
