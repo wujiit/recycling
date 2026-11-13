@@ -1,6 +1,6 @@
 <?php
 /**
- * 启灵回收系统 - 客户端用户控制器
+ * 启灵同城服务系统 - 客户端用户控制器
  * 处理微信小程序授权登录、手机号绑定与用户信息管理
  */
 
@@ -84,22 +84,11 @@ class UserController extends Controller
     }
 
     /**
-     * Web/H5 手机号免密快捷登录与注册
+     * Web/H5 手机号免密快捷登录（已永久下线并禁用）
      */
     public function phoneLogin(): void
     {
-        $mobile = trim((string)Request::post('mobile', ''));
-        $name = trim((string)Request::post('name', ''));
-        if (!preg_match('/^1[3-9]\d{9}$/', $mobile)) {
-            $this->error('请输入正确的11位手机号码');
-        }
-
-        $res = $this->authService->loginOrRegisterByMobile($mobile, $name);
-        if ($res['code'] === 200) {
-            $this->success($res['data'], '登录成功');
-        } else {
-            $this->error($res['msg'], $res['code']);
-        }
+        $this->error('免密快捷登录功能已停用，请使用账号密码登录', 403);
     }
 
     /**
@@ -160,7 +149,7 @@ class UserController extends Controller
     }
 
     /**
-     * 获取会员中心个人资料 (包含全链路订单概览与常用预设)
+     * 获取会员中心个人资料 (包含订单概览与常用预设)
      */
     public function profile(): void
     {
@@ -171,7 +160,7 @@ class UserController extends Controller
             $this->error('用户不存在或已被删除', 404);
         }
 
-        // 订单状态全景看板统计
+        // 订单状态统计
         $stats = $this->userModel->getUserOrderStatistics((int)$user['id']);
         $fresh['order_stats'] = $stats;
 
@@ -270,7 +259,7 @@ class UserController extends Controller
     }
 
     /**
-     * 微信小程序一键授权获取并绑定手机号 (支持跨端自动合并打通网页历史账号与订单)
+     * 微信小程序获取并绑定手机号 (支持合并网页历史账号与订单)
      */
     public function bindWechatPhone(): void
     {
@@ -314,7 +303,7 @@ class UserController extends Controller
     }
 
     /**
-     * 手动输入绑定手机号 (支持 Web / H5 及非微信环境，支持跨端自动合并打通)
+     * 手动输入绑定手机号 (支持 Web / H5 环境与账号合并)
      */
     public function bindPhone(): void
     {
@@ -324,7 +313,7 @@ class UserController extends Controller
             $this->error('请输入正确的11位手机号码');
         }
 
-        // 调用统一的绑定与自动跨端合并打通服务
+        // 调用统一的绑定与账号合并服务
         $res = $this->authService->bindOrMergeUserPhone((int)$user['id'], $mobile);
         if ($res['code'] !== 200) {
             $this->error($res['msg'], $res['code']);

@@ -121,7 +121,7 @@ $dbPrefix = !empty($curConfig['prefix']) ? $curConfig['prefix'] : 'ql_';
         <div class="form-row">
             <div class="form-col form-group">
                 <label class="form-label" for="app_name">系统平台名称</label>
-                <input type="text" class="form-input" id="app_name" value="启灵专业二手回收系统" required>
+                <input type="text" class="form-input" id="app_name" value="启灵同城服务" required>
             </div>
             <div class="form-col form-group">
                 <label class="form-label" for="admin_realname">管理员称谓</label>

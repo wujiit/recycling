@@ -23,7 +23,7 @@ class CouponModel
     }
 
     /**
-     * 自动检测并自愈建表 (零手动迁移，确保全新与既有系统平滑即用)
+     * 自动检测并初始化优惠券数据表
      */
     private function ensureSchema(): void
     {
@@ -88,6 +88,10 @@ class CouponModel
             KEY `idx_order_id` (`order_id`)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='用户加价补贴券卡包表';";
         $this->db->execute($sqlUserCoupon);
+        $delCol = $this->db->fetchOne("SHOW COLUMNS FROM `{$p}rc_coupon` LIKE 'deleted_at'");
+        if (!$delCol) {
+            @$this->db->execute("ALTER TABLE `{$p}rc_coupon` ADD COLUMN `deleted_at` timestamp NULL DEFAULT NULL COMMENT '软删除时间戳' AFTER `updated_at`");
+        }
 
         // 3. 检查并为订单主表添加加价券补贴字段
         try {
@@ -228,7 +232,8 @@ class CouponModel
     public function deleteCoupon(int $id): bool
     {
         $p = $this->prefix;
-        return $this->db->execute("DELETE FROM `{$p}rc_coupon` WHERE `id` = ?", [$id]);
+        // 核心资产软删除保护
+        return (bool)$this->db->execute("UPDATE `{$p}rc_coupon` SET `deleted_at` = ?, `status` = 0 WHERE `id` = ?", [date('Y-m-d H:i:s'), $id]);
     }
 
     /**
@@ -273,7 +278,7 @@ class CouponModel
     }
 
     /**
-     * 用户领取加价券
+     * 用户领取加价券 (分布式互斥防刷锁 + 条件原子更新库存)
      */
     public function receiveCoupon(int $userId, int $couponId): array
     {
@@ -283,45 +288,71 @@ class CouponModel
             return ['code' => 400, 'msg' => '加价券不存在或已下架'];
         }
 
-        if ((int)$coupon['total_count'] > 0 && (int)$coupon['received_count'] >= (int)$coupon['total_count']) {
-            return ['code' => 400, 'msg' => '手慢了，该加价券已被抢光'];
+        // 1. 分布式单据互斥锁：基于用户ID与券ID加锁，防高并发重复领取
+        $cache = \App\Service\CacheService::getInstance();
+        $lockKey = "receive_coupon:{$userId}:{$couponId}";
+        $lockToken = $cache->acquireLock($lockKey, 5);
+        if ($lockToken === null) {
+            return ['code' => 429, 'msg' => '领券处理中，请勿频繁点击！'];
         }
 
-        // 校验同张券单用户限领 1 张（防止恶意刷券）
-        $existing = $this->db->fetchOne("SELECT `id` FROM `{$p}rc_user_coupon` WHERE `user_id` = ? AND `coupon_id` = ? AND `status` IN ('unused', 'locked') LIMIT 1", [
-            $userId, $couponId
-        ]);
-        if ($existing) {
-            return ['code' => 400, 'msg' => '您已经拥有该加价券，请先在订单中使用'];
+        try {
+            // 2. 校验同张券单用户限领 1 张（防止恶意刷券）
+            $existing = $this->db->fetchOne("SELECT `id` FROM `{$p}rc_user_coupon` WHERE `user_id` = ? AND `coupon_id` = ? AND `status` IN ('unused', 'locked') LIMIT 1", [
+                $userId, $couponId
+            ]);
+            if ($existing) {
+                return ['code' => 400, 'msg' => '您已经拥有该加价券，请先在订单中使用'];
+            }
+
+            // 3. 条件原子递增库存 (乐观防超发)：仅当总量为0(无限制)或当前已领量小于发行总量时允许递增
+            if ((int)$coupon['total_count'] > 0) {
+                $stockSql = "UPDATE `{$p}rc_coupon` SET `received_count` = `received_count` + 1 
+                             WHERE `id` = ? AND `received_count` < `total_count`";
+                $affected = $this->db->execute($stockSql, [$couponId]);
+                if ($affected <= 0) {
+                    return ['code' => 400, 'msg' => '手慢了，该加价券已被抢光'];
+                }
+            } else {
+                $this->db->execute("UPDATE `{$p}rc_coupon` SET `received_count` = `received_count` + 1 WHERE `id` = ?", [$couponId]);
+            }
+
+            $now = time();
+            $endTime = $now + max(1, (int)$coupon['valid_days']) * 86400;
+
+            $sql = "INSERT INTO `{$p}rc_user_coupon` 
+                (`user_id`, `coupon_id`, `title`, `type`, `amount`, `max_amount`, `min_estimate_price`, `category_id`, `start_time`, `end_time`, `status`, `created_at`) 
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'unused', ?)";
+            
+            try {
+                $this->db->execute($sql, [
+                    $userId, $couponId, $coupon['title'], $coupon['type'], $coupon['amount'],
+                    $coupon['max_amount'], $coupon['min_estimate_price'], $coupon['category_id'],
+                    $now, $endTime, $now
+                ]);
+                $userCouponId = (int)$this->db->lastInsertId();
+            } catch (\Throwable $e) {
+                // 若插入异常，原子回退已递增的库存
+                if ((int)$coupon['total_count'] > 0) {
+                    $this->db->execute("UPDATE `{$p}rc_coupon` SET `received_count` = GREATEST(0, `received_count` - 1) WHERE `id` = ?", [$couponId]);
+                }
+                throw $e;
+            }
+
+            return [
+                'code' => 200,
+                'msg'  => '加价券领取成功',
+                'data' => [
+                    'user_coupon_id' => $userCouponId,
+                    'title'          => $coupon['title'],
+                    'amount'         => $coupon['amount'],
+                    'type'           => $coupon['type'],
+                    'end_time'       => $endTime,
+                ]
+            ];
+        } finally {
+            $cache->releaseLock($lockKey, $lockToken);
         }
-
-        $now = time();
-        $endTime = $now + max(1, (int)$coupon['valid_days']) * 86400;
-
-        $sql = "INSERT INTO `{$p}rc_user_coupon` 
-            (`user_id`, `coupon_id`, `title`, `type`, `amount`, `max_amount`, `min_estimate_price`, `category_id`, `start_time`, `end_time`, `status`, `created_at`) 
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'unused', ?)";
-        $this->db->execute($sql, [
-            $userId, $couponId, $coupon['title'], $coupon['type'], $coupon['amount'],
-            $coupon['max_amount'], $coupon['min_estimate_price'], $coupon['category_id'],
-            $now, $endTime, $now
-        ]);
-        $userCouponId = (int)$this->db->lastInsertId();
-
-        // 递增已领取量
-        $this->db->execute("UPDATE `{$p}rc_coupon` SET `received_count` = `received_count` + 1 WHERE `id` = ?", [$couponId]);
-
-        return [
-            'code' => 200,
-            'msg'  => '加价券领取成功',
-            'data' => [
-                'user_coupon_id' => $userCouponId,
-                'title'          => $coupon['title'],
-                'amount'         => $coupon['amount'],
-                'type'           => $coupon['type'],
-                'end_time'       => $endTime,
-            ]
-        ];
     }
 
     /**
@@ -334,11 +365,25 @@ class CouponModel
         $autoCoupons = $this->db->fetchAll($sql);
         if (empty($autoCoupons)) return 0;
 
+        // 批量预取当前用户已拥有的加价券ID，消除循环中的 N+1 冗余查询
+        $cids = array_map(function($c) { return (int)$c['id']; }, $autoCoupons);
+        $existingMap = [];
+        if (!empty($cids)) {
+            $inPlaceholders = implode(',', array_fill(0, count($cids), '?'));
+            $params = array_merge([$userId], $cids);
+            $existingRows = $this->db->fetchAll(
+                "SELECT `coupon_id` FROM `{$p}rc_user_coupon` WHERE `user_id` = ? AND `coupon_id` IN ({$inPlaceholders})",
+                $params
+            );
+            foreach ($existingRows as $row) {
+                $existingMap[(int)$row['coupon_id']] = true;
+            }
+        }
+
         $grantedCount = 0;
         foreach ($autoCoupons as $coupon) {
             $cid = (int)$coupon['id'];
-            $exists = $this->db->fetchOne("SELECT `id` FROM `{$p}rc_user_coupon` WHERE `user_id` = ? AND `coupon_id` = ? LIMIT 1", [$userId, $cid]);
-            if (!$exists) {
+            if (!isset($existingMap[$cid])) {
                 $now = time();
                 $endTime = $now + max(1, (int)$coupon['valid_days']) * 86400;
                 $sqlInsert = "INSERT INTO `{$p}rc_user_coupon` 

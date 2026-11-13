@@ -9,6 +9,8 @@ namespace App\Common;
 
 class Request
 {
+    private static $traceId = null;
+
     /**
      * 获取 GET 参数
      */
@@ -125,5 +127,24 @@ class Request
         }
         return $default;
     }
+    /**
+     * 获取或生成本次 HTTP 调用的全局唯一 Trace-ID
+     * 支持微服务网关穿透 (X-Trace-Id / X-Request-Id)
+     */
+    public static function traceId(): string
+    {
+        if (self::$traceId === null) {
+            $incoming = self::header('X-Trace-Id') ?: self::header('X-Request-Id');
+            if (!empty($incoming) && preg_match('/^[a-zA-Z0-9_\-\.]+$/', $incoming) && strlen($incoming) <= 64) {
+                self::$traceId = $incoming;
+            } else {
+                try {
+                    self::$traceId = bin2hex(random_bytes(16));
+                } catch (\Throwable $e) {
+                    self::$traceId = md5(uniqid((string)mt_rand(), true));
+                }
+            }
+        }
+        return self::$traceId;
+    }
 }
-

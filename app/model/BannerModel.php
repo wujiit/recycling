@@ -24,7 +24,7 @@ class BannerModel
     }
 
     /**
-     * 自愈式初始化检测 Banner 数据表与预置默认图文
+     * 初始化检测轮播图数据表并预置默认图文
      */
     private function ensureTable(): void
     {
@@ -70,7 +70,7 @@ class BannerModel
                     ('名表黄金奢侈品 · 权威鉴定高额变现', '足金999按日实时结算 · 瑞士名表大牌箱包 · 顺丰保价密封', '尊享质检', '/uploads/default/banner_luxury.svg', '/uploads/default/banner_luxury.svg', 'category', '4', '/pages/category/index', '实时金价换算', 30, 1, {$now}, {$now})";
                 $this->db->execute($insertSql);
             } else {
-                // 自愈式升级：为既有表补齐 link_miniapp 字段
+                // 检查并补齐 link_miniapp 字段
                 $cols = $this->db->fetchAll("SHOW COLUMNS FROM `{$this->p}rc_banner` LIKE 'link_miniapp'");
                 if (empty($cols)) {
                     $this->db->execute("ALTER TABLE `{$this->p}rc_banner` ADD COLUMN `link_miniapp` varchar(255) NOT NULL DEFAULT '' COMMENT '小程序端专属页面路径/行为(可选)' AFTER `link_value`");

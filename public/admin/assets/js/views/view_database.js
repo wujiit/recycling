@@ -1,5 +1,5 @@
 /**
- * 启灵回收系统 - 数据库状态与健康体检视图
+ * 启灵同城服务系统 - 数据库状态与健康体检视图
  * 包含数据表存储引擎与容量查看、核心表字段完整性检查与优化
  */
 (function (window) {
@@ -21,7 +21,7 @@
             themeColor: '#2563eb',
             themeBg: '#eff6ff',
             borderColor: '#bfdbfe',
-            desc: '负责全系统参数存储、首页多模态装修、导航路由以及三方 API 密钥凭据。',
+            desc: '负责全系统参数存储、首页装修配置、导航路由以及接口配置。',
             tables: [
                 {
                     table: 'sys_config',
@@ -36,7 +36,7 @@
                         '第三方支付/短信 API 凭据 (微信商户密钥/证书、短信网关等)',
                         '财务资金结算二级独立安全出纳密码哈希 (防越权打款保护)'
                     ],
-                    storageDesc: 'Key-Value 键值对与 JSON 树形结构，集成 Redis / 文件双模自愈缓存。'
+                    storageDesc: '系统参数表，支持 Redis 与文件缓存。'
                 }
             ]
         },
@@ -91,7 +91,7 @@
             themeColor: '#7c3aed',
             themeBg: '#f5f3ff',
             borderColor: '#ddd6fe',
-            desc: '定义多维质检题目、成色扣减计算规则与实拍图示，驱动 10 秒精准估价。',
+            desc: '设置质检评估选项与成色扣减规则，支持用户在线快速估价。',
             tables: [
                 {
                     table: 'rc_question',
@@ -297,6 +297,60 @@
                         '事后故障排查与合规审计留痕'
                     ],
                     storageDesc: '时间倒序追加日志表，支持快速检索与安全追溯。'
+                }
+            ]
+        },
+        {
+            key: 'service',
+            title: '同城到家生活服务与师傅抢单体系',
+            badge: '生活服务',
+            icon: '🛠️',
+            themeColor: '#ea580c',
+            themeBg: '#fff7ed',
+            borderColor: '#fed7aa',
+            desc: '支撑上门伴宠、家政保洁、家庭维修等高频到家服务，涵盖多规格阶梯定价与师傅抢单流转。',
+            tables: [
+                {
+                    table: 'rc_service_category',
+                    name: '同城生活服务分类表',
+                    features: [
+                        '三大专属生活品类 (上门宠物与伴宠、家政保洁与家电清洗、家庭维修与安装快修)',
+                        '所属大板块类型 (service-上门到家, errand-同城跑腿)',
+                        '品类专属 Emoji 图标与前台排序权重'
+                    ],
+                    storageDesc: '到家服务类目主数据表，支撑多行业独立切换与前台横向筛选。'
+                },
+                {
+                    table: 'rc_service_item',
+                    name: '生活服务核心项目表',
+                    features: [
+                        '9款精选服务项目 (遛狗、喂猫、洗宠、油烟机、空调、日常保洁、电路、管道、锁芯)',
+                        '起步展示基准价与划线市场原价',
+                        '官方保障标签 (如持证宠托师、140℃高温灭菌、修不好不收钱)',
+                        '服务须知与多图相册'
+                    ],
+                    storageDesc: '服务项目基础大表，独立于回收商品表，支持按行业分类检索。'
+                },
+                {
+                    table: 'rc_service_spec',
+                    name: '服务多规格与阶梯定价表',
+                    features: [
+                        '多规格明码标价细则 (如小型犬/中型犬/大型犬遛狗、1匹/2匹空调、2/3/4小时保洁套餐)',
+                        '规格独立单价 (spec_price) 与计价单位 (spec_unit)',
+                        '默认选中规格设置 (is_default) 与适用场景说明'
+                    ],
+                    storageDesc: '阶梯定价核心表，驱动弹窗规格点选与订单金额严密核算。'
+                },
+                {
+                    table: 'rc_technician',
+                    name: '服务师傅与技师抢单池表',
+                    features: [
+                        '自营与入驻师傅实名档案 (真实姓名、手机号、身份证、健康证)',
+                        '服务工种技能认证 (保洁阿姨、电工师傅、开锁锁匠、持证宠托师)',
+                        '在线接单/休息状态切换、地理位置坐标与服务半径',
+                        '累计完成单量、客户评分好评率与服务质保金'
+                    ],
+                    storageDesc: '师傅信息与派单核销数据表。'
                 }
             ]
         }
@@ -512,7 +566,8 @@
 
                     <!-- 分类快捷筛选标签 Chips -->
                     <div id="db-feature-chips" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:20px;padding-bottom:14px;border-bottom:1px dashed #e2e8f0;">
-                        <button type="button" class="btn btn-sm btn-primary chip-filter-btn" data-cat="all">全部模块 (8大板块)</button>
+                        <button type="button" class="btn btn-sm btn-primary chip-filter-btn" data-cat="all">全部模块 (9大板块 · 22张表)</button>
+                        <button type="button" class="btn btn-sm btn-outline chip-filter-btn" data-cat="service">🛠️ 生活服务与师傅</button>
                         <button type="button" class="btn btn-sm btn-outline chip-filter-btn" data-cat="config">⚙️ 全局与装修</button>
                         <button type="button" class="btn btn-sm btn-outline chip-filter-btn" data-cat="catalog">📱 品类与行情</button>
                         <button type="button" class="btn btn-sm btn-outline chip-filter-btn" data-cat="appraisal">📋 估价与成色</button>

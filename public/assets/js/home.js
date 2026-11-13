@@ -1,5 +1,5 @@
 /**
- * 启灵回收系统 - 前台主入口
+ * 启灵同城服务系统 - 前台主入口
  * 包含行业模板加载、特色板块（废品行情/金价换算）、页脚与Banner轮播初始化
  */
 (function(window) {
@@ -22,7 +22,7 @@
 
             function applyTemplateStyles(meta) {
                 // 1. SEO 标题与 Meta 信息深度绑定
-                const pageTitle = meta.seo_title || `${meta.site_name || '启灵回收'} · ${meta.slogan || '全品类回收服务平台'}`;
+                const pageTitle = meta.seo_title || `${meta.site_name || '启灵同城服务'} · ${meta.slogan || '全品类回收服务平台'}`;
                 document.getElementById('page-title').innerText = pageTitle;
 
                 const metaKeywords = document.getElementById('page-keywords');
@@ -39,27 +39,47 @@
                 }
 
                 // 2. 品牌与 Logo 定制 (杜绝长文本挤占导航栏，优先展示精巧 Logo 与短品牌名)
-                const brandName = meta.brand_name || (meta.site_name ? meta.site_name.split('·')[0].trim() : '启灵回收');
+                let brandName = meta.brand_name;
+                if (!brandName && meta.site_name) {
+                    if (meta.site_name.includes('·')) {
+                        brandName = meta.site_name.split('·')[0].trim();
+                    } else if (meta.site_name.includes('-')) {
+                        brandName = meta.site_name.split('-')[0].trim();
+                    } else {
+                        brandName = meta.site_name.trim();
+                    }
+                }
+                if (!brandName) brandName = '启灵同城服务';
+
                 const brandTextEl = document.getElementById('brand-text');
                 if (brandTextEl) brandTextEl.innerText = brandName;
 
                 const brandLogoImg = document.getElementById('brand-logo-img');
                 const brandIcon = document.getElementById('brand-icon');
-                if (meta.site_logo && brandLogoImg) {
-                    brandLogoImg.src = meta.site_logo;
+                const activeLogo = meta.site_logo || '/uploads/default/site_logo.svg';
+                if (brandLogoImg) {
+                    brandLogoImg.src = activeLogo;
                     brandLogoImg.style.display = 'block';
                     if (brandIcon) brandIcon.style.display = 'none';
-                } else if (brandIcon) {
-                    if (brandLogoImg) brandLogoImg.style.display = 'none';
-                    brandIcon.style.display = 'flex';
-                    brandIcon.innerText = brandName ? brandName.charAt(0) : '启';
                 }
+
+                // 立即更新浏览器标题与本地缓存 (保证下一次访问即刻以真实配置直出，彻底消除异步跳变)
+                try {
+                    localStorage.setItem('ql_platform_brand_cache', JSON.stringify({
+                        brand_name: brandName,
+                        site_logo: activeLogo,
+                        page_title: pageTitle
+                    }));
+                } catch (e) {}
 
                 // 3. 首页首屏与双模式（极速搜索 vs 品牌画卷轮播 Banner）全面数据驱动初始化
                 initHeroAndCarousel(meta);
 
                 // 3.1 实时动态播报栏按后台配置初始化
                 initLiveTicker();
+
+                // 3.1.5 官方首页滚动公告广播条初始化
+                initSiteNoticeSystem();
 
                 // 3.2 行业专属特色板块初始化 (废品行情看板 / 贵金属牌价)
                 renderIndustryFeatureSection(meta);
@@ -70,8 +90,107 @@
                 // 4.1 首页常见问题解答 (FAQ) 动态渲染
                 renderHomeFaq(meta);
 
-                // 4.2 首页 3 步极速回收服务流程动态渲染
+                // 4.2 首页 3 步极速服务流程动态渲染
                 renderHomeProcess(meta);
+
+                // 4.3 首页特色信任保障体系动态渲染
+                renderHomeTrustGuarantees(meta);
+
+                // 4.4 行业场景全景自适应排版调度 (纯生活服务 vs 纯回收 vs 综合平台)
+                const isRecycleOn = meta.module_recycle_enabled !== '0';
+                const isServiceOn = meta.module_service_enabled === '1';
+                const scenarioKey = meta.industry_scenario || 'city_life';
+
+                const lifeServiceSection = document.getElementById('section-life-services');
+                const sectionRecycleCatalog = document.getElementById('section-recycle-catalog');
+                const brandFilterBar = document.querySelector('.brand-filter-bar');
+                const mainContainer = document.querySelector('.main-container');
+                const couponShowcaseBar = document.getElementById('coupon-showcase-bar');
+                const industryFeatureContainer = document.getElementById('industry-feature-container');
+                const navCategoriesBox = document.getElementById('nav-categories-box');
+                const btnOpenOrders = document.getElementById('btn-open-orders');
+                const btnOpenCoupons = document.getElementById('btn-open-coupons');
+                const floatingCouponWidget = document.getElementById('floating-coupon-widget');
+
+                const hubSection = document.getElementById('city-life-hub-section');
+
+                if (!isRecycleOn && isServiceOn) {
+                    // === 纯生活服务模式 (上门宠物、家政保洁、家庭维修) ===
+                    if (hubSection) hubSection.style.display = 'none';
+                    if (sectionRecycleCatalog) sectionRecycleCatalog.style.display = 'none';
+                    if (brandFilterBar) brandFilterBar.style.display = 'none';
+                    if (mainContainer) mainContainer.style.display = 'none';
+                    if (couponShowcaseBar) couponShowcaseBar.style.display = 'none';
+                    if (industryFeatureContainer) industryFeatureContainer.style.display = 'none';
+                    if (floatingCouponWidget) floatingCouponWidget.style.display = 'none';
+                    if (btnOpenCoupons) btnOpenCoupons.style.display = 'none';
+
+                    if (navCategoriesBox) {
+                        let catEmoji = '🐾';
+                        if (scenarioKey === 'housekeeping' || scenarioKey === 'home_cleaning') catEmoji = '🧹';
+                        if (scenarioKey === 'home_repair') catEmoji = '🛠️';
+                        navCategoriesBox.innerHTML = `
+                            <span class="nav-cat-item active" style="font-weight:700;">${catEmoji} ${escapeHtml(meta.scenario_badge || '优质到家')} · ${escapeHtml(brandName)}</span>
+                        `;
+                    }
+                    if (btnOpenOrders) {
+                        btnOpenOrders.innerHTML = `
+                            <svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor" style="margin-right:6px;"><path d="M19 3h-4.18C14.4 1.84 13.3 1 12 1c-1.3 0-2.4.84-2.82 2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 0c.55 0 1 .45 1 1s-.45 1-1 1-1-.45-1-1 .45-1 1-1zm2 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg>
+                            我的预约单
+                        `;
+                    }
+
+                    if (lifeServiceSection) {
+                        lifeServiceSection.style.display = 'block';
+                        const svcTitleEl = lifeServiceSection.querySelector('.service-section-title');
+                        const svcSubEl = lifeServiceSection.querySelector('.service-section-sub');
+                        if (svcTitleEl) {
+                            let icon = '🐾';
+                            if (scenarioKey === 'housekeeping' || scenarioKey === 'home_cleaning') icon = '🧹';
+                            if (scenarioKey === 'home_repair') icon = '🛠️';
+                            svcTitleEl.innerHTML = `<span>${icon}</span> ${escapeHtml(meta.scenario_name || meta.site_name || '精选到家生活服务')}`;
+                        }
+                        if (svcSubEl) {
+                            svcSubEl.innerText = meta.slogan || '实名认证 · 准时准点到达 · 标准透明定价 · 售后无忧保障';
+                        }
+                    }
+                } else if (!isServiceOn && isRecycleOn) {
+                    // === 纯数码二手回收模式 ===
+                    if (hubSection) hubSection.style.display = 'none';
+                    if (lifeServiceSection) lifeServiceSection.style.display = 'none';
+                    if (sectionRecycleCatalog) sectionRecycleCatalog.style.display = '';
+                    if (brandFilterBar) brandFilterBar.style.display = '';
+                    if (mainContainer) mainContainer.style.display = '';
+                    if (btnOpenCoupons) btnOpenCoupons.style.display = '';
+                    if (navCategoriesBox) {
+                        navCategoriesBox.innerHTML = `
+                            <span class="nav-cat-item active" data-cat="0">📱 二手闲置回收</span>
+                        `;
+                    }
+                    if (btnOpenOrders) {
+                        btnOpenOrders.innerHTML = `
+                            <svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor" style="margin-right:6px;"><path d="M20 6h-4V4c0-1.11-.89-2-2-2h-4c-1.11 0-2 .89-2 2v2H4c-1.11 0-1.99.89-1.99 2L2 19c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V8c0-1.11-.89-2-2-2zm-6 0h-4V4h4v2z"/></svg>
+                            查回收单
+                        `;
+                    }
+                } else {
+                    // === 综合生活门户模式 (生活服务 + 回收双核) ===
+                    if (hubSection) hubSection.style.display = 'block';
+                    if (lifeServiceSection) lifeServiceSection.style.display = 'block';
+                    if (sectionRecycleCatalog) sectionRecycleCatalog.style.display = '';
+                    if (brandFilterBar) brandFilterBar.style.display = '';
+                    if (mainContainer) mainContainer.style.display = '';
+                    if (btnOpenCoupons) btnOpenCoupons.style.display = '';
+                    if (navCategoriesBox) {
+                        navCategoriesBox.innerHTML = `
+                            <span class="nav-cat-item active" onclick="window.locateCityServiceCategory(0, '全部生活服务')">🛠️ 全部服务</span>
+                            <span class="nav-cat-item" onclick="window.locateCityServiceCategory(1, '上门宠物与伴宠服务')">🐕 上门宠物</span>
+                            <span class="nav-cat-item" onclick="window.locateCityServiceCategory(2, '家政保洁与家电清洗')">🧹 家政保洁</span>
+                            <span class="nav-cat-item" onclick="window.locateCityServiceCategory(3, '家庭维修与安装快修')">🔧 家庭维修</span>
+                            <span class="nav-cat-item" onclick="window.locateRecycleCatalog()" style="color:#2563eb;font-weight:700;">📱 闲置变现</span>
+                        `;
+                    }
+                }
 
                 // 支持免改数据库的即时 URL 参数前台实景预览模式 (?preview_theme=... & ?preview_mode=...)
                 const urlParams = new URLSearchParams(window.location.search);
@@ -140,7 +259,9 @@
                 // 定制搜索提示文案
                 const searchInput = document.getElementById('main-search-input');
                 if (searchInput) {
-                    if (meta.key === 'scrap') {
+                    if (meta.hero_search_placeholder) {
+                        searchInput.placeholder = meta.hero_search_placeholder;
+                    } else if (meta.key === 'scrap') {
                         searchInput.placeholder = '输入废旧物资种类，如：光亮紫铜线、黄铜阀门、铝合金门窗、铅酸电瓶、废纸箱...';
                     } else if (meta.key === 'auto') {
                         searchInput.placeholder = '输入车型名称，如：丰田卡罗拉、特斯拉Model 3、比亚迪宋、报废面包车...';
@@ -151,7 +272,7 @@
                     } else if (meta.key === 'appliance') {
                         searchInput.placeholder = '输入家电型号，如：格力空调挂机、美的立柜空调、海尔双门冰箱、小天鹅滚筒...';
                     } else {
-                        searchInput.placeholder = '输入数码、废品金属、车型、名表黄金或家电型号搜索实时行情...';
+                        searchInput.placeholder = '输入服务需求或回收品类搜索实时行情...';
                     }
                 }
 
@@ -179,7 +300,7 @@
 
                 bar.innerHTML = `
                     <div style="display:flex;align-items:center;gap:8px;">
-                        <span style="display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:6px;background:#3b82f6;color:#fff;font-size:13px;">👁️</span>
+                        <span style="display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:6px;background:#3b82f6;color:#fff;"><svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/></svg></span>
                         <div>${text}</div>
                     </div>
                     <div style="display:flex;gap:10px;align-items:center;">
@@ -249,7 +370,7 @@
                 if (!meta) return;
 
                 // 1. 品牌愿景与口号
-                const brandName = meta.brand_name || meta.site_name || '启灵回收';
+                const brandName = meta.brand_name || meta.site_name || '启灵同城服务';
                 const megaBrandName = document.getElementById('mega-brand-name');
                 if (megaBrandName) megaBrandName.innerText = brandName;
 
@@ -542,6 +663,51 @@
                 }
             }
 
+            // ==========================================
+            // 平台特色信任保障体系动态渲染 (全场景自适应)
+            // ==========================================
+            function renderHomeTrustGuarantees(meta) {
+                const grid = document.getElementById('home-trust-grid');
+                if (!grid) return;
+
+                let cards = meta.trust_cards;
+                if (!Array.isArray(cards) || cards.length === 0) {
+                    cards = [
+                        { icon: 'shield', title: '实名认证 · 严格考核', desc: '服务人员严选背景核查，专业技能培训合格持证上岗' },
+                        { icon: 'clock', title: '准时准点 · 极速响应', desc: '预约时段准时到达，全程打卡存证，服务透明安心' },
+                        { icon: 'bag', title: '标准定价 · 明码实价', desc: '统一平台标准报价，拒绝中途恶意加价与隐形消费' },
+                        { icon: 'medal', title: '平台质保 · 售后无忧', desc: '全流程客服介入兜底，服务不满意免费重做返工' }
+                    ];
+                }
+
+                const iconSvgMap = {
+                    shield: `<svg viewBox="0 0 24 24" width="28" height="28" fill="currentColor"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm-2 16l-4-4 1.41-1.41L10 14.17l6.59-6.59L18 9l-8 8z"/></svg>`,
+                    clock: `<svg viewBox="0 0 24 24" width="28" height="28" fill="currentColor"><path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z"/></svg>`,
+                    truck: `<svg viewBox="0 0 24 24" width="28" height="28" fill="currentColor"><path d="M20 8h-3V4H1v13h2c0 1.66 1.34 3 3 3s3-1.34 3-3h6c0 1.66 1.34 3 3 3s3-1.34 3-3h2v-5l-3-4zM6 18.5c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zm13.5-9l1.96 2.5H17V9.5h2.5zm-1.5 9c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5z"/></svg>`,
+                    bag: `<svg viewBox="0 0 24 24" width="28" height="28" fill="currentColor"><path d="M19 6h-2V4c0-1.1-.9-2-2-2H9c-1.1 0-2 .9-2 2v2H5c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm-8-2h2v2h-2V4zm8 16H5V8h14v12z"/></svg>`,
+                    medal: `<svg viewBox="0 0 24 24" width="28" height="28" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>`,
+                    lock: `<svg viewBox="0 0 24 24" width="28" height="28" fill="currentColor"><path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/></svg>`
+                };
+
+                const bgColors = ['#eff6ff', '#f0fdf4', '#fefce8', '#fff7ed'];
+                const textColors = ['var(--primary)', '#10b981', '#ca8a04', '#ea580c'];
+
+                grid.innerHTML = cards.map((c, i) => {
+                    const iconSvg = iconSvgMap[c.icon] || iconSvgMap.shield;
+                    const bg = bgColors[i % bgColors.length];
+                    const tc = textColors[i % textColors.length];
+                    return `
+                        <div class="trust-card">
+                            <div class="trust-icon-box" style="background:${bg};color:${tc};">
+                                ${iconSvg}
+                            </div>
+                            <div class="trust-title">${escapeHtml(c.title || '')}</div>
+                            <div class="trust-desc">${escapeHtml(c.desc || '')}</div>
+                        </div>
+                    `;
+                }).join('');
+            }
+
             // 前台文章/条款极速阅读弹窗 (Article Reader Modal)
             // ==========================================
             async function openArticleModal(slugOrId) {
@@ -687,7 +853,95 @@
             }
 
             // ==========================================
-            // 首屏与双模式（极速搜索流 vs 品牌画卷轮播流）数据驱动初始化
+            // 官方滚动公告广播条与弹窗系统
+            // ==========================================
+            let __noticeTickerTimer = null;
+            let __currentNoticeIndex = 0;
+
+            function initSiteNoticeSystem() {
+                const meta = state.platformMeta || {};
+                if (Array.isArray(meta.notices) && meta.notices.length > 0) {
+                    initSiteNoticeBar(meta.notices);
+                } else {
+                    api.request('/api/article/notices').then(res => {
+                        if (res && res.code === 200 && Array.isArray(res.data) && res.data.length > 0) {
+                            initSiteNoticeBar(res.data);
+                        }
+                    }).catch(() => {});
+                }
+            }
+
+            function initSiteNoticeBar(notices) {
+                const section = document.getElementById('site-notice-section');
+                if (!section) return;
+
+                if (!Array.isArray(notices) || notices.length === 0) {
+                    section.style.display = 'none';
+                    return;
+                }
+
+                state.siteNotices = notices;
+                section.style.display = 'block';
+
+                const textEl = document.getElementById('notice-ticker-text');
+                const timeEl = document.getElementById('notice-time-label');
+
+                function updateNoticeDisplay(idx) {
+                    const n = state.siteNotices[idx];
+                    if (!n || !textEl) return;
+                    textEl.style.opacity = '0';
+                    setTimeout(() => {
+                        textEl.innerText = n.title || '最新官方公告';
+                        if (timeEl && n.created_at) {
+                            const d = new Date(Number(n.created_at) * 1000);
+                            timeEl.innerText = (d.getMonth() + 1) + '-' + d.getDate();
+                        }
+                        textEl.style.opacity = '1';
+                    }, 250);
+                }
+
+                updateNoticeDisplay(0);
+
+                if (__noticeTickerTimer) {
+                    clearInterval(__noticeTickerTimer);
+                }
+
+                if (notices.length > 1) {
+                    __noticeTickerTimer = setInterval(() => {
+                        __currentNoticeIndex = (__currentNoticeIndex + 1) % notices.length;
+                        updateNoticeDisplay(__currentNoticeIndex);
+                    }, 4000);
+                }
+            }
+
+            window.openCurrentNoticeModal = function(noticeObj) {
+                const modal = document.getElementById('modal-notice-detail');
+                if (!modal) return;
+                const n = noticeObj || (state.siteNotices && state.siteNotices[__currentNoticeIndex]) || {};
+                
+                const titleEl = document.getElementById('notice-detail-headline');
+                const dateEl = document.getElementById('notice-detail-date');
+                const viewsEl = document.getElementById('notice-detail-views');
+                const contentEl = document.getElementById('notice-detail-content');
+
+                if (titleEl) titleEl.innerText = n.title || '官方公告';
+                if (dateEl) {
+                    if (n.created_at) {
+                        const d = new Date(Number(n.created_at) * 1000);
+                        dateEl.innerText = '📅 发布时间：' + d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+                    } else {
+                        dateEl.innerText = '📅 发布时间：最新';
+                    }
+                }
+                if (viewsEl) viewsEl.innerText = '👁️ 浏览量：' + ((Number(n.view_count) || 0) + 1) + ' 次';
+                if (contentEl) contentEl.innerHTML = n.content || `<p>${escapeHtml(n.summary || '暂无详细内容说明')}</p>`;
+
+                modal.style.display = 'flex';
+
+                if (n.id) {
+                    api.request('/api/article/detail?id=' + n.id).catch(() => {});
+                }
+            };
             // ==========================================
             let __heroCarouselTimer = null;
             let __heroCurrentSlide = 0;
@@ -807,7 +1061,7 @@
                                 floatingContainer.innerHTML = `
                                     <div class="floating-estimate-card">
                                         <div style="font-size:15px;font-weight:700;color:var(--text-main);margin-bottom:12px;display:flex;align-items:center;gap:6px;">
-                                            <span style="color:var(--primary, #1e58ff);">⚡</span> 快速搜索估价 · 上门寄送秒结算
+                                            <svg viewBox="0 0 24 24" width="16" height="16" fill="var(--primary, #1e58ff)" style="vertical-align:middle;margin-right:2px;"><path d="M7 2v11h3v9l7-12h-4l4-8z"/></svg>快速搜索估价 · 上门寄送秒结算
                                         </div>
                                         <div id="floating-search-placeholder"></div>
                                         <div id="floating-metrics-placeholder"></div>
@@ -1012,7 +1266,7 @@
                                             <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M16 6l2.29 2.29-4.88 4.88-4-4L2 16.59 3.41 18l6-6 4 4 6.3-6.29L22 12V6z"/></svg>
                                         </span>
                                         <div>
-                                            <strong style="font-size:16px;color:#0f172a;">📊 今日再生资源挂牌指导价行情看板</strong>
+                                            <strong style="font-size:16px;color:#0f172a;">今日再生资源挂牌指导价行情看板</strong>
                                             <div style="font-size:11px;color:#94a3b8;margin-top:2px;">实时行情更新 · 专业电子地磅 · 当面现金/转账秒结</div>
                                         </div>
                                     </div>
@@ -1023,22 +1277,22 @@
                                 </div>
                                 <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(170px, 1fr));gap:12px;">
                                     <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:12px 14px;">
-                                        <div style="font-size:12px;color:#64748b;margin-bottom:4px;">🔴 光亮紫铜线</div>
+                                        <div style="font-size:12px;color:#64748b;margin-bottom:4px;"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#ef4444;margin-right:4px;"></span>光亮紫铜线</div>
                                         <div style="font-size:20px;font-weight:800;color:#0f172a;">¥68.50 <span style="font-size:12px;font-weight:normal;color:#94a3b8;">/ 公斤</span></div>
                                         <div style="font-size:11px;color:#ef4444;margin-top:2px;">↑ 较昨日 +0.80</div>
                                     </div>
                                     <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:12px 14px;">
-                                        <div style="font-size:12px;color:#64748b;margin-bottom:4px;">🔵 6063 铝合金</div>
+                                        <div style="font-size:12px;color:#64748b;margin-bottom:4px;"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#3b82f6;margin-right:4px;"></span>6063 铝合金</div>
                                         <div style="font-size:20px;font-weight:800;color:#0f172a;">¥18.20 <span style="font-size:12px;font-weight:normal;color:#94a3b8;">/ 公斤</span></div>
                                         <div style="font-size:11px;color:#10b981;margin-top:2px;">→ 走势平稳</div>
                                     </div>
                                     <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:12px 14px;">
-                                        <div style="font-size:12px;color:#64748b;margin-bottom:4px;">🟢 统包废纸板</div>
+                                        <div style="font-size:12px;color:#64748b;margin-bottom:4px;"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#10b981;margin-right:4px;"></span>统包废纸板</div>
                                         <div style="font-size:20px;font-weight:800;color:#0f172a;">¥1,450 <span style="font-size:12px;font-weight:normal;color:#94a3b8;">/ 吨</span></div>
                                         <div style="font-size:11px;color:#3b82f6;margin-top:2px;">↓ 较昨日 -20.0</div>
                                     </div>
                                     <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:12px 14px;">
-                                        <div style="font-size:12px;color:#64748b;margin-bottom:4px;">🟡 动力铅酸电瓶</div>
+                                        <div style="font-size:12px;color:#64748b;margin-bottom:4px;"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#f59e0b;margin-right:4px;"></span>动力铅酸电瓶</div>
                                         <div style="font-size:20px;font-weight:800;color:#0f172a;">¥8.80 <span style="font-size:12px;font-weight:normal;color:#94a3b8;">/ 公斤</span></div>
                                         <div style="font-size:11px;color:#ef4444;margin-top:2px;">↑ 较昨日 +0.30</div>
                                     </div>
@@ -1058,7 +1312,7 @@
                                             <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
                                         </span>
                                         <div>
-                                            <strong style="font-size:16px;color:#0f172a;">💎 今日贵金属国际行情折算牌价</strong>
+                                            <strong style="font-size:16px;color:#0f172a;">今日贵金属国际行情折算牌价</strong>
                                             <div style="font-size:11px;color:#94a3b8;margin-top:2px;">权威中检质检师双重复核 · 顺丰全额保价密封箱 · 克重秒级结算</div>
                                         </div>
                                     </div>
@@ -1066,17 +1320,17 @@
                                 </div>
                                 <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(170px, 1fr));gap:12px;">
                                     <div style="background:#fffbeb;border:1px solid #fde68a;border-radius:10px;padding:12px 14px;">
-                                        <div style="font-size:12px;color:#92400e;margin-bottom:4px;">✨ 足金 999.9 回收价</div>
+                                        <div style="font-size:12px;color:#92400e;margin-bottom:4px;">足金 999.9 回收价</div>
                                         <div style="font-size:20px;font-weight:800;color:#b45309;">¥585.50 <span style="font-size:12px;font-weight:normal;color:#92400e;">/ 克</span></div>
                                         <div style="font-size:11px;color:#b45309;margin-top:2px;">国际行情联动实时换算</div>
                                     </div>
                                     <div style="background:#fffbeb;border:1px solid #fde68a;border-radius:10px;padding:12px 14px;">
-                                        <div style="font-size:12px;color:#92400e;margin-bottom:4px;">🌟 18K 黄金 / 玫瑰金</div>
+                                        <div style="font-size:12px;color:#92400e;margin-bottom:4px;">18K 黄金 / 玫瑰金</div>
                                         <div style="font-size:20px;font-weight:800;color:#b45309;">¥422.00 <span style="font-size:12px;font-weight:normal;color:#92400e;">/ 克</span></div>
                                         <div style="font-size:11px;color:#b45309;margin-top:2px;">无损光谱仪精准成色测定</div>
                                     </div>
                                     <div style="background:#fffbeb;border:1px solid #fde68a;border-radius:10px;padding:12px 14px;">
-                                        <div style="font-size:12px;color:#92400e;margin-bottom:4px;">⌚ 瑞士名表大牌专柜</div>
+                                        <div style="font-size:12px;color:#92400e;margin-bottom:4px;">瑞士名表大牌专柜</div>
                                         <div style="font-size:20px;font-weight:800;color:#b45309;">公价 4 - 8 折 <span style="font-size:12px;font-weight:normal;color:#92400e;">高额变现</span></div>
                                         <div style="font-size:11px;color:#b45309;margin-top:2px;">劳力士/欧米茄/江诗丹顿专收</div>
                                     </div>
@@ -1123,6 +1377,9 @@
         if (typeof window.loadCouponsShowcase === 'function') {
             await window.loadCouponsShowcase();
         }
+        if (typeof window.initLifeServices === 'function') {
+            await window.initLifeServices();
+        }
     }
 
     if (document.readyState === 'loading') {
@@ -1134,6 +1391,7 @@
     // 导出主入口方法
     window.initPlatformTemplate = initPlatformTemplate;
     window.applyTemplateStyles = applyTemplateStyles;
+    window.applyCouponDisplayConfigs = applyCouponDisplayConfigs;
     window.renderPreviewBannerNotification = renderPreviewBannerNotification;
     window.renderMegaFooter = renderMegaFooter;
     window.openArticleModal = openArticleModal;

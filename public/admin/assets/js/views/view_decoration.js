@@ -1,5 +1,5 @@
 /**
- * 启灵回收系统 - 首页装修管理视图
+ * 启灵同城服务系统 - 首页装修管理视图
  * 包含首屏展示模式、标语副标、热门搜索词、服务保障卡片与轮播Banner广告维护
  */
 (function (window) {
@@ -494,7 +494,7 @@
                             </div>
                             <div class="login-form-group">
                                 <label style="font-weight:600;font-size:13px;">关于我们弹窗标题</label>
-                                <input type="text" id="miniapp-about-title" class="form-control" value="${escapeHtml(cfgs['miniapp_about_title'] || '关于启灵回收')}" placeholder="如: 关于启灵回收">
+                                <input type="text" id="miniapp-about-title" class="form-control" value="${escapeHtml(cfgs['miniapp_about_title'] || '关于启灵同城服务')}" placeholder="如: 关于启灵同城服务">
                                 <label style="font-weight:600;font-size:13px;margin-top:10px;display:block;">关于我们介绍内容</label>
                                 <textarea id="miniapp-about-content" class="form-control" rows="3" placeholder="请输入平台简介或企业使命">${escapeHtml(cfgs['miniapp_about_content'] || '高价回收 · 顺丰包邮 · 极速质检 · 款项极速到账。')}</textarea>
                             </div>
@@ -1575,7 +1575,7 @@
                 'miniapp_service_tel': document.getElementById('miniapp-service-tel')?.value.trim() || '400-800-8888',
                 'miniapp_privacy_title': document.getElementById('miniapp-privacy-title')?.value.trim() || '隐私安全彻底清除保障',
                 'miniapp_privacy_content': document.getElementById('miniapp-privacy-content')?.value.trim() || '',
-                'miniapp_about_title': document.getElementById('miniapp-about-title')?.value.trim() || '关于启灵回收',
+                'miniapp_about_title': document.getElementById('miniapp-about-title')?.value.trim() || '关于启灵同城服务',
                 'miniapp_about_content': document.getElementById('miniapp-about-content')?.value.trim() || ''
             };
 

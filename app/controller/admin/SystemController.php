@@ -416,6 +416,17 @@ class SystemController extends AdminBaseController
      */
     private function getCoreTableSchemas(string $p): array
     {
+        return array_merge(
+            $this->getSystemCoreSchemas($p),
+            $this->getCatalogCoreSchemas($p),
+            $this->getOrderCoreSchemas($p),
+            $this->getFinanceSchemas($p),
+            $this->getContentAndStoreSchemas($p)
+        );
+    }
+
+    private function getSystemCoreSchemas(string $p): array
+    {
         return [
             'sys_admin' => "CREATE TABLE IF NOT EXISTS `{$p}sys_admin` (
                 `id` int(11) unsigned NOT NULL AUTO_INCREMENT COMMENT '管理员ID',
@@ -445,6 +456,20 @@ class SystemController extends AdminBaseController
                 KEY `idx_config_key` (`config_key`)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='系统配置与行业模板参数表'",
 
+            'sys_admin_log' => "CREATE TABLE IF NOT EXISTS `{$p}sys_admin_log` (
+                `id` int(11) unsigned NOT NULL AUTO_INCREMENT COMMENT '日志ID',
+                `admin_id` int(11) unsigned NOT NULL DEFAULT '0' COMMENT '管理员ID',
+                `admin_name` varchar(64) NOT NULL DEFAULT '' COMMENT '管理员用户名',
+                `action` varchar(64) NOT NULL DEFAULT '' COMMENT '操作行为类型',
+                `detail` varchar(255) NOT NULL DEFAULT '' COMMENT '操作详细描述',
+                `ip` varchar(45) NOT NULL DEFAULT '' COMMENT '操作IP地址',
+                `user_agent` varchar(255) NOT NULL DEFAULT '' COMMENT '客户端浏览器UA',
+                `created_at` int(11) unsigned NOT NULL DEFAULT '0' COMMENT '记录时间戳',
+                PRIMARY KEY (`id`),
+                KEY `idx_admin_id` (`admin_id`),
+                KEY `idx_created_at` (`created_at`)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='管理员操作与安全审计日志表'",
+
             'rc_user' => "CREATE TABLE IF NOT EXISTS `{$p}rc_user` (
                 `id` int(11) unsigned NOT NULL AUTO_INCREMENT COMMENT '用户ID',
                 `openid` varchar(64) NOT NULL DEFAULT '' COMMENT '微信OpenID',
@@ -458,8 +483,13 @@ class SystemController extends AdminBaseController
                 PRIMARY KEY (`id`),
                 KEY `idx_openid` (`openid`),
                 KEY `idx_mobile` (`mobile`)
-            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='回收客户与交投会员表'",
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='回收客户与交投会员表'"
+        ];
+    }
 
+    private function getCatalogCoreSchemas(string $p): array
+    {
+        return [
             'rc_category' => "CREATE TABLE IF NOT EXISTS `{$p}rc_category` (
                 `id` int(11) unsigned NOT NULL AUTO_INCREMENT COMMENT '品类ID',
                 `name` varchar(64) NOT NULL DEFAULT '' COMMENT '分类名称',
@@ -529,8 +559,13 @@ class SystemController extends AdminBaseController
                 `created_at` int(11) unsigned NOT NULL DEFAULT '0' COMMENT '创建时间',
                 PRIMARY KEY (`id`),
                 KEY `idx_question` (`question_id`)
-            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='质检成色扣减选项表'",
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='质检成色扣减选项表'"
+        ];
+    }
 
+    private function getOrderCoreSchemas(string $p): array
+    {
+        return [
             'rc_order' => "CREATE TABLE IF NOT EXISTS `{$p}rc_order` (
                 `id` int(11) unsigned NOT NULL AUTO_INCREMENT COMMENT '订单ID',
                 `order_sn` varchar(32) NOT NULL DEFAULT '' COMMENT '业务订单号',
@@ -582,8 +617,13 @@ class SystemController extends AdminBaseController
                 `created_at` int(11) unsigned NOT NULL DEFAULT '0' COMMENT '出具质检时间',
                 PRIMARY KEY (`id`),
                 UNIQUE KEY `idx_order` (`order_id`)
-            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='订单专业质检复核报告表'",
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='订单专业质检复核报告表'"
+        ];
+    }
 
+    private function getFinanceSchemas(string $p): array
+    {
+        return [
             'rc_payout_log' => "CREATE TABLE IF NOT EXISTS `{$p}rc_payout_log` (
                 `id` int(11) unsigned NOT NULL AUTO_INCREMENT COMMENT '流水ID',
                 `order_id` int(11) unsigned NOT NULL DEFAULT '0' COMMENT '订单ID',
@@ -599,6 +639,58 @@ class SystemController extends AdminBaseController
                 KEY `idx_order` (`order_id`)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='资金结算打款安全流水表'",
 
+            'rc_coupon' => "CREATE TABLE IF NOT EXISTS `{$p}rc_coupon` (
+                `id` int(11) unsigned NOT NULL AUTO_INCREMENT COMMENT '券模板ID',
+                `title` varchar(128) NOT NULL DEFAULT '' COMMENT '券名称/标题',
+                `sub_title` varchar(255) NOT NULL DEFAULT '' COMMENT '副标题/营销利益点',
+                `type` enum('fixed','percent') NOT NULL DEFAULT 'fixed' COMMENT '加价类型: fixed-固定金额(元), percent-百分比(%)',
+                `amount` decimal(10,2) NOT NULL DEFAULT '0.00' COMMENT '加价值 (固定金额或百分比数值)',
+                `max_amount` decimal(10,2) NOT NULL DEFAULT '0.00' COMMENT '百分比加价时的单笔最高封顶上限(0不封顶)',
+                `min_estimate_price` decimal(10,2) NOT NULL DEFAULT '0.00' COMMENT '最低估价生效门槛(元, 0为无门槛)',
+                `category_id` int(11) unsigned NOT NULL DEFAULT '0' COMMENT '限定品类ID(0为全品类通用)',
+                `valid_days` int(11) NOT NULL DEFAULT '7' COMMENT '领取后有效天数',
+                `total_count` int(11) NOT NULL DEFAULT '0' COMMENT '发行总量(0为不限量)',
+                `received_count` int(11) NOT NULL DEFAULT '0' COMMENT '已领取总张数',
+                `used_count` int(11) NOT NULL DEFAULT '0' COMMENT '已核销总张数',
+                `is_auto_grant` tinyint(1) NOT NULL DEFAULT '0' COMMENT '是否新用户注册/首次登录自动发放: 1-是, 0-否',
+                `status` tinyint(1) NOT NULL DEFAULT '1' COMMENT '状态: 1-启用, 0-停用',
+                `sort` int(11) NOT NULL DEFAULT '0' COMMENT '排序权重(越大越前)',
+                `created_at` int(11) unsigned NOT NULL DEFAULT '0' COMMENT '创建时间',
+                `updated_at` int(11) unsigned NOT NULL DEFAULT '0' COMMENT '更新时间',
+                PRIMARY KEY (`id`),
+                KEY `idx_status_sort` (`status`, `sort`),
+                KEY `idx_auto_grant` (`is_auto_grant`)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='回收加价补贴券模板表'",
+
+            'rc_user_coupon' => "CREATE TABLE IF NOT EXISTS `{$p}rc_user_coupon` (
+                `id` int(11) unsigned NOT NULL AUTO_INCREMENT COMMENT '卡券ID',
+                `user_id` int(11) unsigned NOT NULL DEFAULT '0' COMMENT '会员用户ID',
+                `coupon_id` int(11) unsigned NOT NULL DEFAULT '0' COMMENT '券模板ID',
+                `title` varchar(128) NOT NULL DEFAULT '' COMMENT '券标题快照',
+                `type` enum('fixed','percent') NOT NULL DEFAULT 'fixed' COMMENT '加价类型快照',
+                `amount` decimal(10,2) NOT NULL DEFAULT '0.00' COMMENT '加价值快照',
+                `max_amount` decimal(10,2) NOT NULL DEFAULT '0.00' COMMENT '封顶额快照',
+                `min_estimate_price` decimal(10,2) NOT NULL DEFAULT '0.00' COMMENT '门槛金额快照',
+                `category_id` int(11) unsigned NOT NULL DEFAULT '0' COMMENT '限定品类快照',
+                `start_time` int(11) unsigned NOT NULL DEFAULT '0' COMMENT '生效时间戳',
+                `end_time` int(11) unsigned NOT NULL DEFAULT '0' COMMENT '过期失效时间戳',
+                `status` enum('unused','locked','used','expired') NOT NULL DEFAULT 'unused' COMMENT '状态: unused-未使用, locked-订单锁定待质检, used-已核销, expired-已过期',
+                `order_id` int(11) unsigned NOT NULL DEFAULT '0' COMMENT '绑定的订单ID',
+                `order_sn` varchar(32) NOT NULL DEFAULT '' COMMENT '绑定的订单号',
+                `actual_add_price` decimal(10,2) NOT NULL DEFAULT '0.00' COMMENT '最终实际补贴加价金额',
+                `used_at` int(11) unsigned NOT NULL DEFAULT '0' COMMENT '核销打款时间',
+                `created_at` int(11) unsigned NOT NULL DEFAULT '0' COMMENT '领取时间',
+                PRIMARY KEY (`id`),
+                KEY `idx_user_status` (`user_id`, `status`),
+                KEY `idx_coupon_id` (`coupon_id`),
+                KEY `idx_order_id` (`order_id`)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='用户加价补贴券卡包表'"
+        ];
+    }
+
+    private function getContentAndStoreSchemas(string $p): array
+    {
+        return [
             'rc_store' => "CREATE TABLE IF NOT EXISTS `{$p}rc_store` (
                 `id` int(11) unsigned NOT NULL AUTO_INCREMENT COMMENT '门店ID',
                 `name` varchar(128) NOT NULL DEFAULT '' COMMENT '门店/网点名称',
@@ -654,68 +746,7 @@ class SystemController extends AdminBaseController
                 UNIQUE KEY `uniq_slug` (`slug`),
                 KEY `idx_footer_col_sort` (`is_footer`, `footer_column`, `sort_order`),
                 KEY `idx_cat_sort` (`category`, `sort_order`)
-            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='文章与条款单页信息表'",
-
-            'rc_coupon' => "CREATE TABLE IF NOT EXISTS `{$p}rc_coupon` (
-                `id` int(11) unsigned NOT NULL AUTO_INCREMENT COMMENT '券模板ID',
-                `title` varchar(128) NOT NULL DEFAULT '' COMMENT '券名称/标题',
-                `sub_title` varchar(255) NOT NULL DEFAULT '' COMMENT '副标题/营销利益点',
-                `type` enum('fixed','percent') NOT NULL DEFAULT 'fixed' COMMENT '加价类型: fixed-固定金额(元), percent-百分比(%)',
-                `amount` decimal(10,2) NOT NULL DEFAULT '0.00' COMMENT '加价值 (固定金额或百分比数值)',
-                `max_amount` decimal(10,2) NOT NULL DEFAULT '0.00' COMMENT '百分比加价时的单笔最高封顶上限(0不封顶)',
-                `min_estimate_price` decimal(10,2) NOT NULL DEFAULT '0.00' COMMENT '最低估价生效门槛(元, 0为无门槛)',
-                `category_id` int(11) unsigned NOT NULL DEFAULT '0' COMMENT '限定品类ID(0为全品类通用)',
-                `valid_days` int(11) NOT NULL DEFAULT '7' COMMENT '领取后有效天数',
-                `total_count` int(11) NOT NULL DEFAULT '0' COMMENT '发行总量(0为不限量)',
-                `received_count` int(11) NOT NULL DEFAULT '0' COMMENT '已领取总张数',
-                `used_count` int(11) NOT NULL DEFAULT '0' COMMENT '已核销总张数',
-                `is_auto_grant` tinyint(1) NOT NULL DEFAULT '0' COMMENT '是否新用户注册/首次登录自动发放: 1-是, 0-否',
-                `status` tinyint(1) NOT NULL DEFAULT '1' COMMENT '状态: 1-启用, 0-停用',
-                `sort` int(11) NOT NULL DEFAULT '0' COMMENT '排序权重(越大越前)',
-                `created_at` int(11) unsigned NOT NULL DEFAULT '0' COMMENT '创建时间',
-                `updated_at` int(11) unsigned NOT NULL DEFAULT '0' COMMENT '更新时间',
-                PRIMARY KEY (`id`),
-                KEY `idx_status_sort` (`status`, `sort`),
-                KEY `idx_auto_grant` (`is_auto_grant`)
-            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='回收加价补贴券模板表'",
-
-            'rc_user_coupon' => "CREATE TABLE IF NOT EXISTS `{$p}rc_user_coupon` (
-                `id` int(11) unsigned NOT NULL AUTO_INCREMENT COMMENT '卡券ID',
-                `user_id` int(11) unsigned NOT NULL DEFAULT '0' COMMENT '会员用户ID',
-                `coupon_id` int(11) unsigned NOT NULL DEFAULT '0' COMMENT '券模板ID',
-                `title` varchar(128) NOT NULL DEFAULT '' COMMENT '券标题快照',
-                `type` enum('fixed','percent') NOT NULL DEFAULT 'fixed' COMMENT '加价类型快照',
-                `amount` decimal(10,2) NOT NULL DEFAULT '0.00' COMMENT '加价值快照',
-                `max_amount` decimal(10,2) NOT NULL DEFAULT '0.00' COMMENT '封顶额快照',
-                `min_estimate_price` decimal(10,2) NOT NULL DEFAULT '0.00' COMMENT '门槛金额快照',
-                `category_id` int(11) unsigned NOT NULL DEFAULT '0' COMMENT '限定品类快照',
-                `start_time` int(11) unsigned NOT NULL DEFAULT '0' COMMENT '生效时间戳',
-                `end_time` int(11) unsigned NOT NULL DEFAULT '0' COMMENT '过期失效时间戳',
-                `status` enum('unused','locked','used','expired') NOT NULL DEFAULT 'unused' COMMENT '状态: unused-未使用, locked-订单锁定待质检, used-已核销, expired-已过期',
-                `order_id` int(11) unsigned NOT NULL DEFAULT '0' COMMENT '绑定的订单ID',
-                `order_sn` varchar(32) NOT NULL DEFAULT '' COMMENT '绑定的订单号',
-                `actual_add_price` decimal(10,2) NOT NULL DEFAULT '0.00' COMMENT '最终实际补贴加价金额',
-                `used_at` int(11) unsigned NOT NULL DEFAULT '0' COMMENT '核销打款时间',
-                `created_at` int(11) unsigned NOT NULL DEFAULT '0' COMMENT '领取时间',
-                PRIMARY KEY (`id`),
-                KEY `idx_user_status` (`user_id`, `status`),
-                KEY `idx_coupon_id` (`coupon_id`),
-                KEY `idx_order_id` (`order_id`)
-            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='用户加价补贴券卡包表'",
-
-            'sys_admin_log' => "CREATE TABLE IF NOT EXISTS `{$p}sys_admin_log` (
-                `id` int(11) unsigned NOT NULL AUTO_INCREMENT COMMENT '日志ID',
-                `admin_id` int(11) unsigned NOT NULL DEFAULT '0' COMMENT '管理员ID',
-                `admin_name` varchar(64) NOT NULL DEFAULT '' COMMENT '管理员用户名',
-                `action` varchar(64) NOT NULL DEFAULT '' COMMENT '操作行为类型',
-                `detail` varchar(255) NOT NULL DEFAULT '' COMMENT '操作详细描述',
-                `ip` varchar(45) NOT NULL DEFAULT '' COMMENT '操作IP地址',
-                `user_agent` varchar(255) NOT NULL DEFAULT '' COMMENT '客户端浏览器UA',
-                `created_at` int(11) unsigned NOT NULL DEFAULT '0' COMMENT '记录时间戳',
-                PRIMARY KEY (`id`),
-                KEY `idx_admin_id` (`admin_id`),
-                KEY `idx_created_at` (`created_at`)
-            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='管理员操作与安全审计日志表'"
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='文章与条款单页信息表'"
         ];
     }
 
@@ -725,7 +756,32 @@ class SystemController extends AdminBaseController
     private function repairMissingColumns(string $p): array
     {
         $added = [];
-        $columnsToEnsure = [
+        $columnsToEnsure = $this->getColumnsToEnsure($p);
+
+        foreach ($columnsToEnsure as $item) {
+            $table = $item['table'];
+            $col = $item['column'];
+            try {
+                $tableExists = $this->db->fetchOne("SHOW TABLES LIKE '{$table}'");
+                if (empty($tableExists)) {
+                    continue;
+                }
+                $exists = $this->db->fetchOne("SHOW COLUMNS FROM `{$table}` LIKE '{$col}'");
+                if (empty($exists)) {
+                    $this->db->execute($item['ddl']);
+                    $added[] = "{$table}.{$col}";
+                }
+            } catch (\Throwable $e) {
+                // 静默容错
+            }
+        }
+
+        return $added;
+    }
+
+    private function getColumnsToEnsure(string $p): array
+    {
+        return [
             [
                 'table'  => "{$p}rc_device",
                 'column' => 'unit',
@@ -806,27 +862,37 @@ class SystemController extends AdminBaseController
                 'column' => 'coupon_add_price',
                 'ddl'    => "ALTER TABLE `{$p}rc_order` ADD COLUMN `coupon_add_price` DECIMAL(10,2) NOT NULL DEFAULT '0.00' COMMENT '加价券实际补贴现金金额' AFTER `user_coupon_id`"
             ],
+            [
+                'table'  => "{$p}rc_order",
+                'column' => 'biz_type',
+                'ddl'    => "ALTER TABLE `{$p}rc_order` ADD COLUMN `biz_type` VARCHAR(32) NOT NULL DEFAULT 'recycle' COMMENT '业务形态: recycle-回收, service-同城服务' AFTER `order_sn`"
+            ],
+            [
+                'table'  => "{$p}rc_order",
+                'column' => 'pay_status',
+                'ddl'    => "ALTER TABLE `{$p}rc_order` ADD COLUMN `pay_status` TINYINT(1) NOT NULL DEFAULT '0' COMMENT '支付状态: 0-未付, 1-已付, 2-已退款' AFTER `final_price`"
+            ],
+            [
+                'table'  => "{$p}rc_order",
+                'column' => 'pay_price',
+                'ddl'    => "ALTER TABLE `{$p}rc_order` ADD COLUMN `pay_price` DECIMAL(10,2) NOT NULL DEFAULT '0.00' COMMENT '用户实际在线支付金额' AFTER `pay_status`"
+            ],
+            [
+                'table'  => "{$p}rc_order",
+                'column' => 'pay_type',
+                'ddl'    => "ALTER TABLE `{$p}rc_order` ADD COLUMN `pay_type` VARCHAR(32) NOT NULL DEFAULT 'none' COMMENT '在线支付渠道' AFTER `pay_price`"
+            ],
+            [
+                'table'  => "{$p}rc_order",
+                'column' => 'pay_time',
+                'ddl'    => "ALTER TABLE `{$p}rc_order` ADD COLUMN `pay_time` INT(11) UNSIGNED NOT NULL DEFAULT '0' COMMENT '支付成功时间戳' AFTER `pay_type`"
+            ],
+            [
+                'table'  => "{$p}rc_order",
+                'column' => 'pay_trade_no',
+                'ddl'    => "ALTER TABLE `{$p}rc_order` ADD COLUMN `pay_trade_no` VARCHAR(128) NOT NULL DEFAULT '' COMMENT '第三方支付交易流水号' AFTER `pay_time`"
+            ],
         ];
-
-        foreach ($columnsToEnsure as $item) {
-            $table = $item['table'];
-            $col = $item['column'];
-            try {
-                $tableExists = $this->db->fetchOne("SHOW TABLES LIKE '{$table}'");
-                if (empty($tableExists)) {
-                    continue;
-                }
-                $exists = $this->db->fetchOne("SHOW COLUMNS FROM `{$table}` LIKE '{$col}'");
-                if (empty($exists)) {
-                    $this->db->execute($item['ddl']);
-                    $added[] = "{$table}.{$col}";
-                }
-            } catch (\Throwable $e) {
-                // 静默容错
-            }
-        }
-
-        return $added;
     }
 
     /**
@@ -836,7 +902,7 @@ class SystemController extends AdminBaseController
     {
         $restored = [];
         $defaults = [
-            ['system', 'site_name', '启灵专业二手回收系统', '系统站点名称'],
+            ['system', 'site_name', '启灵同城服务', '系统站点名称'],
             ['system', 'service_tel', '400-800-8888', '客服联系电话'],
             ['system', 'price_lock_days', '7', '下单估价锁定期(天)'],
             ['system', 'industry_template', 'universal', '当前生效行业业务模板'],

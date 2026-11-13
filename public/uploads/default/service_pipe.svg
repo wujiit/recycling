@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+  <defs>
+    <linearGradient id="pipeBg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#f0f9ff"/>
+      <stop offset="100%" stop-color="#e0f2fe"/>
+    </linearGradient>
+    <linearGradient id="pipeGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#64748b"/>
+      <stop offset="50%" stop-color="#94a3b8"/>
+      <stop offset="100%" stop-color="#475569"/>
+    </linearGradient>
+  </defs>
+  <rect width="200" height="200" rx="20" fill="url(#pipeBg)"/>
+  <!-- Decorative background water circle -->
+  <circle cx="100" cy="110" r="60" fill="#e0f2fe"/>
+  <!-- PVC / Steel Pipe System (U-Trap) -->
+  <path d="M45 40 L45 95 C45 135 90 135 90 95 L90 75 C90 60 125 60 125 75 L125 150" fill="none" stroke="url(#pipeGrad)" stroke-width="18" stroke-linecap="square"/>
+  <!-- Pipe Joint Collars -->
+  <rect x="34" y="65" width="22" height="8" rx="2" fill="#334155"/>
+  <rect x="79" y="80" width="22" height="8" rx="2" fill="#334155"/>
+  <rect x="114" y="110" width="22" height="8" rx="2" fill="#334155"/>
+  <!-- Pipe Plunger / Dredging Spring Tool -->
+  <g transform="translate(110, 85) rotate(-30)">
+    <!-- Wooden Handle -->
+    <rect x="22" y="5" width="8" height="55" rx="3" fill="#d97706"/>
+    <!-- Rubber Cup -->
+    <path d="M12 60 C12 52 40 52 40 60 L46 76 C46 80 6 80 6 76 Z" fill="#ef4444"/>
+    <!-- Plunger Base Rim -->
+    <ellipse cx="26" cy="76" rx="20" ry="4" fill="#b91c1c"/>
+  </g>
+  <!-- Water Droplets and Flow -->
+  <circle cx="68" cy="148" r="5" fill="#0ea5e9"/>
+  <path d="M125 160 C125 166 120 172 116 172 C112 172 108 166 116 156 C120 156 125 158 125 160 Z" fill="#0284c7"/>
+  <circle cx="138" cy="152" r="4" fill="#38bdf8"/>
+</svg>

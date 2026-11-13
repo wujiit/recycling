@@ -1,5 +1,5 @@
-/**
- * 启灵回收系统 - 系统参数设置与控制台视图
+﻿/**
+ * 启灵同城服务系统 - 系统参数设置与控制台视图
  * 包含品牌备案、SEO、运营横幅、履约方式、结算渠道与支付接口等配置
  */
 (function (window) {
@@ -41,13 +41,17 @@
                             <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M20 8h-3V4H3c-1.1 0-2 .9-2 2v11h2c0 1.66 1.34 3 3 3s3-1.34 3-3h6c0 1.66 1.34 3 3 3s3-1.34 3-3h2v-5l-3-4zM6 18.5c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zm13.5-9l1.96 2.5H17V9.5h2.5zm-1.5 9c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5z"/></svg>
                             回收方式
                         </button>
-                        <button type="button" class="settings-tab-btn" data-target="panel-payout">
+                        <button type="button" class="settings-tab-btn" data-target="panel-online-pay" style="color:#0284c7;font-weight:700;">
                             <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M20 4H4c-1.11 0-1.99.89-1.99 2L2 18c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V6c0-1.11-.89-2-2-2zm0 14H4v-6h16v6zm0-10H4V6h16v2z"/></svg>
-                            收款方式
+                            💳 在线支付 (用户付款)
+                        </button>
+                        <button type="button" class="settings-tab-btn" data-target="panel-payout">
+                            <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 14h-2v-2h2v2zm0-4h-2V7h2v5z"/></svg>
+                            💰 客户收款项
                         </button>
                         <button type="button" class="settings-tab-btn" data-target="panel-wechat">
-                            <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M12.65 15.67c.33.06.66.1 1 .1 3.76 0 6.81-2.6 6.81-5.81 0-3.21-3.05-5.81-6.81-5.81-3.76 0-6.81 2.6-6.81 5.81 0 1.83 1.01 3.47 2.61 4.54l-.65 1.98 2.29-1.14c.48.16 1.01.27 1.56.33z"/></svg>
-                            支付接口
+                            <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M11.8 10.9c-2.27-.59-3-1.2-3-2.15 0-1.09 1.01-1.85 2.7-1.85 1.78 0 2.44.85 2.5 2.1h2.21c-.07-1.72-1.12-3.3-3.21-3.81V3h-3v2.16c-1.94.42-3.5 1.68-3.5 3.61 0 2.31 1.91 3.46 4.7 4.13 2.5.6 3 1.48 3 2.41 0 .69-.49 1.79-2.7 1.79-2.06 0-2.87-.92-2.98-2.1h-2.2c.12 2.19 1.76 3.42 3.68 3.83V21h3v-2.15c1.95-.37 3.5-1.5 3.5-3.55 0-2.84-2.43-3.81-4.7-4.4z"/></svg>
+                            📤 财务打款 (平台转账)
                         </button>
                         <button type="button" class="settings-tab-btn" data-target="panel-sf">
                             <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M20 8h-3V4H3c-1.1 0-2 .9-2 2v11h2c0 1.66 1.34 3 3 3s3-1.34 3-3h6c0 1.66 1.34 3 3 3s3-1.34 3-3h2v-5l-3-4zM6 18.5c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zm13.5-9l1.96 2.5H17V9.5h2.5zm-1.5 9c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5z"/></svg>
@@ -113,8 +117,8 @@
         const res = await api.get('/admin/config/getConfigs');
         if (res && res.code === 200) {
             const cfgs = res.data || {};
-            document.getElementById('cfg-site-name').value = cfgs['site_name'] || '启灵通用回收系统';
-            document.getElementById('cfg-brand-name').value = cfgs['brand_name'] || '启灵回收';
+            document.getElementById('cfg-site-name').value = cfgs['site_name'] || '启灵同城服务';
+            document.getElementById('cfg-brand-name').value = cfgs['brand_name'] || '启灵同城服务';
             document.getElementById('cfg-site-logo').value = cfgs['site_logo'] || '/uploads/default/site_logo.svg';
             document.getElementById('cfg-logo-preview').src = cfgs['site_logo'] || '/uploads/default/site_logo.svg';
             document.getElementById('cfg-site-favicon').value = cfgs['site_favicon'] || '/uploads/default/site_favicon.svg';
@@ -122,12 +126,12 @@
             document.getElementById('cfg-gongan-icon').value = cfgs['gong_an_icon'] || '/uploads/default/police_badge.svg';
             document.getElementById('cfg-gongan-icon-preview').src = cfgs['gong_an_icon'] || '/uploads/default/police_badge.svg';
             document.getElementById('cfg-service-tel').value = cfgs['service_tel'] || '400-800-8888';
-            document.getElementById('cfg-copyright').value = cfgs['copyright'] || '© 2026 启灵智能回收系统 · 保留所有权利';
+            document.getElementById('cfg-copyright').value = cfgs['copyright'] || '© 2026 启灵同城服务 · 保留所有权利';
             document.getElementById('cfg-icp-beian').value = cfgs['icp_beian'] || '京ICP备20260001号-1';
             document.getElementById('cfg-gongan-beian').value = cfgs['gong_an_beian'] || '';
             document.getElementById('cfg-gongan-url').value = cfgs['gong_an_url'] || '';
 
-            document.getElementById('cfg-seo-title').value = cfgs['seo_title'] || '启灵全行业数字化回收平台 · 手机数码/废品金属/汽车家电高价上门回收';
+            document.getElementById('cfg-seo-title').value = cfgs['seo_title'] || '启灵同城服务 · 手机数码/废品金属/汽车家电高价上门回收';
             document.getElementById('cfg-seo-keywords').value = cfgs['seo_keywords'] || '二手回收,手机数码回收,废旧金属,再生资源,二手车回收,名表黄金回收,家电回收';
             document.getElementById('cfg-seo-description').value = cfgs['seo_description'] || '专业全品类回收服务平台，提供手机数码、废旧物资、二手汽车、名表黄金及家电回收服务，透明质检当面极速放款。';
 
@@ -217,6 +221,36 @@
                 }
             }
 
+            // 在线商户收款配置 (同城生活服务用户向平台付款)
+            const payWxEnabled = document.getElementById('cfg-pay-wechat-enabled');
+            if (payWxEnabled) payWxEnabled.checked = (cfgs['wechat_pay_enabled'] === '1' || cfgs['wechat_pay_enabled'] === true);
+            const payWxMchId = document.getElementById('cfg-pay-wechat-mchid');
+            if (payWxMchId) payWxMchId.value = cfgs['wechat_pay_mchid'] || cfgs['mch_id'] || '';
+            const payWxAppId = document.getElementById('cfg-pay-wechat-appid');
+            if (payWxAppId) payWxAppId.value = cfgs['wechat_pay_appid'] || cfgs['wechat_appid'] || cfgs['miniapp_appid'] || '';
+            const payWxV3Key = document.getElementById('cfg-pay-wechat-v3key');
+            if (payWxV3Key) payWxV3Key.value = cfgs['wechat_pay_v3_key'] || cfgs['mch_v3_key'] || '';
+            const payWxCertSerial = document.getElementById('cfg-pay-wechat-cert-serial-no');
+            if (payWxCertSerial) payWxCertSerial.value = cfgs['wechat_pay_cert_serial_no'] || cfgs['wechat_cert_serial_no'] || '';
+            const payWxPrivKey = document.getElementById('cfg-pay-wechat-private-key');
+            if (payWxPrivKey) payWxPrivKey.value = cfgs['wechat_pay_private_key'] || cfgs['wechat_private_key'] || '';
+            const payWxPlatformKey = document.getElementById('cfg-pay-wechat-platform-public-key');
+            if (payWxPlatformKey) payWxPlatformKey.value = cfgs['wechat_pay_platform_public_key'] || cfgs['wechat_platform_public_key'] || '';
+
+            const payAliEnabled = document.getElementById('cfg-pay-alipay-enabled');
+            if (payAliEnabled) payAliEnabled.checked = (cfgs['alipay_pay_enabled'] === '1' || cfgs['alipay_pay_enabled'] === true);
+            const payAliAppId = document.getElementById('cfg-pay-alipay-appid');
+            if (payAliAppId) payAliAppId.value = cfgs['alipay_pay_appid'] || cfgs['alipay_appid'] || '';
+            const payAliSignType = document.getElementById('cfg-pay-alipay-sign-type');
+            if (payAliSignType) payAliSignType.value = cfgs['alipay_pay_sign_type'] || cfgs['alipay_sign_type'] || 'cert';
+            const payAliPrivKey = document.getElementById('cfg-pay-alipay-private-key');
+            if (payAliPrivKey) payAliPrivKey.value = cfgs['alipay_pay_private_key'] || cfgs['alipay_private_key'] || '';
+            const payAliPubKey = document.getElementById('cfg-pay-alipay-public-key');
+            if (payAliPubKey) payAliPubKey.value = cfgs['alipay_pay_public_key'] || cfgs['alipay_public_key'] || '';
+
+            const payMockEnabled = document.getElementById('cfg-pay-mock-enabled');
+            if (payMockEnabled) payMockEnabled.checked = (cfgs['pay_dev_mock_enabled'] === '1' || cfgs['pay_dev_mock_enabled'] === true);
+
             // 支付宝官方商家转账参数回显 (公钥证书模式与普通模式)
             const alipayEnabledCheck = document.getElementById('cfg-alipay-enabled');
             if (alipayEnabledCheck) alipayEnabledCheck.checked = cfgs['alipay_enabled'] !== '0';
@@ -305,7 +339,7 @@
             if (sfIsDocallSelect) sfIsDocallSelect.value = cfgs['sf_is_docall'] || '1';
 
             const sfRecvContactInp = document.getElementById('cfg-sf-receive-contact');
-            if (sfRecvContactInp) sfRecvContactInp.value = cfgs['sf_receive_contact'] || '启灵回收质检中心';
+            if (sfRecvContactInp) sfRecvContactInp.value = cfgs['sf_receive_contact'] || '启灵同城服务质检中心';
             const sfRecvMobileInp = document.getElementById('cfg-sf-receive-mobile');
             if (sfRecvMobileInp) sfRecvMobileInp.value = cfgs['sf_receive_mobile'] || cfgs['service_tel'] || '';
             const sfRecvProvInp = document.getElementById('cfg-sf-receive-province');
@@ -322,8 +356,7 @@
                 const el = document.getElementById(id);
                 if (el) el.checked = (val !== undefined) ? (val !== '0') : def;
             };
-            setCheck('cfg-settings-user-auth-fast', cfgs['user_auth_fast_enabled'], true);
-            setCheck('cfg-settings-user-auth-password', cfgs['user_auth_password_enabled'], true);
+                        setCheck('cfg-settings-user-auth-password', cfgs['user_auth_password_enabled'], true);
             setCheck('cfg-settings-user-register-enabled', cfgs['user_register_enabled'], true);
             setCheck('cfg-settings-user-auth-wechat', cfgs['user_auth_wechat_enabled'], true);
             setCheck('cfg-settings-user-order-guest', cfgs['user_order_guest_enabled'], true);
@@ -650,6 +683,24 @@
                     payout_audit_threshold: parseFloat(document.getElementById('cfg-payout-audit-threshold')?.value || '1000'),
                     payout_security_password: document.getElementById('cfg-payout-security-password')?.value?.trim() || '',
 
+                    // 在线商户收款配置 (同城生活服务用户向平台付款)
+                    wechat_pay_enabled: document.getElementById('cfg-pay-wechat-enabled')?.checked ? '1' : '0',
+                    wechat_pay_mchid: document.getElementById('cfg-pay-wechat-mchid')?.value.trim() || '',
+                    wechat_pay_appid: document.getElementById('cfg-pay-wechat-appid')?.value.trim() || '',
+                    wechat_pay_v3_key: document.getElementById('cfg-pay-wechat-v3key')?.value.trim() || '',
+                    wechat_pay_cert_serial_no: document.getElementById('cfg-pay-wechat-cert-serial-no')?.value.trim() || '',
+                    wechat_pay_private_key: document.getElementById('cfg-pay-wechat-private-key')?.value.trim() || '',
+                    wechat_pay_platform_public_key: document.getElementById('cfg-pay-wechat-platform-public-key')?.value.trim() || '',
+
+                    alipay_pay_enabled: document.getElementById('cfg-pay-alipay-enabled')?.checked ? '1' : '0',
+                    alipay_pay_appid: document.getElementById('cfg-pay-alipay-appid')?.value.trim() || '',
+                    alipay_pay_sign_type: document.getElementById('cfg-pay-alipay-sign-type')?.value || 'cert',
+                    alipay_pay_private_key: document.getElementById('cfg-pay-alipay-private-key')?.value.trim() || '',
+                    alipay_pay_public_key: document.getElementById('cfg-pay-alipay-public-key')?.value.trim() || '',
+
+                    pay_dev_mock_enabled: document.getElementById('cfg-pay-mock-enabled')?.checked ? '1' : '0',
+
+                    // 财务放款打款配置 (平台向用户出资打款)
                     alipay_enabled: document.getElementById('cfg-alipay-enabled')?.checked ? '1' : '0',
                     alipay_sandbox: '0',
                     alipay_sign_type: document.getElementById('cfg-alipay-sign-type')?.value || 'cert',
@@ -677,7 +728,7 @@
                     wechat_platform_public_key: document.getElementById('cfg-wx-platform-public-key')?.value.trim() || '',
                     wechat_platform_cert_serial_no: document.getElementById('cfg-wx-platform-cert-serial-no')?.value.trim() || '',
 
-                    user_auth_fast_enabled: document.getElementById('cfg-settings-user-auth-fast')?.checked ? '1' : '0',
+                    user_auth_fast_enabled: '0',
                     user_auth_password_enabled: document.getElementById('cfg-settings-user-auth-password')?.checked ? '1' : '0',
                     user_register_enabled: document.getElementById('cfg-settings-user-register-enabled')?.checked ? '1' : '0',
                     user_auth_wechat_enabled: document.getElementById('cfg-settings-user-auth-wechat')?.checked ? '1' : '0',

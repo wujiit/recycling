@@ -262,10 +262,21 @@ class CacheService
     }
 
     /**
+     * 判断指定键名是否为用户/管理员登录认证鉴权 Token
+     */
+    private function isAuthKey(string $key): bool
+    {
+        return strpos($key, 'admin_token:') !== false || strpos($key, 'user_token:') !== false;
+    }
+
+    /**
      * 安全清理系统缓存
      * 注意：严格禁止执行 flushdb 或 flushall，仅使用 SCAN 批量删除自身前缀缓存！
+     * 默认保全管理员与会员登录 Token，绝不把在线用户踢下线！
+     *
+     * @param bool $keepAuth 是否保留登录 Token 认证会话 (默认 true，严防误登出)
      */
-    public function clear(): bool
+    public function clear(bool $keepAuth = true): bool
     {
         if ($this->useRedis && $this->redis) {
             try {
@@ -273,24 +284,50 @@ class CacheService
                 $iterator = null;
                 while ($keys = $this->redis->scan($iterator, $pattern, 100)) {
                     if (!empty($keys)) {
-                        $this->redis->del($keys);
+                        $keysToDelete = [];
+                        foreach ($keys as $k) {
+                            if ($keepAuth && $this->isAuthKey($k)) {
+                                continue;
+                            }
+                            $keysToDelete[] = $k;
+                        }
+                        if (!empty($keysToDelete)) {
+                            $this->redis->del($keysToDelete);
+                        }
                     }
                 }
             } catch (\Throwable $e) {
             }
         }
 
-        // 清理文件缓存
+        // 清理文件缓存 (保留以 .auth.cache 结尾的会话凭证)
         $files = glob($this->fileCacheDir . '*');
         if (is_array($files)) {
             foreach ($files as $file) {
                 if (is_file($file)) {
+                    if ($keepAuth && strpos($file, '.auth.') !== false) {
+                        continue;
+                    }
                     @unlink($file);
                 }
             }
         }
 
         return true;
+    }
+
+    /**
+     * 精准清理行业模板与业务系统配置缓存 (绝不波及任何会话)
+     */
+    public function clearTemplateCache(): bool
+    {
+        $this->delete('sys_config:all');
+        $this->delete('industry_scenario_current');
+        $this->delete('industry_scenario_all');
+        $this->delete('theme_style_current');
+        $this->delete('nav_menus:all');
+        $this->delete('platform_info:appraisal');
+        return $this->clear(true);
     }
 
     /**
@@ -551,14 +588,21 @@ class CacheService
 
     private function getFilePath(string $safeKey): string
     {
-        return $this->fileCacheDir . md5($safeKey) . '.cache';
+        $ext = $this->isAuthKey($safeKey) ? '.auth.cache' : '.cache';
+        return $this->fileCacheDir . md5($safeKey) . $ext;
     }
 
     private function getFileCache(string $safeKey, $default)
     {
         $file = $this->getFilePath($safeKey);
         if (!is_file($file)) {
-            return $default;
+            // 兼容可能遗留的原 .cache 文件
+            $legacyFile = $this->fileCacheDir . md5($safeKey) . '.cache';
+            if (is_file($legacyFile)) {
+                $file = $legacyFile;
+            } else {
+                return $default;
+            }
         }
 
         $content = @file_get_contents($file);
@@ -587,7 +631,11 @@ class CacheService
     {
         $file = $this->getFilePath($safeKey);
         if (is_file($file)) {
-            return @unlink($file);
+            @unlink($file);
+        }
+        $legacyFile = $this->fileCacheDir . md5($safeKey) . '.cache';
+        if (is_file($legacyFile)) {
+            @unlink($legacyFile);
         }
         return true;
     }

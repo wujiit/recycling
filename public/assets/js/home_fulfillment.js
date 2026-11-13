@@ -1,5 +1,5 @@
 /**
- * 启灵回收系统 - 前台履约交付与下单结算模块
+ * 启灵同城服务系统 - 前台履约交付与下单结算模块
  * 包含履约方式切换（顺丰上门/邮寄自寄/门店自送）、顺丰上门预约时段、门店列表、收款账户配置与回收单提交
  */
 (function(window) {
@@ -222,7 +222,7 @@
                         } else {
                             payDesc = '平台支持运费补贴政策';
                         }
-                        sfTextEl.innerHTML = `🚀 <strong>顺丰官方上门：</strong>预约顺丰小哥上门取件。${payDesc}，小哥携带专业包装上门验机揽件。`;
+                        sfTextEl.innerHTML = `<svg viewBox="0 0 24 24" width="15" height="15" fill="#0284c7" style="vertical-align:middle;margin-right:4px;"><path d="M20 8h-3V4H3c-1.1 0-2 .9-2 2v11h2c0 1.66 1.34 3 3 3s3-1.34 3-3h6c0 1.66 1.34 3 3 3s3-1.34 3-3h2v-5l-3-4zM6 18.5c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zm13.5-9l1.96 2.5H17V9.5h2.5zm-1.5 9c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5z"/></svg><strong>顺丰官方上门：</strong>预约顺丰小哥上门取件。${payDesc}，小哥携带专业包装上门验机揽件。`;
                     }
                     if (selfCard) selfCard.style.display = 'none';
                     if (addrGroup) addrGroup.style.display = 'block';
@@ -389,15 +389,15 @@
                         <div class="store-select-card ${isSelected ? 'active' : ''}" onclick="window.selectStore(${s.id}, '${escapeHtml(s.name)}')">
                             <div style="display:flex;justify-content:space-between;align-items:flex-start;">
                                 <div style="font-weight:700;font-size:13px;color:var(--text-main);display:flex;align-items:center;">
-                                    🏬 ${escapeHtml(s.name)}
+                                    ${escapeHtml(s.name)}
                                     ${defTag}
                                 </div>
                                 <div style="margin-left:8px;">${radioIcon}</div>
                             </div>
                             <div style="font-size:12px;color:var(--text-muted);margin-top:4px;line-height:1.4;">
-                                <div>📍 ${escapeHtml(s.address)}</div>
-                                <div style="margin-top:2px;">📞 ${escapeHtml(s.phone)} · 🕒 ${escapeHtml(s.business_hours || '09:00 - 21:00')}</div>
-                                ${s.traffic_guide ? `<div style="color:#2563eb;margin-top:2px;font-size:11px;">🚗 ${escapeHtml(s.traffic_guide)}</div>` : ''}
+                                <div>地址：${escapeHtml(s.address)}</div>
+                                <div style="margin-top:2px;">电话：${escapeHtml(s.phone)} · 营业时间：${escapeHtml(s.business_hours || '09:00 - 21:00')}</div>
+                                ${s.traffic_guide ? `<div style="color:#2563eb;margin-top:2px;font-size:11px;">交通指引：${escapeHtml(s.traffic_guide)}</div>` : ''}
                             </div>
                         </div>
                     `;
@@ -740,7 +740,7 @@
                         }
                     } else if (res.data.mail_sub_type === 'self_delivery') {
                         if (expRow) {
-                            expRow.innerHTML = `<div style="font-size:12px;color:#15803d;line-height:1.6;">📦 <strong>您已选择自行寄送</strong>：请尽快寄出并在【我的订单】中录入快递单号，我们收到后将立即质检并结算。</div>`;
+                            expRow.innerHTML = `<div style="font-size:12px;color:#15803d;line-height:1.6;"><strong>您已选择自行寄送</strong>：请尽快寄出并在【我的订单】中录入快递单号，我们收到后将立即质检并结算。</div>`;
                             expRow.style.display = 'block';
                         }
                     } else if (expRow) {

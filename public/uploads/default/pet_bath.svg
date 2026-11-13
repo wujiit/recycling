@@ -1,0 +1,47 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+  <defs>
+    <linearGradient id="bathBg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#eff6ff"/>
+      <stop offset="100%" stop-color="#dbeafe"/>
+    </linearGradient>
+    <linearGradient id="tubGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#38bdf8"/>
+      <stop offset="100%" stop-color="#0284c7"/>
+    </linearGradient>
+  </defs>
+  <rect width="200" height="200" rx="20" fill="url(#bathBg)"/>
+  <!-- Bathtub Base -->
+  <path d="M40 115 C40 150 60 162 100 162 C140 162 160 150 160 115 L40 115 Z" fill="url(#tubGrad)"/>
+  <!-- Tub Rim -->
+  <ellipse cx="100" cy="115" rx="64" ry="12" fill="#7dd3fc"/>
+  <!-- Water inside -->
+  <ellipse cx="100" cy="118" rx="56" ry="8" fill="#bae6fd"/>
+  <!-- Little Dog peeking out of tub -->
+  <circle cx="95" cy="88" r="22" fill="#f59e0b"/>
+  <!-- Ears with bubbles on top -->
+  <path d="M78 80 C70 82 66 94 72 100 C78 104 82 96 82 86 Z" fill="#b45309"/>
+  <path d="M112 80 C120 82 124 94 118 100 C112 104 108 96 108 86 Z" fill="#b45309"/>
+  <!-- Snout -->
+  <ellipse cx="95" cy="94" rx="9" ry="6" fill="#fef08a"/>
+  <circle cx="95" cy="91" r="3" fill="#1e293b"/>
+  <circle cx="89" cy="84" r="2.8" fill="#1e293b"/>
+  <circle cx="101" cy="84" r="2.8" fill="#1e293b"/>
+  <!-- Foam / Soap Bubbles on Head -->
+  <circle cx="95" cy="68" r="8" fill="#ffffff" opacity="0.95"/>
+  <circle cx="87" cy="71" r="6" fill="#ffffff" opacity="0.9"/>
+  <circle cx="104" cy="70" r="7" fill="#ffffff" opacity="0.9"/>
+  <!-- Paws on Tub Rim -->
+  <ellipse cx="80" cy="115" rx="7" ry="5" fill="#f59e0b"/>
+  <ellipse cx="110" cy="115" rx="7" ry="5" fill="#f59e0b"/>
+  <!-- Floating Bubbles -->
+  <circle cx="50" cy="88" r="7" fill="#38bdf8" opacity="0.6"/>
+  <circle cx="58" cy="72" r="10" fill="#60a5fa" opacity="0.5"/>
+  <circle cx="145" cy="82" r="9" fill="#38bdf8" opacity="0.6"/>
+  <circle cx="156" cy="98" r="6" fill="#60a5fa" opacity="0.5"/>
+  <circle cx="132" cy="62" r="8" fill="#38bdf8" opacity="0.5"/>
+  <!-- Shower Head / Water Spray -->
+  <path d="M150 40 L136 54" stroke="#64748b" stroke-width="4" stroke-linecap="round"/>
+  <rect x="128" y="50" width="16" height="8" rx="3" transform="rotate(45 136 54)" fill="#94a3b8"/>
+  <line x1="124" y1="62" x2="114" y2="76" stroke="#0ea5e9" stroke-width="2" stroke-dasharray="3,3"/>
+  <line x1="130" y1="68" x2="120" y2="82" stroke="#0ea5e9" stroke-width="2" stroke-dasharray="3,3"/>
+</svg>

@@ -1,6 +1,6 @@
 <?php
 /**
- * 启灵回收系统 - 鉴权与用户会话服务
+ * 启灵同城服务系统 - 鉴权与用户会话服务
  * 提供管理员与前台会员 Token 签发、安全验证与用户信息管理
  */
 
@@ -153,7 +153,7 @@ class AuthService
     }
 
     /**
-     * 前台微信小程序用户静默登录 / 自动注册 (支持与 Web 端手机号历史账号自动打通同步)
+     * 前台微信小程序用户静默登录 / 自动注册 (支持关联相同手机号的历史账号)
      */
     public function loginOrRegisterByWechat(string $openid, string $unionid = '', array $userInfo = []): array
     {
@@ -170,7 +170,7 @@ class AuthService
             if (!empty($mobile) && preg_match('/^1[3-9]\d{9}$/', $mobile)) {
                 $existUser = $this->userModel->findByMobile($mobile);
                 if ($existUser) {
-                    // 直接将微信 openid 关联到已有 Web 账号，打通双端数据！
+                    // 关联已有账号的微信 openid
                     $updateFields = [
                         'openid'  => $openid,
                         'unionid' => !empty($unionid) ? $unionid : ($existUser['unionid'] ?? '')
@@ -197,7 +197,7 @@ class AuthService
                     'register_ip' => $clientIp
                 ]);
                 $user = $this->userModel->findById($userId);
-                // 自动注入新人加价券大礼包 (转转/闲鱼同款裂变促单机制)
+                // 注册自动发放新手优惠券
                 try {
                     (new CouponService())->grantAutoCoupons($userId);
                 } catch (\Throwable $e) {}
@@ -220,6 +220,7 @@ class AuthService
         $this->userModel->recordLogin((int)$user['id'], $clientIp);
 
         // 签发会员 Token (有效期 30 天)
+        unset($user['password_hash']);
         $token = 'usr_' . Str::random(32);
         $this->cache->set('user_token:' . $token, $user, 86400 * 30);
 
@@ -234,18 +235,17 @@ class AuthService
     }
 
     /**
-     * 绑定或自动合并用户手机号 (打通 PC/H5 网页端与微信小程序端跨端资产)
+     * 绑定或合并用户手机号 (同步网页端与小程序端账号资产)
      * 
-     * 核心业务场景：
-     * 1. 手机号未被任何用户绑定：直接更新当前微信账号的 mobile。
+     * 业务流程：
+     * 1. 手机号未被任何用户绑定：直接更新当前账号的 mobile。
      * 2. 手机号已被当前账号绑定：直接返回当前账号。
-     * 3. 手机号已在网页端存在历史账号：
-     *    - 开启数据库事务 (保证事务原子性)
-     *    - 将当前临时微信账号的 openid、unionid、头像、昵称无缝合并到网页端主账号
-     *    - 迁移临时账号产生的所有订单 (rc_order.user_id) 至主账号 (100% 资产不丢失)
-     *    - 迁移临时账号获得的所有加价券 (rc_user_coupon.user_id) 至主账号
-     *    - 注销清理临时微信账号 (清空 openid 避免唯一冲突，状态设为 0)
-     *    - 提交事务，会话平滑切换为主账号，向前端返回合并后的主账号全景数据
+     * 3. 手机号已被其他账号绑定：
+     *    - 开启数据库事务
+     *    - 将当前账号的 openid、unionid、头像、昵称合并到主账号
+     *    - 迁移临时账号的订单与优惠券至主账号
+     *    - 清理临时账号
+     *    - 提交事务并切换为主账号
      */
     public function bindOrMergeUserPhone(int $currentUserId, string $mobile, array $extra = []): array
     {
@@ -294,7 +294,7 @@ class AuthService
             ];
         }
 
-        // 分支 3：该手机号已被其他账号（如网页端注册的历史老账号）绑定 -> 触发跨端账号全量合并打通！
+        // 分支 3：该手机号已被其他账号绑定 -> 合并账号数据
         $mainUserId = (int)$existingUser['id'];
         $tempUserId = $currentUserId;
 
@@ -397,46 +397,63 @@ class AuthService
     }
 
     /**
-     * 前台手机号免密极速登录 / 自动注册 (适配 Web 页面与 H5)
+     * 前台手机号免密快捷登录（已永久停用）
      */
     public function loginOrRegisterByMobile(string $mobile, string $nickname = ''): array
     {
-        if (!$this->isConfigEnabled('user_auth_fast_enabled', true)) {
-            return ['code' => 403, 'msg' => '系统未开启免密快捷登录，请使用账号密码登录'];
+        return ['code' => 403, 'msg' => '免密快捷登录功能已停用，请使用账号密码登录'];
+    }
+
+    /**
+     * 前台会员账号密码注册
+     */
+    public function registerUser(string $mobile, string $password, string $nickname = '', string $realname = ''): array
+    {
+        $mobile = trim($mobile);
+        if (!preg_match('/^1[3-9]\d{9}$/', $mobile)) {
+            return ['code' => 400, 'msg' => '请输入正确的11位手机号码'];
+        }
+        if (mb_strlen($password) < 6) {
+            return ['code' => 400, 'msg' => '登录密码长度不得少于6位字符'];
         }
 
-        $clientIp = \App\Common\Request::ip();
-        $user = $this->userModel->findByMobile($mobile);
-        if (!$user) {
+        $existing = $this->userModel->findByMobile($mobile, true);
+        if ($existing) {
+            if (!empty($existing['password_hash'])) {
+                return ['code' => 400, 'msg' => '该手机号已注册，请直接使用密码登录'];
+            }
+            // 若之前通过微信静默绑定无密码，补充设置密码与资料
+            $this->userModel->update((int)$existing['id'], [
+                'password_hash' => password_hash($password, PASSWORD_BCRYPT),
+                'nickname'      => !empty($nickname) ? $nickname : $existing['nickname'],
+                'realname'      => !empty($realname) ? $realname : $existing['realname']
+            ]);
+            $user = $this->userModel->findById((int)$existing['id']);
+        } else {
+            $clientIp = \App\Common\Request::ip();
             $userId = $this->userModel->create([
-                'openid'      => '',
-                'unionid'     => '',
-                'mobile'      => $mobile,
-                'nickname'    => !empty($nickname) ? $nickname : ('用户' . mb_substr($mobile, -4)),
-                'avatar'      => '/uploads/default/avatar.png',
-                'register_ip' => $clientIp
+                'openid'        => '',
+                'unionid'       => '',
+                'mobile'        => $mobile,
+                'password_hash' => password_hash($password, PASSWORD_BCRYPT),
+                'nickname'      => !empty($nickname) ? $nickname : ('用户' . mb_substr($mobile, -4)),
+                'realname'      => $realname,
+                'avatar'        => '/uploads/default/avatar.png',
+                'register_ip'   => $clientIp
             ]);
             $user = $this->userModel->findById($userId);
-            // 自动注入新人加价券大礼包 (转转/闲鱼同款裂变促单机制)
             try {
                 (new CouponService())->grantAutoCoupons($userId);
             } catch (\Throwable $e) {}
         }
 
-        if ((int)$user['status'] !== 1) {
-            return ['code' => 403, 'msg' => '您的账号已被限制使用'];
-        }
-
-        // 记录登录时间与 IP
-        $this->userModel->recordLogin((int)$user['id'], $clientIp);
-
-        // 签发会员 Token (有效期 30 天)
-        $token = 'usr_' . Str::random(32);
+        $token = 'usr_' . \App\Common\Str::random(32);
+        unset($user['password_hash']);
         $this->cache->set('user_token:' . $token, $user, 86400 * 30);
 
         return [
             'code' => 200,
-            'msg'  => '登录成功',
+            'msg'  => '注册成功',
             'data' => [
                 'token'    => $token,
                 'userinfo' => $user
@@ -445,81 +462,10 @@ class AuthService
     }
 
     /**
-     * 前台会员手机号 + 密码注册
-     */
-    public function registerUser(string $mobile, string $password, string $nickname = '', string $realname = ''): array
-    {
-        if (!$this->isConfigEnabled('user_register_enabled', true)) {
-            return ['code' => 403, 'msg' => '系统当前暂未开放公开注册，请联系客服'];
-        }
-
-        $mobile = trim($mobile);
-        if (!preg_match('/^1[3-9]\d{9}$/', $mobile)) {
-            return ['code' => 400, 'msg' => '请输入有效的11位手机号码'];
-        }
-        if (mb_strlen($password) < 6) {
-            return ['code' => 400, 'msg' => '登录密码长度不得少于6位'];
-        }
-
-        // 检查手机号是否已存在
-        $exist = $this->userModel->findByMobile($mobile);
-        if ($exist) {
-            // 如果已存在且没有密码（免密注册过的用户），自动绑定密码并登录
-            $existFull = $this->userModel->findByMobile($mobile, true);
-            if (empty($existFull['password_hash'])) {
-                $hash = password_hash($password, PASSWORD_DEFAULT);
-                $this->userModel->update((int)$exist['id'], [
-                    'password_hash' => $hash,
-                    'realname'      => !empty($realname) ? $realname : ($exist['realname'] ?? '')
-                ]);
-                return $this->loginUser($mobile, $password);
-            }
-            return ['code' => 400, 'msg' => '该手机号已注册，请直接登录'];
-        }
-
-        $clientIp = \App\Common\Request::ip();
-        $hash = password_hash($password, PASSWORD_DEFAULT);
-        $userId = $this->userModel->create([
-            'openid'        => '',
-            'unionid'       => '',
-            'password_hash' => $hash,
-            'mobile'        => $mobile,
-            'nickname'      => !empty($nickname) ? trim($nickname) : ('用户' . mb_substr($mobile, -4)),
-            'realname'      => trim($realname),
-            'avatar'        => '/uploads/default/avatar.png',
-            'register_ip'   => $clientIp
-        ]);
-
-        if ($userId <= 0) {
-            return ['code' => 500, 'msg' => '注册账号失败，请稍后重试'];
-        }
-
-        // 记录登录时间与 IP
-        $this->userModel->recordLogin($userId, $clientIp);
-
-        $user = $this->userModel->findById($userId);
-        $token = 'usr_' . Str::random(32);
-        $this->cache->set('user_token:' . $token, $user, 86400 * 30);
-
-        return [
-            'code' => 200,
-            'msg'  => '注册成功并已为您自动登录',
-            'data' => [
-                'token'    => $token,
-                'userinfo' => $user
-            ]
-        ];
-    }
-
-    /**
-     * 前台会员账号/手机号 + 密码登录
+     * 前台会员手机号 + 密码登录
      */
     public function loginUser(string $mobile, string $password): array
     {
-        if (!$this->isConfigEnabled('user_auth_password_enabled', true)) {
-            return ['code' => 403, 'msg' => '系统未开启账号密码登录功能'];
-        }
-
         $mobile = trim($mobile);
         if (empty($mobile) || empty($password)) {
             return ['code' => 400, 'msg' => '手机号与密码不能为空'];
@@ -527,25 +473,22 @@ class AuthService
 
         $user = $this->userModel->findByMobile($mobile, true);
         if (!$user) {
-            return ['code' => 400, 'msg' => '该手机号尚未注册，请先注册'];
+            return ['code' => 400, 'msg' => '账号或密码错误，请核对后再试'];
+        }
+
+        if (empty($user['password_hash']) || !password_verify($password, $user['password_hash'])) {
+            return ['code' => 400, 'msg' => '账号或密码错误，请核对后再试'];
         }
 
         if ((int)$user['status'] !== 1) {
-            return ['code' => 403, 'msg' => '该账号已被限制使用，请联系客服'];
+            return ['code' => 403, 'msg' => '该账号已被系统封禁，无法登录'];
         }
 
-        // 密码校验
-        if (empty($user['password_hash']) || !password_verify($password, $user['password_hash'])) {
-            return ['code' => 400, 'msg' => '账号或密码不正确，请重新输入'];
-        }
+        $clientIp = \App\Common\Request::ip();
+        $this->userModel->recordLogin((int)$user['id'], $clientIp);
 
-        // 记录登录时间与 IP
-        $this->userModel->recordLogin((int)$user['id'], \App\Common\Request::ip());
-
-        // 安全过滤掉 password_hash 返回
+        $token = 'usr_' . \App\Common\Str::random(32);
         unset($user['password_hash']);
-
-        $token = 'usr_' . Str::random(32);
         $this->cache->set('user_token:' . $token, $user, 86400 * 30);
 
         return [
@@ -559,160 +502,149 @@ class AuthService
     }
 
     /**
-     * 修改会员登录密码
+     * 会员安全退出登录
      */
-    public function changePassword(int $userId, string $oldPassword, string $newPassword): array
-    {
-        if (mb_strlen($newPassword) < 6) {
-            return ['code' => 400, 'msg' => '新密码长度不得少于6位'];
-        }
-
-        $db = Database::getInstance();
-        $p = $db->getPrefix();
-        $row = $db->fetchOne("SELECT `password_hash` FROM `{$p}rc_user` WHERE `id` = ? LIMIT 1", [$userId]);
-        if (!$row) {
-            return ['code' => 404, 'msg' => '用户不存在'];
-        }
-
-        // 若原密码存在，必须核验旧密码
-        if (!empty($row['password_hash'])) {
-            if (empty($oldPassword) || !password_verify($oldPassword, $row['password_hash'])) {
-                return ['code' => 400, 'msg' => '原密码输入错误，无法完成修改'];
-            }
-        }
-
-        $newHash = password_hash($newPassword, PASSWORD_DEFAULT);
-        $this->userModel->update($userId, ['password_hash' => $newHash]);
-
-        return ['code' => 200, 'msg' => '密码已成功修改'];
-    }
-
-    /**
-     * 前台会员退出登录
-     */
-    public function logoutUser(string $token): void
+    public function logoutUser(string $token): bool
     {
         if (!empty($token)) {
             $this->cache->delete('user_token:' . $token);
         }
+        return true;
     }
 
     /**
-     * 管理员自改密码 (严格校验原密码)
+     * 会员修改自身密码
+     */
+    public function changePassword(int $userId, string $oldPassword, string $newPassword): array
+    {
+        if ($userId <= 0) {
+            return ['code' => 401, 'msg' => '用户尚未登录'];
+        }
+        if (mb_strlen($newPassword) < 6) {
+            return ['code' => 400, 'msg' => '新密码长度不得少于6位字符'];
+        }
+
+        $user = $this->db->fetchOne("SELECT `id`, `password_hash` FROM `{$this->p}rc_user` WHERE `id` = ? LIMIT 1", [$userId]);
+        if (!$user) {
+            return ['code' => 404, 'msg' => '用户不存在'];
+        }
+
+        // 若原先设置过密码，需校验原密码
+        if (!empty($user['password_hash'])) {
+            if (empty($oldPassword) || !password_verify($oldPassword, $user['password_hash'])) {
+                return ['code' => 400, 'msg' => '原登录密码验证失败'];
+            }
+        }
+
+        $newHash = password_hash($newPassword, PASSWORD_BCRYPT);
+        $this->db->execute("UPDATE `{$this->p}rc_user` SET `password_hash` = ?, `updated_at` = ? WHERE `id` = ?", [$newHash, time(), $userId]);
+
+        return ['code' => 200, 'msg' => '密码修改成功，请牢记新密码'];
+    }
+
+    /**
+     * 管理员修改自身密码
      */
     public function changeAdminPassword(int $adminId, string $oldPassword, string $newPassword): array
     {
         if ($adminId <= 0) {
-            return ['code' => 400, 'msg' => '管理员参数错误'];
+            return ['code' => 401, 'msg' => '管理员未登录'];
         }
         if (mb_strlen($newPassword) < 6) {
-            return ['code' => 400, 'msg' => '新密码长度不得少于6位'];
+            return ['code' => 400, 'msg' => '新密码长度不得少于6位字符'];
         }
 
-        $db = Database::getInstance();
-        $p = $db->getPrefix();
-        $admin = $db->fetchOne("SELECT `id`, `username`, `password_hash` FROM `{$p}sys_admin` WHERE `id` = ? LIMIT 1", [$adminId]);
+        $admin = $this->db->fetchOne("SELECT `id`, `password` FROM `{$this->p}sys_admin` WHERE `id` = ? LIMIT 1", [$adminId]);
         if (!$admin) {
-            return ['code' => 404, 'msg' => '管理员账号不存在'];
+            return ['code' => 404, 'msg' => '管理员不存在'];
         }
 
-        if (!password_verify($oldPassword, $admin['password_hash'])) {
-            return ['code' => 400, 'msg' => '原登录密码不正确，请核对后重试'];
+        if (!password_verify($oldPassword, $admin['password'])) {
+            return ['code' => 400, 'msg' => '原管理员登录密码不正确'];
         }
 
-        $newHash = password_hash($newPassword, PASSWORD_DEFAULT);
-        $db->execute("UPDATE `{$p}sys_admin` SET `password_hash` = ?, `updated_at` = ? WHERE `id` = ?", [$newHash, time(), $adminId]);
+        $newHash = password_hash($newPassword, PASSWORD_BCRYPT);
+        $this->db->execute("UPDATE `{$this->p}sys_admin` SET `password` = ?, `updated_at` = ? WHERE `id` = ?", [$newHash, time(), $adminId]);
+        $this->logAdminAction($adminId, 'change_password', '管理员修改自身登录密码');
 
-        $this->logAdminAction($adminId, 'change_password', '修改个人登录密码', $_SERVER['REMOTE_ADDR'] ?? '127.0.0.1');
-
-        return ['code' => 200, 'msg' => '登录密码已成功修改，请妥善保管新密码'];
+        return ['code' => 200, 'msg' => '管理员密码修改成功'];
     }
 
     /**
-     * 更新管理员个人基本信息 (真实姓名)
+     * 更新管理员个人真实姓名
      */
     public function updateAdminProfile(int $adminId, string $realname): array
     {
-        if ($adminId <= 0) {
-            return ['code' => 400, 'msg' => '管理员参数错误'];
-        }
-        $db = Database::getInstance();
-        $p = $db->getPrefix();
-        $db->execute("UPDATE `{$p}sys_admin` SET `realname` = ?, `updated_at` = ? WHERE `id` = ?", [$realname, time(), $adminId]);
-
-        $this->logAdminAction($adminId, 'update_profile', '更新个人真实姓名为：' . $realname, $_SERVER['REMOTE_ADDR'] ?? '127.0.0.1');
-
-        return ['code' => 200, 'msg' => '个人资料已更新', 'data' => ['realname' => $realname]];
+        $this->db->execute("UPDATE `{$this->p}sys_admin` SET `realname` = ?, `updated_at` = ? WHERE `id` = ?", [$realname, time(), $adminId]);
+        $fresh = $this->db->fetchOne("SELECT `id`, `username`, `realname`, `role`, `status` FROM `{$this->p}sys_admin` WHERE `id` = ? LIMIT 1", [$adminId]);
+        return ['code' => 200, 'msg' => '资料已更新', 'data' => $fresh];
     }
 
     /**
-     * 获取全系统管理员列表
+     * 获取系统管理员列表
      */
     public function getAdminList(): array
     {
-        $db = Database::getInstance();
-        $p = $db->getPrefix();
-        $sql = "SELECT `id`, `username`, `realname`, `role`, `status`, `last_login_time`, `last_login_ip`, `created_at` 
-                FROM `{$p}sys_admin` ORDER BY `id` ASC";
-        return $db->fetchAll($sql) ?: [];
+        return $this->db->fetchAll("SELECT `id`, `username`, `realname`, `role`, `status`, `last_login_time`, `last_login_ip`, `created_at` FROM `{$this->p}sys_admin` ORDER BY `id` ASC");
     }
 
     /**
-     * 创建新增系统管理员账号
+     * 创建系统管理员账号
      */
     public function createAdmin(string $username, string $password, string $realname, string $role, int $currentAdminId): array
     {
-        $db = Database::getInstance();
-        $p = $db->getPrefix();
-
-        $exist = $db->fetchOne("SELECT `id` FROM `{$p}sys_admin` WHERE `username` = ? LIMIT 1", [$username]);
-        if ($exist) {
-            return ['code' => 400, 'msg' => '该管理员登录账号已存在，不能重复添加'];
+        $has = $this->db->fetchOne("SELECT `id` FROM `{$this->p}sys_admin` WHERE `username` = ? LIMIT 1", [$username]);
+        if ($has) {
+            return ['code' => 400, 'msg' => '管理员账号已被占用，请更换'];
         }
 
-        $hash = password_hash($password, PASSWORD_DEFAULT);
-        $time = time();
-        $db->execute("INSERT INTO `{$p}sys_admin` (`username`, `password_hash`, `salt`, `realname`, `role`, `status`, `created_at`, `updated_at`) 
-                      VALUES (?, ?, '', ?, ?, 1, ?, ?)", [$username, $hash, $realname, $role, $time, $time]);
-        $newId = (int)$db->lastInsertId();
+        $now = time();
+        $hash = password_hash($password, PASSWORD_BCRYPT);
+        $this->db->execute(
+            "INSERT INTO `{$this->p}sys_admin` (`username`, `password`, `realname`, `role`, `status`, `created_at`, `updated_at`) VALUES (?, ?, ?, ?, 1, ?, ?)",
+            [$username, $hash, $realname, $role, $now, $now]
+        );
+        $newId = (int)$this->db->lastInsertId();
+        $this->logAdminAction($currentAdminId, 'create_admin', "创建管理员账号: {$username} (ID: {$newId})");
 
-        $this->logAdminAction($currentAdminId, 'create_admin', "添加新管理员：{$username}（{$realname}，角色：{$role}）", $_SERVER['REMOTE_ADDR'] ?? '127.0.0.1');
-
-        return ['code' => 200, 'msg' => '新管理员账号创建成功', 'data' => ['id' => $newId]];
+        return [
+            'code' => 200,
+            'msg'  => '管理员创建成功',
+            'data' => [
+                'id'       => $newId,
+                'username' => $username,
+                'realname' => $realname,
+                'role'     => $role
+            ]
+        ];
     }
 
     /**
-     * 变更管理员启禁用状态
+     * 启用/停用管理员账号
      */
     public function updateAdminStatus(int $id, int $status, int $currentAdminId): array
     {
-        if ($id === $currentAdminId) {
-            return ['code' => 400, 'msg' => '禁止停用当前登录的管理员自身账号'];
+        if ($id === 1) {
+            return ['code' => 400, 'msg' => '超级管理员账号不可禁用'];
         }
-
-        $db = Database::getInstance();
-        $p = $db->getPrefix();
-        $db->execute("UPDATE `{$p}sys_admin` SET `status` = ?, `updated_at` = ? WHERE `id` = ?", [$status, time(), $id]);
-
+        if ($id === $currentAdminId) {
+            return ['code' => 400, 'msg' => '不可修改当前登录管理员自身的状态'];
+        }
+        $this->db->execute("UPDATE `{$this->p}sys_admin` SET `status` = ?, `updated_at` = ? WHERE `id` = ?", [$status, time(), $id]);
         $statusText = $status === 1 ? '启用' : '停用';
-        $this->logAdminAction($currentAdminId, 'update_admin_status', "{$statusText}管理员账号 [ID: {$id}]", $_SERVER['REMOTE_ADDR'] ?? '127.0.0.1');
-
-        return ['code' => 200, 'msg' => "管理员账号已成功{$statusText}"];
+        $this->logAdminAction($currentAdminId, 'update_admin_status', "{$statusText}管理员 ID: {$id}");
+        return ['code' => 200, 'msg' => "管理员账号已{$statusText}"];
     }
 
     /**
-     * 重置指定管理员密码
+     * 重置管理员密码
      */
     public function resetAdminPassword(int $id, string $password, int $currentAdminId): array
     {
-        $db = Database::getInstance();
-        $p = $db->getPrefix();
-        $hash = password_hash($password, PASSWORD_DEFAULT);
-        $db->execute("UPDATE `{$p}sys_admin` SET `password_hash` = ?, `updated_at` = ? WHERE `id` = ?", [$hash, time(), $id]);
-
-        $this->logAdminAction($currentAdminId, 'reset_admin_password', "重置管理员 [ID: {$id}] 的登录密码", $_SERVER['REMOTE_ADDR'] ?? '127.0.0.1');
-
-        return ['code' => 200, 'msg' => '已成功重置该管理员的登录密码'];
+        $hash = password_hash($password, PASSWORD_BCRYPT);
+        $this->db->execute("UPDATE `{$this->p}sys_admin` SET `password` = ?, `updated_at` = ? WHERE `id` = ?", [$hash, time(), $id]);
+        $this->logAdminAction($currentAdminId, 'reset_admin_password', "重置管理员 ID: {$id} 的登录密码");
+        return ['code' => 200, 'msg' => '管理员密码重置成功'];
     }
 
     /**
@@ -720,107 +652,57 @@ class AuthService
      */
     public function deleteAdmin(int $id, int $currentAdminId): array
     {
+        if ($id === 1) {
+            return ['code' => 400, 'msg' => '超级管理员账号不可删除'];
+        }
         if ($id === $currentAdminId) {
-            return ['code' => 400, 'msg' => '禁止删除当前正在登录的管理员自身账号'];
+            return ['code' => 400, 'msg' => '不可删除当前登录账号自身'];
         }
-
-        $db = Database::getInstance();
-        $p = $db->getPrefix();
-        $countRow = $db->fetchOne("SELECT COUNT(*) as `total` FROM `{$p}sys_admin`");
-        if ((int)($countRow['total'] ?? 0) <= 1) {
-            return ['code' => 400, 'msg' => '系统中至少需要保留一个管理员账号，不能全部删除'];
-        }
-
-        $target = $db->fetchOne("SELECT `username` FROM `{$p}sys_admin` WHERE `id` = ? LIMIT 1", [$id]);
-        $targetName = $target['username'] ?? "ID: {$id}";
-
-        $db->execute("DELETE FROM `{$p}sys_admin` WHERE `id` = ?", [$id]);
-
-        $this->logAdminAction($currentAdminId, 'delete_admin', "删除管理员账号：{$targetName}", $_SERVER['REMOTE_ADDR'] ?? '127.0.0.1');
-
-        return ['code' => 200, 'msg' => '管理员账号已成功删除'];
+        $this->db->execute("DELETE FROM `{$this->p}sys_admin` WHERE `id` = ?", [$id]);
+        $this->logAdminAction($currentAdminId, 'delete_admin', "删除管理员账号 ID: {$id}");
+        return ['code' => 200, 'msg' => '管理员已删除'];
     }
 
     /**
-     * 写入管理员操作审计日志
+     * 写入管理员操作日志
      */
-    public function logAdminAction(int $adminId, string $action, string $detail, string $ip = ''): void
+    public function logAdminAction(int $adminId, string $action, string $remark): void
     {
         try {
-            $db = Database::getInstance();
-            $p = $db->getPrefix();
-
-            // 自愈检测表结构
-            $db->execute("CREATE TABLE IF NOT EXISTS `{$p}sys_admin_log` (
-                `id` bigint unsigned NOT NULL AUTO_INCREMENT,
-                `admin_id` int unsigned NOT NULL DEFAULT 0,
-                `admin_name` varchar(64) NOT NULL DEFAULT '',
+            $p = $this->p;
+            $this->db->execute("CREATE TABLE IF NOT EXISTS `{$p}sys_admin_log` (
+                `id` int(11) unsigned NOT NULL AUTO_INCREMENT,
+                `admin_id` int(11) unsigned NOT NULL DEFAULT '0',
                 `action` varchar(64) NOT NULL DEFAULT '',
-                `detail` varchar(255) NOT NULL DEFAULT '',
+                `remark` varchar(255) NOT NULL DEFAULT '',
                 `ip` varchar(45) NOT NULL DEFAULT '',
-                `user_agent` varchar(255) NOT NULL DEFAULT '',
-                `created_at` int unsigned NOT NULL DEFAULT 0,
+                `created_at` int(11) unsigned NOT NULL DEFAULT '0',
                 PRIMARY KEY (`id`),
-                KEY `idx_admin_id` (`admin_id`),
-                KEY `idx_created` (`created_at`)
-            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+                KEY `idx_admin_time` (`admin_id`, `created_at`)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='管理员操作审计日志'");
 
-            $adminName = '系统';
-            if ($adminId > 0) {
-                $row = $db->fetchOne("SELECT `username`, `realname` FROM `{$p}sys_admin` WHERE `id` = ? LIMIT 1", [$adminId]);
-                if ($row) {
-                    $adminName = !empty($row['realname']) ? $row['realname'] : $row['username'];
-                }
-            }
-
-            $ua = mb_substr($_SERVER['HTTP_USER_AGENT'] ?? '', 0, 250);
-            $clientIp = !empty($ip) ? $ip : ($_SERVER['REMOTE_ADDR'] ?? '127.0.0.1');
-
-            $db->execute("INSERT INTO `{$p}sys_admin_log` (`admin_id`, `admin_name`, `action`, `detail`, `ip`, `user_agent`, `created_at`) 
-                          VALUES (?, ?, ?, ?, ?, ?, ?)", [
-                $adminId,
-                $adminName,
-                $action,
-                $detail,
-                $clientIp,
-                $ua,
-                time()
-            ]);
-        } catch (\Throwable $e) {
-            // 静默安全捕获
-        }
+            $ip = \App\Common\Request::ip();
+            $this->db->execute(
+                "INSERT INTO `{$p}sys_admin_log` (`admin_id`, `action`, `remark`, `ip`, `created_at`) VALUES (?, ?, ?, ?, ?)",
+                [$adminId, $action, mb_substr($remark, 0, 255), $ip, time()]
+            );
+        } catch (\Throwable $e) {}
     }
 
     /**
-     * 读取管理员安全审计日志
+     * 获取管理员审计日志
      */
     public function getAdminLogs(int $limit = 30): array
     {
         try {
-            $db = Database::getInstance();
-            $p = $db->getPrefix();
-            // 自愈确保表存在
-            $db->execute("CREATE TABLE IF NOT EXISTS `{$p}sys_admin_log` (
-                `id` bigint unsigned NOT NULL AUTO_INCREMENT,
-                `admin_id` int unsigned NOT NULL DEFAULT 0,
-                `admin_name` varchar(64) NOT NULL DEFAULT '',
-                `action` varchar(64) NOT NULL DEFAULT '',
-                `detail` varchar(255) NOT NULL DEFAULT '',
-                `ip` varchar(45) NOT NULL DEFAULT '',
-                `user_agent` varchar(255) NOT NULL DEFAULT '',
-                `created_at` int unsigned NOT NULL DEFAULT 0,
-                PRIMARY KEY (`id`),
-                KEY `idx_admin_id` (`admin_id`),
-                KEY `idx_created` (`created_at`)
-            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
-
-            $sql = "SELECT `id`, `admin_id`, `admin_name`, `action`, `detail`, `ip`, `user_agent`, `created_at` 
-                    FROM `{$p}sys_admin_log` ORDER BY `id` DESC LIMIT {$limit}";
-            return $db->fetchAll($sql) ?: [];
+            $p = $this->p;
+            $sql = "SELECT l.`id`, l.`admin_id`, l.`action`, l.`remark`, l.`ip`, l.`created_at`, a.`username`, a.`realname` 
+                    FROM `{$p}sys_admin_log` l 
+                    LEFT JOIN `{$p}sys_admin` a ON l.`admin_id` = a.`id` 
+                    ORDER BY l.`id` DESC LIMIT ?";
+            return $this->db->fetchAll($sql, [$limit]);
         } catch (\Throwable $e) {
             return [];
         }
     }
 }
-
-

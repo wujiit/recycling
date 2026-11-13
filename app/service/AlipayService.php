@@ -1,6 +1,6 @@
 <?php
 /**
- * 启灵回收系统 - 支付宝商家转账服务 (OpenAPI 标准版)
+ * 启灵同城服务系统 - 支付宝商家转账服务 (OpenAPI 标准版)
  * 支持单笔转账 (alipay.fund.trans.uni.transfer)、转账状态查询与账户余额查询
  */
 
@@ -411,43 +411,16 @@ class AlipayService
         $actualBizNo = $outBizNo;
         $subCode = (string)($body['sub_code'] ?? $code);
 
-        // 针对 TRANSFER_SCENE_REPORT_INFO_ILLEGAL 智能探测自愈：
-        // 仅当用户未显式锁定自定义 info_type 时，且首选“回收商品名称”被个别资质商户拒绝时触发候选探测
+        // 针对 TRANSFER_SCENE_REPORT_INFO_ILLEGAL 自动尝试备选场景类型
         if ($subCode === 'TRANSFER_SCENE_REPORT_INFO_ILLEGAL' && empty($this->transferSceneInfoType)) {
-            $candidates = $this->getSceneReportCandidates($this->transferSceneName ?: '二手回收');
-            foreach ($candidates as $idx => $candidateType) {
-                if ($candidateType === '回收商品名称') {
-                    continue;
-                }
-                $probeBizNo = Str::substr($outBizNo, 0, 54) . '_c' . ($idx + 1);
-                $probeBizContent = $this->buildTransferBizContent($probeBizNo, $amount, $payeeAccount, $payeeName, $orderTitle, $remark, $candidateType);
-                $probeParams = $this->buildSignedRequest('alipay.fund.trans.uni.transfer', $probeBizContent);
-                $probeRes = $this->executeHttp($this->getGatewayUrl(), $probeParams);
-                if (!$probeRes['success'] || !isset($probeRes['data'][$responseKey])) {
-                    continue;
-                }
-                $probeBody = $probeRes['data'][$responseKey];
-                $probeCode = (string)($probeBody['code'] ?? '');
-                $probeStatus = (string)($probeBody['status'] ?? '');
-                if ($probeCode === '10000' && ($probeStatus === 'SUCCESS' || $probeStatus === 'DEALING')) {
-                    $this->saveSuccessfulInfoType($candidateType);
-                    $body = $probeBody;
-                    $code = $probeCode;
-                    $status = $probeStatus;
-                    $orderId = (string)($probeBody['order_id'] ?? '');
-                    $actualBizNo = $probeBizNo;
-                    break;
-                }
-                $probeSubCode = (string)($probeBody['sub_code'] ?? $probeCode);
-                if ($probeSubCode !== 'TRANSFER_SCENE_REPORT_INFO_ILLEGAL') {
-                    $body = $probeBody;
-                    $code = $probeCode;
-                    $status = $probeStatus;
-                    $orderId = (string)($probeBody['order_id'] ?? '');
-                    $actualBizNo = $probeBizNo;
-                    $subCode = $probeSubCode;
-                    break;
-                }
+            $probeResult = $this->probeSceneReportCandidates($outBizNo, $amount, $payeeAccount, $payeeName, $orderTitle, $remark, $responseKey);
+            if ($probeResult !== null) {
+                $body = $probeResult['body'];
+                $code = $probeResult['code'];
+                $status = $probeResult['status'];
+                $orderId = $probeResult['order_id'];
+                $actualBizNo = $probeResult['actual_biz_no'];
+                $subCode = $probeResult['sub_code'];
             }
         }
 
@@ -492,17 +465,8 @@ class AlipayService
         }
 
         // 真实失败信息透传与智能排查指引
-        $subMsg = $body['sub_msg'] ?? ($body['msg'] ?? '转账被支付宝网关拒绝');
         $subCode = $body['sub_code'] ?? $code;
-        if ($subCode === 'TRANSFER_SCENE_NAME_BLANK' || $subCode === 'TRANSFER_SCENE_ILLEGAL' || $subCode === 'TRANSFER_SCENE_NAME_ILLEGAL') {
-            $subMsg .= ' (排查建议：转账场景名称与商户后台不匹配。请登录【支付宝商家平台 b.alipay.com -> 资金管理 -> 转账场景】，查看您已生效的场景名称。若您已申明为“业务结算”，请在系统设置中将场景切换为“业务结算”再测试；若需使用“二手回收”，请在商家平台点击申明/新增“二手回收”)';
-        } elseif (stripos($subMsg, 'transfer_scene_report_infos') !== false || $subCode === 'TRANSFER_SCENE_REPORT_INFO_ILLEGAL') {
-            $subMsg .= ' (排查建议：转账场景上报信息有误。系统已自动按官方“二手回收”规范组装【回收商品名称】。若您在支付宝商家平台申明了其他场景或有特殊配置，请在【系统设置】切换对应场景或填写自定义场景上报类型)';
-        } elseif ($subCode === 'PAYEE_NOT_EXIST') {
-            $subMsg .= ' (排查建议：1. 确认该手机号/邮箱已开通支付宝且已完成实名认证；2. 填写的收款人姓名必须与支付宝App中绑定的【身份证法定中文姓名】100%一致，不能填昵称或错别字)';
-        } elseif (stripos($subMsg, '验签出错') !== false || stripos($subMsg, '签名私钥与应用公钥是否匹配') !== false) {
-            $subMsg .= ' (排查建议：开放平台应用为【公钥证书模式】，请确保已在【系统设置】粘贴应用公钥证书 appCertPublicKey.crt 与支付宝公钥证书，且应用私钥与证书配套)';
-        }
+        $subMsg = $this->enrichSubErrorMsg($subCode, $body['sub_msg'] ?? ($body['msg'] ?? '转账被支付宝网关拒绝'));
         return [
             'success'    => false,
             'out_biz_no' => $actualBizNo,
@@ -517,6 +481,77 @@ class AlipayService
     /**
      * 获取指定场景的合规上报类型有序候选清单
      */
+
+    /**
+     * 当首选场景被支付宝网关拒绝时，自动尝试商户可用的候选场景类型
+     */
+    private function probeSceneReportCandidates(
+        string $outBizNo,
+        float $amount,
+        string $payeeAccount,
+        string $payeeName,
+        string $orderTitle,
+        string $remark,
+        string $responseKey
+    ): ?array {
+        $candidates = $this->getSceneReportCandidates($this->transferSceneName ?: '二手回收');
+        foreach ($candidates as $idx => $candidateType) {
+            if ($candidateType === '回收商品名称') {
+                continue;
+            }
+            $probeBizNo = Str::substr($outBizNo, 0, 54) . '_c' . ($idx + 1);
+            $probeBizContent = $this->buildTransferBizContent($probeBizNo, $amount, $payeeAccount, $payeeName, $orderTitle, $remark, $candidateType);
+            $probeParams = $this->buildSignedRequest('alipay.fund.trans.uni.transfer', $probeBizContent);
+            $probeRes = $this->executeHttp($this->getGatewayUrl(), $probeParams);
+            if (!$probeRes['success'] || !isset($probeRes['data'][$responseKey])) {
+                continue;
+            }
+            $probeBody = $probeRes['data'][$responseKey];
+            $probeCode = (string)($probeBody['code'] ?? '');
+            $probeStatus = (string)($probeBody['status'] ?? '');
+            if ($probeCode === '10000' && ($probeStatus === 'SUCCESS' || $probeStatus === 'DEALING')) {
+                $this->saveSuccessfulInfoType($candidateType);
+                return [
+                    'body'          => $probeBody,
+                    'code'          => $probeCode,
+                    'status'        => $probeStatus,
+                    'order_id'      => (string)($probeBody['order_id'] ?? ''),
+                    'actual_biz_no' => $probeBizNo,
+                    'sub_code'      => (string)($probeBody['sub_code'] ?? $probeCode)
+                ];
+            }
+            $probeSubCode = (string)($probeBody['sub_code'] ?? $probeCode);
+            if ($probeSubCode !== 'TRANSFER_SCENE_REPORT_INFO_ILLEGAL') {
+                return [
+                    'body'          => $probeBody,
+                    'code'          => $probeCode,
+                    'status'        => $probeStatus,
+                    'order_id'      => (string)($probeBody['order_id'] ?? ''),
+                    'actual_biz_no' => $probeBizNo,
+                    'sub_code'      => $probeSubCode
+                ];
+            }
+        }
+        return null;
+    }
+
+    /**
+     * 根据支付宝网关错误码补充友好的排查指导建议
+     */
+    private function enrichSubErrorMsg(string $subCode, string $subMsg): string
+    {
+        if ($subCode === 'TRANSFER_SCENE_NAME_BLANK' || $subCode === 'TRANSFER_SCENE_ILLEGAL' || $subCode === 'TRANSFER_SCENE_NAME_ILLEGAL') {
+            $subMsg .= ' (排查建议：转账场景名称与商户后台不匹配。请登录【支付宝商家平台 b.alipay.com -> 资金管理 -> 转账场景】，查看您已生效的场景名称。若您已申明为“业务结算”，请在系统设置中将场景切换为“业务结算”再测试；若需使用“二手回收”，请在商家平台点击申明/新增“二手回收”)';
+        } elseif (stripos($subMsg, 'transfer_scene_report_infos') !== false || $subCode === 'TRANSFER_SCENE_REPORT_INFO_ILLEGAL') {
+            $subMsg .= ' (排查建议：转账场景上报信息有误。系统已自动按官方“二手回收”规范组装【回收商品名称】。若您在支付宝商家平台申明了其他场景或有特殊配置，请在【系统设置】切换对应场景或填写自定义场景上报类型)';
+        } elseif ($subCode === 'PAYEE_NOT_EXIST') {
+            $subMsg .= ' (排查建议：1. 确认该手机号/邮箱已开通支付宝且已完成实名认证；2. 填写的收款人姓名必须与支付宝App中绑定的【身份证法定中文姓名】100%一致，不能填昵称或错别字)';
+        } elseif (stripos($subMsg, '验签出错') !== false || stripos($subMsg, '签名私钥与应用公钥是否匹配') !== false) {
+            $subMsg .= ' (排查建议：开放平台应用为【公钥证书模式】，请确保已在【系统设置】粘贴应用公钥证书 appCertPublicKey.crt 与支付宝公钥证书，且应用私钥与证书配套)';
+        }
+        return $subMsg;
+    }
+
     private function getSceneReportCandidates(string $sceneName): array
     {
         if ($sceneName === '二手回收') {
@@ -722,8 +757,8 @@ class AlipayService
             curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
             curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 5); // 连接超时 5 秒
             curl_setopt($ch, CURLOPT_TIMEOUT, 15);        // 响应超时 15 秒
-            curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
-            curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 0);
+            curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, true);
+            curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 2);
             curl_setopt($ch, CURLOPT_HTTPHEADER, [
                 'Content-Type: application/x-www-form-urlencoded;charset=utf-8'
             ]);

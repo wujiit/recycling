@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+  <defs>
+    <linearGradient id="dogBg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fffbeb"/>
+      <stop offset="100%" stop-color="#fef3c7"/>
+    </linearGradient>
+    <linearGradient id="dogFur" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#f59e0b"/>
+      <stop offset="100%" stop-color="#d97706"/>
+    </linearGradient>
+  </defs>
+  <rect width="200" height="200" rx="20" fill="url(#dogBg)"/>
+  <!-- Decorative background grass circle -->
+  <circle cx="100" cy="115" r="62" fill="#ecfdf5"/>
+  <!-- Dog Body -->
+  <path d="M60 125 C60 98 85 92 110 95 C125 97 142 108 145 125 C146 132 140 142 130 142 L72 142 C64 142 60 135 60 125 Z" fill="url(#dogFur)"/>
+  <!-- Dog Head -->
+  <circle cx="132" cy="85" r="24" fill="url(#dogFur)"/>
+  <!-- Dog Snout -->
+  <path d="M142 85 C156 85 160 94 156 100 C150 106 138 104 135 98 Z" fill="#fde68a"/>
+  <!-- Dog Nose -->
+  <ellipse cx="154" cy="91" rx="4" ry="3" fill="#1e293b"/>
+  <!-- Dog Ear (floppy) -->
+  <path d="M124 72 C116 75 112 90 118 96 C124 100 128 92 128 82 Z" fill="#b45309"/>
+  <!-- Eye -->
+  <circle cx="138" cy="80" r="3.5" fill="#1e293b"/>
+  <circle cx="139.5" cy="78.5" r="1.2" fill="#ffffff"/>
+  <!-- Collar & Tag -->
+  <path d="M120 101 Q130 108 142 103" stroke="#ef4444" stroke-width="4.5" stroke-linecap="round" fill="none"/>
+  <circle cx="131" cy="111" r="3.5" fill="#fbbf24"/>
+  <!-- Tail -->
+  <path d="M62 118 C48 108 42 90 52 82 C55 80 58 84 56 90 C52 98 58 108 66 112" fill="none" stroke="#d97706" stroke-width="6" stroke-linecap="round"/>
+  <!-- Legs -->
+  <rect x="74" y="136" width="10" height="22" rx="4" fill="#d97706"/>
+  <rect x="92" y="138" width="9" height="20" rx="4" fill="#b45309"/>
+  <rect x="118" y="136" width="10" height="22" rx="4" fill="#d97706"/>
+  <rect x="134" y="138" width="9" height="20" rx="4" fill="#b45309"/>
+  <!-- GPS Tracking Pin Tag -->
+  <g transform="translate(142, 38)">
+    <circle cx="15" cy="15" r="14" fill="#10b981"/>
+    <path d="M15 6 C11 6 8 9 8 13 C8 18 15 24 15 24 C15 24 22 18 22 13 C22 9 19 6 15 6 Z" fill="#ffffff"/>
+    <circle cx="15" cy="12" r="2.5" fill="#10b981"/>
+  </g>
+</svg>

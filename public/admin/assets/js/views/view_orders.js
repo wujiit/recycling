@@ -1,5 +1,5 @@
 /**
- * 启灵回收系统 - 回收订单全生命周期管理视图
+ * 启灵同城服务系统 - 回收订单全生命周期管理视图
  * 职责：订单查询、状态流转、详情弹窗、质检快捷跳转、删除与数据导出
  * 编码：UTF-8 无 BOM
  */
@@ -12,6 +12,7 @@
     const escapeHtml = window.escapeHtml || function(s) { return s; };
     const formatTime = window.formatTime;
     const getStatusBadge = window.getStatusBadge;
+    window.reloadOrders = reloadOrders;
 
     function reloadOrders() {
         if (typeof window.loadTabContent === 'function') {
@@ -40,6 +41,12 @@
                         <option value="refunded">已退货/已返还</option>
                         <option value="cancelled">已取消</option>
                     </select>
+                    <select class="form-control" id="order-biz-filter" style="width:150px;">
+                        <option value="all">全部业务类型</option>
+                        <option value="recycle">📱 二手回收</option>
+                        <option value="service">🛠️ 同城生活服务</option>
+                        <option value="errand">🏃 同城帮办跑腿</option>
+                    </select>
                     <select class="form-control" id="order-fulfillment-filter" style="width:150px;">
                         <option value="all">全部回收方式</option>
                         <option value="mail">快速寄送</option>
@@ -56,8 +63,9 @@
             const kw = document.getElementById('order-kw')?.value.trim() || '';
             const status = document.getElementById('order-status-filter')?.value || 'all';
             const fulfillment = document.getElementById('order-fulfillment-filter')?.value || 'all';
+            const bizType = document.getElementById('order-biz-filter')?.value || 'all';
 
-            const res = await api.get(`/admin/order/list&keyword=${encodeURIComponent(kw)}&status=${encodeURIComponent(status)}&fulfillment_type=${encodeURIComponent(fulfillment)}&page=1&page_size=50`);
+            const res = await api.get(`/admin/order/list&keyword=${encodeURIComponent(kw)}&status=${encodeURIComponent(status)}&fulfillment_type=${encodeURIComponent(fulfillment)}&biz_type=${encodeURIComponent(bizType)}&page=1&page_size=50`);
             if (res && res.code === 200) {
                 const list = res.data.list || [];
                 if (list.length === 0) {
@@ -101,11 +109,44 @@
                         : '';
                     const isConfirming = o.status === 'price_confirming';
 
+                    const isService = o.biz_type === 'service' || o.biz_type === 'errand';
+                    let bizBadge = '<span class="badge" style="background:#f1f5f9;color:#475569;">📱 回收</span>';
+                    if (o.biz_type === 'service') {
+                        bizBadge = '<span class="badge" style="background:#fef3c7;color:#92400e;font-weight:600;">🛠️ 服务</span>';
+                    } else if (o.biz_type === 'errand') {
+                        bizBadge = '<span class="badge" style="background:#e0f2fe;color:#0369a1;font-weight:600;">🏃 跑腿</span>';
+                    }
+
+                    let payBadge = '';
+                    if (isService) {
+                        const isPaid = (o.pay_status === 'paid' || o.pay_status == 1 || o.pay_status === '1');
+                        const payName = o.pay_type === 'wechat' ? '微信支付' : (o.pay_type === 'alipay' ? '支付宝' : (o.pay_type === 'mock' ? '模拟支付' : (o.pay_type || '线上支付')));
+                        if (isPaid) {
+                            payBadge = `<span class="badge" style="background:#dcfce7;color:#15803d;font-weight:600;">✓ 已付款 ¥${escapeHtml(o.pay_price || o.final_price)}</span><br><small style="color:#64748b;">${escapeHtml(payName)}</small>`;
+                        } else {
+                            payBadge = `<span class="badge" style="background:#fee2e2;color:#b91c1c;">⏳ 待客户付款 ¥${escapeHtml(o.pay_price || o.estimate_price)}</span>`;
+                        }
+                    } else {
+                        payBadge = `${pBadge}${pAccount}`;
+                    }
+
+                    let techFulfillment = '';
+                    if (isService) {
+                        if (o.technician_name) {
+                            techFulfillment = `<span class="badge" style="background:#ede9fe;color:#5b21b6;font-weight:600;">👷 ${escapeHtml(o.technician_name)}</span><br><small style="color:#64748b;">${escapeHtml(o.technician_mobile || '')}</small>`;
+                        } else {
+                            techFulfillment = '<span class="badge" style="background:#fff7ed;color:#c2410c;">待指派师傅</span>';
+                        }
+                    } else {
+                        techFulfillment = `${fBadge}${mailSubBadge}${storeText}`;
+                    }
+
                     rows += `<tr>
+                        <td>${bizBadge}</td>
                         <td><strong>${escapeHtml(o.order_sn)}</strong>${expressText}${shippingFeeBadge}</td>
                         <td><strong>${escapeHtml(o.device_name)}</strong></td>
-                        <td>${fBadge}${mailSubBadge}${storeText}</td>
-                        <td>${pBadge}${pAccount}</td>
+                        <td>${techFulfillment}</td>
+                        <td>${payBadge}</td>
                         <td>¥ ${escapeHtml(o.estimate_price)}</td>
                         <td><strong style="color:#10b981;">¥ ${escapeHtml(o.final_price || o.estimate_price)}</strong>${subsidyBadge}${couponBadge}</td>
                         <td>${getStatusBadge(o.status)}</td>
@@ -117,8 +158,17 @@
                                 ${isConfirming ? `
                                     <button class="btn" style="height:28px;padding:0 8px;font-size:12px;background:#ea580c;color:#fff;font-weight:600;" onclick="window.openNegotiationModal(${o.id}, '${escapeHtml(o.order_sn)}', '${escapeHtml(o.estimate_price)}', '${escapeHtml(o.final_price || o.estimate_price)}', '${escapeHtml(o.subsidy_amount || 0)}', '${escapeHtml(o.negotiation_remark || '')}')">协商还价</button>
                                 ` : ''}
-                                <button class="btn btn-primary" style="height:28px;padding:0 8px;font-size:12px;" onclick="window.openStatusModal(${o.id}, '${escapeHtml(o.order_sn)}', '${escapeHtml(o.status)}', '${escapeHtml(o.express_sn || '')}', '${escapeHtml(o.refund_express_sn || '')}', '${escapeHtml(o.express_company || '顺丰速运')}')">流转</button>
-                                <button class="btn btn-warning" style="height:28px;padding:0 8px;font-size:12px;background:#f59e0b;color:#fff;" onclick="window.jumpToInspection('${escapeHtml(o.order_sn)}')">质检</button>
+                                ${isService ? `
+                                    ${o.status !== 'completed' && o.status !== 'cancelled' && o.status !== 'refunded' ? `
+                                        <button class="btn" style="height:28px;padding:0 8px;font-size:12px;background:#6366f1;color:#fff;font-weight:600;" onclick="window.openDispatchModal(${o.id}, '${escapeHtml(o.order_sn)}', '${escapeHtml(o.technician_name || '')}')">${o.technician_name ? '改派师傅' : '指派师傅'}</button>
+                                    ` : ''}
+                                    ${o.status === 'in_service' || o.status === 'dispatched' ? `
+                                        <button class="btn btn-success" style="height:28px;padding:0 8px;font-size:12px;background:#10b981;color:#fff;" onclick="window.openFinishModal(${o.id}, '${escapeHtml(o.order_sn)}')">完工</button>
+                                    ` : ''}
+                                ` : `
+                                    <button class="btn btn-primary" style="height:28px;padding:0 8px;font-size:12px;" onclick="window.openStatusModal(${o.id}, '${escapeHtml(o.order_sn)}', '${escapeHtml(o.status)}', '${escapeHtml(o.express_sn || '')}', '${escapeHtml(o.refund_express_sn || '')}', '${escapeHtml(o.express_company || '顺丰速运')}')">流转</button>
+                                    <button class="btn btn-warning" style="height:28px;padding:0 8px;font-size:12px;background:#f59e0b;color:#fff;" onclick="window.jumpToInspection('${escapeHtml(o.order_sn)}')">质检</button>
+                                `}
                                 <button class="btn btn-danger" style="height:28px;padding:0 8px;font-size:12px;background:#ef4444;color:#fff;" onclick="window.deleteOrder(${o.id})">删除</button>
                             </div>
                         </td>
@@ -128,7 +178,7 @@
                 document.getElementById('orders-table-box').innerHTML = `
                     <table class="data-table">
                         <thead>
-                            <tr><th>订单号/物流</th><th>商品名称</th><th>回收方式</th><th>收款渠道与账户</th><th>预估价</th><th>最终成交价</th><th>当前状态</th><th>联系人</th><th>下单时间</th><th>操作</th></tr>
+                            <tr><th>业务</th><th>订单号/物流</th><th>服务/商品名称</th><th>履约与师傅</th><th>收款/支付状态</th><th>预估价</th><th>成交/结算价</th><th>当前状态</th><th>联系人</th><th>下单时间</th><th>操作</th></tr>
                         </thead>
                         <tbody>${rows}</tbody>
                     </table>
@@ -348,6 +398,38 @@
             `;
         }
 
+        // 解析并渲染预约表单自定义字段
+        let customFieldsHtml = '';
+        if (o.custom_fields) {
+            let cfObj = null;
+            try {
+                cfObj = typeof o.custom_fields === 'string' ? JSON.parse(o.custom_fields) : o.custom_fields;
+            } catch (e) {
+                cfObj = null;
+            }
+            if (cfObj && typeof cfObj === 'object' && Object.keys(cfObj).length > 0) {
+                let itemsHtml = '';
+                for (const [k, v] of Object.entries(cfObj)) {
+                    let valStr = typeof v === 'object' ? JSON.stringify(v) : String(v);
+                    if (valStr.trim() !== '') {
+                        itemsHtml += `<div style="background:#fff;padding:6px 10px;border-radius:6px;border:1px solid #c7d2fe;display:flex;justify-content:space-between;align-items:center;"><span style="color:#4338ca;font-weight:600;">${escapeHtml(k)}:</span> <strong style="color:#1e1b4b;">${escapeHtml(valStr)}</strong></div>`;
+                    }
+                }
+                if (itemsHtml) {
+                    customFieldsHtml = `
+                        <div style="background:#eef2ff;border:1px solid #c7d2fe;border-radius:8px;padding:12px 14px;margin:12px 0;">
+                            <div style="font-weight:700;color:#3730a3;font-size:13px;margin-bottom:8px;display:flex;align-items:center;gap:6px;">
+                                <span>🧩</span> 客户填写行业专属信息 (动态表单快照)
+                            </div>
+                            <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(200px, 1fr));gap:8px;font-size:12px;">
+                                ${itemsHtml}
+                            </div>
+                        </div>
+                    `;
+                }
+            }
+        }
+
         const modal = document.createElement('div');
         modal.className = 'modal-overlay';
         modal.innerHTML = `
@@ -358,19 +440,62 @@
                 </div>
                 <div class="modal-body" style="font-size:13px;line-height:1.8;">
                     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;">
-                        <div><strong>回收商品:</strong> ${escapeHtml(o.device_name)}</div>
-                        <div><strong>回收方式:</strong> ${o.fulfillment_type === 'mail' ? ('快速寄送 (' + (o.mail_sub_type === 'self_delivery' ? '自行寄送' : '顺丰上门取件') + ')') : (o.fulfillment_type === 'store' ? ('线下门店自送' + (o.store_name ? ` (网点: ${escapeHtml(o.store_name)})` : '')) : '预约免费上门')}</div>
+                        <div><strong>${(o.biz_type === 'service' || o.biz_type === 'errand') ? '服务项目' : '回收商品'}:</strong> ${escapeHtml(o.device_name)}</div>
+                        <div><strong>${(o.biz_type === 'service' || o.biz_type === 'errand') ? '履约方式' : '回收方式'}:</strong> ${(o.biz_type === 'service' || o.biz_type === 'errand') ? (o.fulfillment_type === 'store' ? '到店核销体验' : '师傅上门履约') : (o.fulfillment_type === 'mail' ? ('快速寄送 (' + (o.mail_sub_type === 'self_delivery' ? '自行寄送' : '顺丰上门取件') + ')') : (o.fulfillment_type === 'store' ? ('线下门店自送' + (o.store_name ? ` (网点: ${escapeHtml(o.store_name)})` : '')) : '预约免费上门'))}</div>
                         <div><strong>评估模式:</strong> ${appraisalModeHtml}</div>
                         <div><strong>预估金额:</strong> <span style="color:#1e58ff;font-weight:bold;">¥ ${escapeHtml(o.estimate_price)}</span></div>
                         <div><strong>加价补贴券:</strong> ${parseFloat(o.coupon_add_price || 0) > 0 ? `<span style="color:#dc2626;font-weight:bold;">+¥ ${escapeHtml(o.coupon_add_price)} (已享现金加码)</span>` : '<span style="color:#94a3b8;">未使用</span>'}</div>
-                        <div><strong>最终成交价:</strong> <span style="color:#10b981;font-weight:bold;">¥ ${escapeHtml(o.final_price || o.estimate_price)}</span></div>
+                        <div><strong>${(o.biz_type === 'service' || o.biz_type === 'errand') ? '服务金额' : '最终成交价'}:</strong> <span style="color:#10b981;font-weight:bold;">¥ ${escapeHtml(o.final_price || o.estimate_price)}</span></div>
                         <div><strong>联系人:</strong> ${escapeHtml(o.contact_name)} (${escapeHtml(o.contact_mobile)})</div>
                     </div>
-                    ${payoutInfoHtml}
+                    ${o.biz_type === 'service' || o.biz_type === 'errand' ? `
+                    <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:12px 14px;margin:12px 0;">
+                        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+                            <strong style="color:#166534;font-size:13px;display:flex;align-items:center;gap:6px;">
+                                💳 客户支付结算明细 (正向收银)
+                            </strong>
+                            <span class="badge" style="background:${(o.pay_status === 'paid' || o.pay_status == 1 || o.pay_status === '1') ? '#dcfce7' : '#fee2e2'};color:${(o.pay_status === 'paid' || o.pay_status == 1 || o.pay_status === '1') ? '#15803d' : '#b91c1c'};font-weight:bold;">
+                                ${(o.pay_status === 'paid' || o.pay_status == 1 || o.pay_status === '1') ? '✓ 已支付全款' : '⏳ 待客户支付'}
+                            </span>
+                        </div>
+                        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;font-size:12px;color:#166534;">
+                            <div>应付/实付金额: <strong style="color:#ea580c;font-size:14px;">¥ ${escapeHtml(o.pay_price || o.final_price || o.estimate_price)}</strong></div>
+                            <div>支付渠道: <strong>${escapeHtml(o.pay_type === 'wechat' ? '微信支付官方' : (o.pay_type === 'alipay' ? '支付宝官方' : (o.pay_type === 'mock' ? '开发模拟支付' : (o.pay_type || '线上支付'))))}</strong></div>
+                            <div>支付流水号: <span style="font-family:monospace;">${escapeHtml(o.pay_trade_no || '暂无')}</span></div>
+                        </div>
+                        ${o.pay_time ? `<div style="font-size:11px;color:#15803d;margin-top:6px;">支付到账时间: ${escapeHtml(o.pay_time)}</div>` : ''}
+                    </div>
+
+                    <div style="background:#faf5ff;border:1px solid #e9d5ff;border-radius:8px;padding:12px 14px;margin:12px 0;">
+                        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+                            <strong style="color:#6b21a8;font-size:13px;display:flex;align-items:center;gap:6px;">
+                                👷 师傅派单与现场履约动态
+                            </strong>
+                            <span class="badge" style="background:#ede9fe;color:#5b21b6;font-weight:bold;">
+                                ${o.technician_name ? ('已指派: ' + escapeHtml(o.technician_name)) : '等待指派师傅'}
+                            </span>
+                        </div>
+                        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:12px;color:#581c87;">
+                            <div>师傅姓名: <strong>${escapeHtml(o.technician_name || '未指派')}</strong></div>
+                            <div>联系电话: <strong>${escapeHtml(o.technician_mobile || '未指派')}</strong></div>
+                            <div>开始服务时间: ${escapeHtml(o.service_start_time || '尚未开始')}</div>
+                            <div>服务完工时间: ${escapeHtml(o.service_finish_time || '尚未完工')}</div>
+                        </div>
+                        ${o.service_images && o.service_images.length ? `
+                            <div style="margin-top:10px;">
+                                <div style="font-size:12px;font-weight:600;color:#6b21a8;margin-bottom:6px;">现场完工服务凭证照片:</div>
+                                <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                                    ${o.service_images.map(img => `<a href="${escapeHtml(img)}" target="_blank"><img src="${escapeHtml(img)}" style="width:70px;height:70px;border-radius:6px;object-fit:cover;border:1px solid #d8b4fe;"></a>`).join('')}
+                                </div>
+                            </div>
+                        ` : ''}
+                    </div>
+                ` : payoutInfoHtml}
                     ${negotiationHtml}
                     ${sfShippingHtml}
                     ${o.fulfillment_type === 'store' ? `<p><strong>服务网点:</strong> <span style="color:#2563eb;font-weight:700;">🏬 ${escapeHtml(o.store_name || '官方推荐服务网点')}</span></p>` : `<p><strong>取件/收货地址:</strong> ${escapeHtml(o.contact_address || '未提供详细地址')}</p>`}
                     <p><strong>预约时间:</strong> ${escapeHtml(o.appointment_time || '即刻处理')}</p>
+                    ${(o.biz_type === 'recycle' || !o.biz_type || o.express_sn) ? `
                     <div style="display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:8px;">
                         <strong>物流/寄送单号:</strong>
                         <span>${escapeHtml(o.express_company || '顺丰速运')}</span>
@@ -384,8 +509,10 @@
                             </button>
                         ` : ''}
                     </div>
-                    <p><strong>退货返还物流:</strong> ${escapeHtml(o.refund_express_sn || '无')}</p>
+                    ${o.refund_express_sn ? `<p><strong>退货返还物流:</strong> ${escapeHtml(o.refund_express_sn)}</p>` : ''}
+                    ` : ''}
                     <p><strong>订单留言:</strong> ${escapeHtml(o.user_remark || '无')}</p>
+                    ${customFieldsHtml}
                     <hr style="margin:12px 0;border:none;border-top:1px dashed #e2e8f0;">
                     <p style="font-weight:600;margin-bottom:6px;">用户评估选项明细:</p>
                     ${detailsHtml || '<div style="color:#94a3b8;">无选项数据</div>'}
@@ -677,6 +804,151 @@
     };
 
     // ==========================================
+
+    // 同城服务 - 指派上门师傅/技术人员
+    window.openDispatchModal = async function (orderId, orderSn, currentTechName) {
+        let techList = [];
+        try {
+            const res = await api.get('/admin/technician/options');
+            if (res && res.code === 200 && Array.isArray(res.data)) {
+                techList = res.data;
+            }
+        } catch (e) {
+            console.error('获取师傅列表失败', e);
+        }
+
+        const optionsHtml = techList.map(t => {
+            const statusBadge = t.is_online ? '【在线】' : '【离线】';
+            const star = t.star_rating ? `⭐${t.star_rating}` : '';
+            return `<option value="${t.id}" data-name="${escapeHtml(t.name)}" data-mobile="${escapeHtml(t.mobile)}">${escapeHtml(t.name)} (${escapeHtml(t.mobile)}) - ${statusBadge} ${star} ${escapeHtml(t.district_name || '')}</option>`;
+        }).join('');
+
+        const modal = document.createElement('div');
+        modal.className = 'modal-overlay';
+        modal.innerHTML = `
+            <div class="modal-card" style="max-width:520px;">
+                <div class="modal-header">
+                    <h3>🛠️ 指派上门师傅 / 服务人员</h3>
+                    <button class="modal-close" onclick="this.closest('.modal-overlay').remove()">×</button>
+                </div>
+                <div class="modal-body">
+                    <div style="background:#f8fafc;padding:10px 14px;border-radius:8px;margin-bottom:16px;font-size:13px;border-left:4px solid #6366f1;">
+                        <div><strong>订单编号：</strong><span style="font-family:monospace;color:#334155;">${escapeHtml(orderSn)}</span></div>
+                        <div style="margin-top:4px;"><strong>当前师傅：</strong><span style="color:#64748b;">${escapeHtml(currentTechName || '暂未指派')}</span></div>
+                    </div>
+                    
+                    <div class="login-form-group">
+                        <label>从系统师傅库中快捷选择</label>
+                        <select id="modal-dispatch-select" class="form-control" style="width:100%;">
+                            <option value="">-- 点击选择入驻师傅 (自动填充) --</option>
+                            ${optionsHtml}
+                        </select>
+                    </div>
+
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+                        <div class="login-form-group">
+                            <label>师傅姓名 <span style="color:#ef4444;">*</span></label>
+                            <input type="text" id="modal-dispatch-name" class="form-control" placeholder="例如：张师傅" value="${escapeHtml(currentTechName || '')}">
+                        </div>
+                        <div class="login-form-group">
+                            <label>联系电话 <span style="color:#ef4444;">*</span></label>
+                            <input type="text" id="modal-dispatch-mobile" class="form-control" placeholder="例如：13800000000">
+                        </div>
+                    </div>
+                    <small style="color:#64748b;font-size:12px;">提示：派单成功后，系统将自动把订单流转为【已派单/待履约】，并在小程序端向用户展示师傅联系方式与履约状态。</small>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" onclick="this.closest('.modal-overlay').remove()">取消</button>
+                    <button class="btn btn-primary" id="btn-save-dispatch" style="background:#6366f1;border-color:#6366f1;">确认派单</button>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(modal);
+
+        const selectEl = modal.querySelector('#modal-dispatch-select');
+        const nameInput = modal.querySelector('#modal-dispatch-name');
+        const mobileInput = modal.querySelector('#modal-dispatch-mobile');
+        let selectedTechId = 0;
+
+        selectEl?.addEventListener('change', function () {
+            const opt = selectEl.options[selectEl.selectedIndex];
+            if (opt && opt.value) {
+                selectedTechId = parseInt(opt.value, 10) || 0;
+                nameInput.value = opt.getAttribute('data-name') || '';
+                mobileInput.value = opt.getAttribute('data-mobile') || '';
+            }
+        });
+
+        modal.querySelector('#btn-save-dispatch')?.addEventListener('click', async function () {
+            const techName = nameInput.value.trim();
+            const techMobile = mobileInput.value.trim();
+            if (!techName || !techMobile) {
+                SysUI.toast('请填写师傅姓名与联系电话', 'warning');
+                return;
+            }
+
+            const res = await api.post('/admin/order/dispatchTechnician', {
+                order_id: orderId,
+                technician_id: selectedTechId,
+                technician_name: techName,
+                technician_mobile: techMobile
+            });
+
+            if (res && res.code === 200) {
+                SysUI.toast('派单成功！订单已更新为已派单', 'success');
+                modal.remove();
+                reloadOrders();
+            } else {
+                SysUI.toast(res ? res.msg : '派单失败', 'error');
+            }
+        });
+    };
+
+    // 同城服务 - 订单完工核销与作业记录
+    window.openFinishModal = async function (orderId, orderSn) {
+        const modal = document.createElement('div');
+        modal.className = 'modal-overlay';
+        modal.innerHTML = `
+            <div class="modal-card" style="max-width:480px;">
+                <div class="modal-header">
+                    <h3>✅ 订单完工核销</h3>
+                    <button class="modal-close" onclick="this.closest('.modal-overlay').remove()">×</button>
+                </div>
+                <div class="modal-body">
+                    <div style="background:#f0fdf4;padding:10px 14px;border-radius:8px;margin-bottom:16px;font-size:13px;border-left:4px solid #10b981;">
+                        <div><strong>订单编号：</strong><span style="font-family:monospace;color:#166534;">${escapeHtml(orderSn)}</span></div>
+                        <div style="margin-top:4px;color:#15803d;">确认该服务已上门履约完毕，用户验收合格。</div>
+                    </div>
+                    <div class="login-form-group">
+                        <label>完工说明与核销备注</label>
+                        <textarea id="modal-finish-notes" class="form-control" rows="3" placeholder="例如：已上门完成管道疏通/保洁，客户已现场验收通过。"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" onclick="this.closest('.modal-overlay').remove()">取消</button>
+                    <button class="btn btn-success" id="btn-save-finish" style="background:#10b981;border-color:#10b981;">确认完工核销</button>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(modal);
+
+        modal.querySelector('#btn-save-finish')?.addEventListener('click', async function () {
+            const notes = document.getElementById('modal-finish-notes')?.value.trim() || '';
+            const res = await api.post('/admin/order/finishService', {
+                order_id: orderId,
+                notes: notes,
+                service_images: []
+            });
+
+            if (res && res.code === 200) {
+                SysUI.toast('服务订单核销完工成功！', 'success');
+                modal.remove();
+                reloadOrders();
+            } else {
+                SysUI.toast(res ? res.msg : '完工提交失败', 'error');
+            }
+        });
+    };
 
     window.renderOrdersView = renderOrdersView;
 })(window);

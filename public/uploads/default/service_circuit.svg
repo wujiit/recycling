@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+  <defs>
+    <linearGradient id="elecBg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fff7ed"/>
+      <stop offset="100%" stop-color="#ffedd5"/>
+    </linearGradient>
+    <linearGradient id="boltGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#facc15"/>
+      <stop offset="100%" stop-color="#ea580c"/>
+    </linearGradient>
+  </defs>
+  <rect width="200" height="200" rx="20" fill="url(#elecBg)"/>
+  <!-- Decorative circle -->
+  <circle cx="100" cy="105" r="60" fill="#fed7aa" opacity="0.4"/>
+  <!-- Circuit Breaker Box / Multimeter Body -->
+  <rect x="55" y="55" width="90" height="105" rx="14" fill="#1e293b" stroke="#334155" stroke-width="2"/>
+  <!-- Multimeter Screen -->
+  <rect x="68" y="68" width="64" height="32" rx="6" fill="#84cc16"/>
+  <text x="100" y="90" font-family="monospace" font-size="16" font-weight="bold" fill="#14532d" text-anchor="middle">220.5 V</text>
+  <!-- Rotary Dial -->
+  <circle cx="100" cy="125" r="16" fill="#475569" stroke="#94a3b8" stroke-width="2"/>
+  <line x1="100" y1="125" x2="100" y2="114" stroke="#facc15" stroke-width="3" stroke-linecap="round"/>
+  <!-- Test Leads / Probes (Red and Black) -->
+  <path d="M78 155 C70 170 50 165 42 150 L38 120" stroke="#ef4444" stroke-width="3.5" stroke-linecap="round" fill="none"/>
+  <rect x="36" y="112" width="4" height="14" fill="#ef4444"/>
+  <line x1="38" y1="112" x2="38" y2="98" stroke="#94a3b8" stroke-width="2"/>
+
+  <path d="M122 155 C130 170 150 165 158 150 L162 120" stroke="#0f172a" stroke-width="3.5" stroke-linecap="round" fill="none"/>
+  <rect x="160" y="112" width="4" height="14" fill="#0f172a"/>
+  <line x1="162" y1="112" x2="162" y2="98" stroke="#94a3b8" stroke-width="2"/>
+  <!-- Dynamic Lightning Bolt -->
+  <polygon points="155,30 135,55 147,55 132,80 165,48 150,48" fill="url(#boltGrad)"/>
+</svg>

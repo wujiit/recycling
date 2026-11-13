@@ -1,6 +1,6 @@
 <?php
 /**
- * 启灵回收系统 - 前台文章与单页接口控制器
+ * 启灵同城服务系统 - 前台文章与单页接口控制器
  * 提供文章单页详情、协议条款内容调取及浏览量统计
  */
 
@@ -42,6 +42,17 @@ class ArticleController extends Controller
     }
 
     /**
+     * 前台与小程序端官方公告列表 (公开跑马灯与弹窗播报)
+     * GET /api/article/notices
+     */
+    public function notices(): void
+    {
+        $limit = Request::getInt('limit', 10);
+        $notices = $this->articleModel->getNotices($limit);
+        Response::success($notices, '获取最新公告列表成功');
+    }
+
+    /**
      * 前台文章单页详情 (支持通过 ID 或 Slug 查询)
      */
     public function detail(): void
@@ -53,7 +64,7 @@ class ArticleController extends Controller
         if ($id > 0) {
             $article = $this->articleModel->getArticleById($id);
         } elseif ($slug !== '') {
-            // 向下兼容性保障：对历史可能出现的别名进行自愈别名映射
+            // 兼容历史别名映射
             if ($slug === 'about-us') {
                 $slug = 'about';
             } elseif ($slug === 'inspection-rules') {

@@ -1,5 +1,5 @@
-/**
- * 启灵回收系统 - 文章与单页管理视图
+﻿/**
+ * 启灵同城服务系统 - 文章与单页管理视图
  * 包含平台协议单页、帮助中心、回收指南与底部导航链接维护
  */
 (function (window) {
@@ -411,6 +411,7 @@
      */
     function updateStats(container, articles) {
         const total = articles.length;
+        const notice = articles.filter(a => a.category === 'notice').length;
         const legal = articles.filter(a => a.category === 'legal').length;
         const guide = articles.filter(a => a.category === 'guide').length;
         const footer = articles.filter(a => parseInt(a.is_footer, 10) === 1 && parseInt(a.status, 10) === 1).length;

@@ -1,7 +1,7 @@
 <?php
 /**
  * 启灵独立回收系统 - 后台回收客户管理控制器
- * 规范：支持客户多维检索、封禁拉黑与订单统揽
+ * 规范：支持客户列表筛选、封禁拉黑与订单查看
  * 编码：UTF-8 无 BOM
  */
 
@@ -258,7 +258,7 @@ class UserController extends AdminBaseController
         }
 
         $p = $this->db->getPrefix();
-        // 自愈添加 risk_tag 字段
+        // 检查并添加 risk_tag 字段（若不存在）
         try {
             $this->db->execute("ALTER TABLE `{$p}rc_user` ADD COLUMN `risk_tag` VARCHAR(32) NOT NULL DEFAULT 'normal' COMMENT '风控标签: normal正常, trusted优质, dispute争议, fraud欺诈预警'");
         } catch (\Throwable $e) {
@@ -315,8 +315,8 @@ class UserController extends AdminBaseController
             // 3. 吊销并强制踢出该用户所有在途会话
             $this->authService->kickUser($id);
 
-            // 4. 物理删除该会员记录 (完成销户)
-            $this->db->execute("DELETE FROM `{$p}rc_user` WHERE `id` = ? LIMIT 1", [$id]);
+            // 4. 软删除该会员记录 (完成销户，保全审计留痕)
+            $this->db->execute("UPDATE `{$p}rc_user` SET `deleted_at` = ?, `status` = 0, `deregister_status` = 'approved' WHERE `id` = ? LIMIT 1", [date('Y-m-d H:i:s'), $id]);
 
             // 5. 记录管理员安全审计日志
             $adminId = (int)($this->admin['id'] ?? 1);
@@ -389,7 +389,7 @@ class UserController extends AdminBaseController
             $this->db->execute("DELETE FROM `{$p}rc_user_coupon` WHERE `user_id` = ?", [$id]);
             $this->db->execute("UPDATE `{$p}rc_order` SET `user_id` = 0 WHERE `user_id` = ?", [$id]);
             $this->authService->kickUser($id);
-            $this->db->execute("DELETE FROM `{$p}rc_user` WHERE `id` = ? LIMIT 1", [$id]);
+            $this->db->execute("UPDATE `{$p}rc_user` SET `deleted_at` = ?, `status` = 0 WHERE `id` = ? LIMIT 1", [date('Y-m-d H:i:s'), $id]);
 
             $adminId = (int)($this->admin['id'] ?? 1);
             $this->authService->logAdminAction($adminId, 'delete_user', "管理员手动删除客户账号：用户ID={$id}, 手机号={$user['mobile']}");

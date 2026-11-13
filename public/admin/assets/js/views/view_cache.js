@@ -1,5 +1,5 @@
 /**
- * 启灵回收系统 - 缓存性能与统计监控视图
+ * 启灵同城服务系统 - 缓存性能与统计监控视图
  * 职责：Redis 独立库隔离运行监控、本地文件原子降级统计、内存占用分析与一键安全清空
  * 编码：UTF-8 无 BOM
  */
@@ -12,20 +12,26 @@
     // ==========================================
     async function renderCacheView(container) {
         container.innerHTML = `
+            <style>
+                @keyframes ql-spin {
+                    0% { transform: rotate(0deg); }
+                    100% { transform: rotate(360deg); }
+                }
+            </style>
             <div class="card">
                 <div class="card-header">
                     <div>
                         <div class="card-title">缓存管理</div>
-                        <div style="font-size:12px;color:#64748b;margin-top:4px;">查看系统缓存运行状态与内存占用</div>
+                        <div style="font-size:12px;color:#64748b;margin-top:4px;">查看系统缓存运行状态与内存占用 <span id="cache-last-updated" style="margin-left:8px;font-size:12px;color:#0ea5e9;font-weight:500;"></span></div>
                     </div>
-                    <div style="display:flex;gap:10px;flex-wrap:wrap;">
+                    <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
                         <button class="btn btn-primary" id="btn-cache-config" style="background:#4f46e5;border-color:#4338ca;">
                             <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor" style="margin-right:6px;"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg>
                             Redis 配置
                         </button>
                         <button class="btn btn-outline" id="btn-cache-refresh">
-                            <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor" style="margin-right:6px;"><path d="M12 4V1L8 5l4 4V6c3.31 0 6 2.69 6 6 0 1.01-.25 1.97-.7 2.8l1.46 1.46A7.93 7.93 0 0020 12c0-4.42-3.58-8-8-8zm0 14c-3.31 0-6-2.69-6-6 0-1.01.25-1.97.7-2.8L5.24 7.74A7.93 7.93 0 004 12c0 4.42 3.58 8 8 8v3l4-4-4-4v3z"/></svg>
-                            刷新
+                            <svg class="refresh-icon" viewBox="0 0 24 24" width="14" height="14" fill="currentColor" style="margin-right:6px;"><path d="M12 4V1L8 5l4 4V6c3.31 0 6 2.69 6 6 0 1.01-.25 1.97-.7 2.8l1.46 1.46A7.93 7.93 0 0020 12c0-4.42-3.58-8-8-8zm0 14c-3.31 0-6-2.69-6-6 0-1.01.25-1.97.7-2.8L5.24 7.74A7.93 7.93 0 004 12c0 4.42 3.58 8 8 8v3l4-4-4-4v3z"/></svg>
+                            <span class="refresh-text">刷新</span>
                         </button>
                         <button class="btn btn-danger" id="btn-cache-clear">
                             <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor" style="margin-right:6px;"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
@@ -124,29 +130,51 @@
             </div>
         `;
 
-        async function loadData() {
+        async function loadData(isManual = false) {
             const content = document.getElementById('cache-stats-content');
             if (!content) return;
 
-            const res = await api.get('/admin/system/cacheStats');
-            if (!res || res.code !== 200 || !res.data) {
-                content.innerHTML = '<div style="text-align:center;padding:30px;color:#ef4444;">获取缓存统计失败，请检查服务</div>';
-                return;
+            const refreshBtn = document.getElementById('btn-cache-refresh');
+            const refreshIcon = refreshBtn?.querySelector('.refresh-icon');
+            const refreshText = refreshBtn?.querySelector('.refresh-text');
+
+            if (isManual && refreshBtn) {
+                refreshBtn.disabled = true;
+                if (refreshIcon) refreshIcon.style.animation = 'ql-spin 0.7s linear infinite';
+                if (refreshText) refreshText.innerText = '刷新中...';
             }
 
-            const d = res.data;
-            const isRedis = d.is_redis;
+            try {
+                const res = await api.get('/admin/system/cacheStats', { _t: Date.now() });
+                if (!res || res.code !== 200 || !res.data) {
+                    content.innerHTML = '<div style="text-align:center;padding:30px;color:#ef4444;">获取缓存统计失败，请检查服务</div>';
+                    if (isManual && window.SysUI) {
+                        window.SysUI.toast(res ? res.msg : '获取缓存统计失败', 'error');
+                    }
+                    return;
+                }
 
-            let sampleKeysHtml = '';
-            if (d.sample_keys && d.sample_keys.length > 0) {
-                d.sample_keys.forEach(k => {
-                    sampleKeysHtml += `<tr><td><code>${escapeHtml(k)}</code></td><td><span class="badge badge-success">生效中</span></td></tr>`;
-                });
-            } else {
-                sampleKeysHtml = '<tr><td colspan="2" style="text-align:center;color:#64748b;padding:16px;">暂无专属前缀活跃键</td></tr>';
-            }
+                const d = res.data;
+                const isRedis = d.is_redis;
 
-            content.innerHTML = `
+                // 更新最后刷新时间显示
+                const lastUpdatedEl = document.getElementById('cache-last-updated');
+                if (lastUpdatedEl) {
+                    const now = new Date();
+                    const timeStr = [now.getHours(), now.getMinutes(), now.getSeconds()].map(n => String(n).padStart(2, '0')).join(':');
+                    lastUpdatedEl.innerText = `(已更新于 ${timeStr})`;
+                }
+
+                let sampleKeysHtml = '';
+                if (d.sample_keys && d.sample_keys.length > 0) {
+                    d.sample_keys.forEach(k => {
+                        sampleKeysHtml += `<tr><td><code>${escapeHtml(k)}</code></td><td><span class="badge badge-success">生效中</span></td></tr>`;
+                    });
+                } else {
+                    sampleKeysHtml = '<tr><td colspan="2" style="text-align:center;color:#64748b;padding:16px;">暂无专属前缀活跃键</td></tr>';
+                }
+
+                content.innerHTML = `
                 <!-- 统计指标网格 -->
                 <div class="stat-grid">
                     <div class="stat-card">
@@ -262,9 +290,27 @@
                     </table>
                 </div>
             `;
-        }
 
-        document.getElementById('btn-cache-refresh')?.addEventListener('click', loadData);
+            if (isManual && window.SysUI) {
+                window.SysUI.toast('缓存监控与性能统计已更新！', 'success');
+            }
+        } catch (err) {
+            console.error('刷新缓存数据异常:', err);
+            if (isManual && window.SysUI) {
+                window.SysUI.toast('刷新异常: ' + (err.message || '网络连接失败'), 'error');
+            }
+        } finally {
+            if (isManual && refreshBtn) {
+                refreshBtn.disabled = false;
+                if (refreshIcon) refreshIcon.style.animation = '';
+                if (refreshText) refreshText.innerText = '刷新';
+            }
+        }
+    }
+
+    document.getElementById('btn-cache-refresh')?.addEventListener('click', function() {
+        loadData(true);
+    });
 
         document.getElementById('btn-cache-clear')?.addEventListener('click', async function () {
             const confirmed = await SysUI.confirm('安全确认：将安全清理本回收系统的所有前缀缓存与本地文件缓存，绝不影响同服务器其他系统。确认继续？', {

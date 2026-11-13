@@ -40,9 +40,9 @@ try {
     if (!empty($act)) {
         header('Content-Type: application/json; charset=utf-8');
 
-        // 安全屏障：系统已安装且正常运行时，严格阻断重装与写库操作
-        if ($isInstalled && $dbOk && in_array($act, ['do_install', 'save_db_only'], true)) {
-            echo json_encode(['code' => 403, 'msg' => '系统已安装受保护，严禁执行安装或配置重写操作！如需维护请先从服务器手动删除 install.lock 文件'], JSON_UNESCAPED_UNICODE);
+        // 安全硬屏障：系统已安装时，严格阻断重装、写库与探测操作
+        if ($isInstalled) {
+            echo json_encode(['code' => 403, 'msg' => '系统已安装受保护，严禁执行安装、配置重写或探测操作！如需维护请先从服务器手动删除 install.lock 文件'], JSON_UNESCAPED_UNICODE);
             exit;
         }
 
@@ -76,22 +76,26 @@ try {
         }
     }
 
-    // 2. 仅在已安装且数据库连接正常时执行锁定拦截
-    if ($isInstalled && $step !== 4 && $dbOk) {
+    // 2. 安装锁硬屏障：只要物理存在 install.lock，无论当前数据库状态如何，一律拦截外部安装界面
+    if ($isInstalled && $step !== 4) {
+        $statusTitle = $dbOk ? '系统运行正常 (已锁定保护)' : '系统已锁定保护 (数据库连接断开)';
+        $statusColor = $dbOk ? '#27ae60' : '#e53e3e';
+        $statusDesc = $dbOk 
+            ? '数据库与环境运行正常，系统已受 <code>install.lock</code> 物理保护。'
+            : '检测到数据库连接异常，请登录服务器检查 <code>config/database.php</code> 配置。系统当前处于 <code>install.lock</code> 物理保护锁定状态，外部安装入口已完全关闭。';
+        $btnHtml = $dbOk 
+            ? '<a href="/admin/" class="btn btn-primary">直接进入后台管理</a>'
+            : '<a href="/install/index.php" class="btn btn-primary" style="background:#4a5568;">刷新重试</a>';
+
         echo '<!DOCTYPE html><html lang="zh-CN"><head><meta charset="utf-8"><title>系统已安装</title><link rel="stylesheet" href="assets/install.css"></head><body>'
             . '<div class="install-container" style="margin-top:60px; text-align:center; padding:50px 30px;">'
-            . '<h2 style="color:#27ae60; margin-bottom:12px;">系统运行正常 (已锁定保护)</h2>'
-            . '<p style="color:#718096; margin-bottom:24px;">数据库与环境运行正常，系统已受 <code>install.lock</code> 物理保护。</p>'
+            . '<h2 style="color:' . $statusColor . '; margin-bottom:12px;">' . $statusTitle . '</h2>'
+            . '<p style="color:#718096; margin-bottom:24px;">' . $statusDesc . '</p>'
             . '<div style="display:flex; justify-content:center; gap:16px;">'
-            . '<a href="/admin/" class="btn btn-primary">直接进入后台管理</a>'
+            . $btnHtml
             . '</div>'
             . '</div></body></html>';
         exit;
-    }
-
-    // 若已安装但数据库连接断开，自动进入第2步修复配置
-    if ($installer->isInstalled() && !$dbOk && $step === 1 && !$force) {
-        $step = 2;
     }
 
     // 3. 视图渲染

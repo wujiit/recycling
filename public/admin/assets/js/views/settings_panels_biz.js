@@ -1,5 +1,5 @@
 /**
- * 启灵回收系统 - 系统设置业务交割与支付物流组件
+ * 启灵同城服务系统 - 系统设置业务交割与支付物流组件
  * 提供回收履约方式、收款结算渠道、微信支付参数与顺丰速运参数的HTML模板
  */
 (function(window) {
@@ -86,7 +86,180 @@
 
                         </div>
 
-                        <!-- 5. 客户收款结算渠道面板 -->
+                        <!-- 4.5 统一在线支付配置面板 (微信/支付宝官方收款 - 用户向平台付款) -->
+                        <div class="settings-panel" id="panel-online-pay">
+                            <!-- 核心业务定位说明条 -->
+                            <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-left:4px solid #16a34a;border-radius:8px;padding:14px 18px;margin-bottom:24px;">
+                                <div style="display:flex;align-items:center;gap:8px;font-weight:700;color:#15803d;font-size:14px;margin-bottom:4px;">
+                                    <span>💳</span> 业务定位：同城服务「商户在线收款」官方通道配置 (用户 ➔ 平台)
+                                </div>
+                                <div style="font-size:13px;color:#166534;line-height:1.6;">
+                                    本面板专用于配置客户在<strong>【同城生活服务】</strong>预约下单或在线支付时，通过<strong>微信支付官方 (API v3)</strong> 或 <strong>支付宝官方 (OpenAPI)</strong> 向平台付款的官方收单参数（资金流入平台商户号）。<br>
+                                    <span style="color:#b45309;font-weight:600;">⚠️ 严格区分提示：</span>回收质检完成后由<strong>平台出资向用户转账打款</strong>的参数，请前往<strong>【📤 财务出资打款配置】</strong>面板设置，二者业务方向完全相反、相互独立。
+                                </div>
+                            </div>
+
+                            <!-- 1. 微信支付官方收单配置 (API v3) -->
+                            <div style="background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:20px;margin-bottom:24px;box-shadow:0 1px 3px rgba(0,0,0,0.03);">
+                                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:12px;">
+                                    <div style="display:flex;align-items:center;gap:10px;">
+                                        <div style="width:36px;height:36px;background:#e6f4ea;border-radius:8px;display:flex;align-items:center;justify-content:center;color:#07c160;font-size:20px;">
+                                            💬
+                                        </div>
+                                        <div>
+                                            <div style="font-size:15px;font-weight:700;color:#0f172a;">1. 微信支付官方商户收单配置 (API v3)</div>
+                                            <div style="font-size:12px;color:#64748b;margin-top:2px;">支持小程序直调支付 (JSAPI)、PC 扫码支付 (Native) 与手机网页 (H5)</div>
+                                        </div>
+                                    </div>
+                                    <div style="display:flex;gap:8px;">
+                                        <button type="button" class="btn btn-outline" id="btn-sync-pay-wechat-from-payout" style="height:32px;padding:0 12px;font-size:12px;color:#0284c7;border-color:#bae6fd;">
+                                            🔄 从出资打款一键复用参数
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <div style="background:#f8fafc;padding:14px;border:1px solid #e2e8f0;border-radius:8px;margin-bottom:16px;">
+                                    <label style="display:flex;align-items:center;gap:10px;font-weight:700;cursor:pointer;">
+                                        <input type="checkbox" id="cfg-pay-wechat-enabled" style="width:18px;height:18px;">
+                                        <span>启用微信支付官方收款 (前端收银台展示)</span>
+                                    </label>
+                                    <div style="font-size:12px;color:#64748b;margin-top:4px;padding-left:28px;">开启后，用户在小程序或网页收银台提交同城服务订单时，可选择微信支付并拉起微信安全扣款。</div>
+                                </div>
+
+                                <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;">
+                                    <div class="login-form-group" style="margin:0;">
+                                        <label>微信支付商户号 (MchId) <span style="color:#ef4444;">*</span></label>
+                                        <input type="text" id="cfg-pay-wechat-mchid" class="form-control" placeholder="例如: 1600000000 (微信支付商户平台的10位商户号)">
+                                    </div>
+                                    <div class="login-form-group" style="margin:0;">
+                                        <label>关联微信小程序/应用 AppID <span style="color:#ef4444;">*</span></label>
+                                        <input type="text" id="cfg-pay-wechat-appid" class="form-control" placeholder="例如: wx1234567890abcdef (需在微信商户平台完成AppID授权绑定)">
+                                    </div>
+                                </div>
+
+                                <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;">
+                                    <div class="login-form-group" style="margin:0;">
+                                        <label>商户 APIv3 密钥 (32位秘钥) <span style="color:#ef4444;">*</span></label>
+                                        <input type="password" id="cfg-pay-wechat-v3key" class="form-control" placeholder="在商户平台「API安全」中设置的32位字符">
+                                    </div>
+                                    <div class="login-form-group" style="margin:0;">
+                                        <label>商户 API 证书序列号 <span style="color:#ef4444;">*</span></label>
+                                        <input type="text" id="cfg-pay-wechat-cert-serial-no" class="form-control" placeholder="例如: 3775B6A45ACDCE70538E477F2CC0A3FC38F40173">
+                                    </div>
+                                </div>
+
+                                <div style="margin-bottom:16px;">
+                                    <div class="login-form-group" style="margin:0;">
+                                        <label>商户 API 私钥 (apiclient_key.pem) <span style="color:#ef4444;">*</span></label>
+                                        <textarea id="cfg-pay-wechat-private-key" class="form-control" rows="3" style="font-family:monospace;font-size:11px;" placeholder="粘贴以 -----BEGIN PRIVATE KEY----- 开头的商户私钥明文"></textarea>
+                                    </div>
+                                </div>
+
+                                <div style="margin-bottom:16px;">
+                                    <div class="login-form-group" style="margin:0;">
+                                        <label>微信支付平台公钥 / 平台证书 (选填，用于回调高级验签)</label>
+                                        <textarea id="cfg-pay-wechat-platform-public-key" class="form-control" rows="2" style="font-family:monospace;font-size:11px;" placeholder="粘贴微信支付平台证书明文 (选填，系统默认使用 APIv3 校验)"></textarea>
+                                    </div>
+                                </div>
+
+                                <div style="background:#f1f5f9;border-radius:8px;padding:12px 14px;font-size:12px;color:#475569;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
+                                    <div>
+                                        <strong>微信支付异步回调通知地址 (Notify URL)：</strong>
+                                        <code id="display-wechat-notify-url" style="color:#0284c7;font-family:monospace;margin-left:6px;">/api/payment/notifyWechat</code>
+                                    </div>
+                                    <button type="button" class="btn btn-outline" id="btn-copy-wechat-notify" style="height:26px;padding:0 8px;font-size:11px;">📋 复制通知URL</button>
+                                </div>
+                            </div>
+
+                            <!-- 2. 支付宝官方收单配置 (OpenAPI) -->
+                            <div style="background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:20px;margin-bottom:24px;box-shadow:0 1px 3px rgba(0,0,0,0.03);">
+                                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:12px;">
+                                    <div style="display:flex;align-items:center;gap:10px;">
+                                        <div style="width:36px;height:36px;background:#e0f2fe;border-radius:8px;display:flex;align-items:center;justify-content:center;color:#0284c7;font-size:20px;">
+                                            支
+                                        </div>
+                                        <div>
+                                            <div style="font-size:15px;font-weight:700;color:#0f172a;">2. 支付宝官方商户收单配置 (OpenAPI)</div>
+                                            <div style="font-size:12px;color:#64748b;margin-top:2px;">支持当面付扫码下单 (precreate) 与手机网站网页直连支付 (wap)</div>
+                                        </div>
+                                    </div>
+                                    <div style="display:flex;gap:8px;">
+                                        <button type="button" class="btn btn-outline" id="btn-sync-pay-alipay-from-payout" style="height:32px;padding:0 12px;font-size:12px;color:#0284c7;border-color:#bae6fd;">
+                                            🔄 从出资打款一键复用参数
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <div style="background:#f8fafc;padding:14px;border:1px solid #e2e8f0;border-radius:8px;margin-bottom:16px;">
+                                    <label style="display:flex;align-items:center;gap:10px;font-weight:700;cursor:pointer;">
+                                        <input type="checkbox" id="cfg-pay-alipay-enabled" style="width:18px;height:18px;">
+                                        <span>启用支付宝官方收款 (前端收银台展示)</span>
+                                    </label>
+                                    <div style="font-size:12px;color:#64748b;margin-top:4px;padding-left:28px;">开启后，用户在收银台可选择支付宝当面付扫码或手机支付完成服务订单付款。</div>
+                                </div>
+
+                                <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;">
+                                    <div class="login-form-group" style="margin:0;">
+                                        <label>支付宝应用 AppID <span style="color:#ef4444;">*</span></label>
+                                        <input type="text" id="cfg-pay-alipay-appid" class="form-control" placeholder="例如: 2021000000000000">
+                                    </div>
+                                    <div class="login-form-group" style="margin:0;">
+                                        <label>加签模式 (接口验签方式) <span style="color:#ef4444;">*</span></label>
+                                        <select id="cfg-pay-alipay-sign-type" class="form-control" style="font-weight:600;">
+                                            <option value="cert">公钥证书模式 (官方推荐)</option>
+                                            <option value="normal">普通公钥模式 (RSA2)</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <div style="margin-bottom:16px;">
+                                    <div class="login-form-group" style="margin:0;">
+                                        <label>应用私钥 (应用私钥 RSA2048) <span style="color:#ef4444;">*</span></label>
+                                        <textarea id="cfg-pay-alipay-private-key" class="form-control" rows="3" style="font-family:monospace;font-size:11px;" placeholder="粘贴支付宝开发助手生成的应用私钥文本"></textarea>
+                                    </div>
+                                </div>
+
+                                <div style="margin-bottom:16px;">
+                                    <div class="login-form-group" style="margin:0;">
+                                        <label>支付宝公钥 / 支付宝公钥证书 <span style="color:#ef4444;">*</span></label>
+                                        <textarea id="cfg-pay-alipay-public-key" class="form-control" rows="3" style="font-family:monospace;font-size:11px;" placeholder="粘贴支付宝公钥或 alipayCertPublicKey_RSA2.crt 证书明文"></textarea>
+                                    </div>
+                                </div>
+
+                                <div style="background:#f1f5f9;border-radius:8px;padding:12px 14px;font-size:12px;color:#475569;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
+                                    <div>
+                                        <strong>支付宝异步回调通知地址 (Notify URL)：</strong>
+                                        <code id="display-alipay-notify-url" style="color:#0284c7;font-family:monospace;margin-left:6px;">/api/payment/notifyAlipay</code>
+                                    </div>
+                                    <button type="button" class="btn btn-outline" id="btn-copy-alipay-notify" style="height:26px;padding:0 8px;font-size:11px;">📋 复制通知URL</button>
+                                </div>
+                            </div>
+
+                            <!-- 3. 沙箱开发与本地模拟极速通道 -->
+                            <div style="background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:20px;margin-bottom:24px;box-shadow:0 1px 3px rgba(0,0,0,0.03);">
+                                <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;">
+                                    <div style="width:36px;height:36px;background:#fef3c7;border-radius:8px;display:flex;align-items:center;justify-content:center;color:#d97706;font-size:20px;">
+                                        ⚡
+                                    </div>
+                                    <div>
+                                        <div style="font-size:15px;font-weight:700;color:#0f172a;">3. 开发调试与演示极速模拟通道 (非正式渠道)</div>
+                                        <div style="font-size:12px;color:#64748b;margin-top:2px;">本地开发联调或未申请到商户号时的免密体验通道</div>
+                                    </div>
+                                </div>
+
+                                <div style="background:#f8fafc;padding:14px;border:1px solid #e2e8f0;border-radius:8px;">
+                                    <label style="display:flex;align-items:center;gap:10px;font-weight:700;cursor:pointer;">
+                                        <input type="checkbox" id="cfg-pay-mock-enabled" style="width:18px;height:18px;">
+                                        <span>启用极速模拟支付 (测试环境专享)</span>
+                                    </label>
+                                    <div style="font-size:12px;color:#64748b;margin-top:4px;padding-left:28px;">
+                                        开启后，在收银台将展示「极速模拟支付」通道。点击后直接模拟支付成功并自动推进至待派单履约，完全不产生真实扣款。正式上线运营时建议关闭此项。
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 5. 客户收款结算渠道面板 (回收业务客户收款账户类型) -->
                         <div class="settings-panel" id="panel-payout">
                                                     <!-- 5. 客户收款结算渠道高度自定义 -->
                         <div style="margin-bottom:28px;">
@@ -195,8 +368,18 @@
 
                         </div>
 
-                        <!-- 6. 支付宝与微信商户转账打款配置 -->
+                        <!-- 6. 财务出资打款配置 (平台转账给用户/放款) -->
                         <div class="settings-panel" id="panel-wechat">
+                            <div style="background:#fffbeb;border:1px solid #fde68a;border-left:4px solid #f59e0b;border-radius:8px;padding:12px 16px;margin-bottom:18px;">
+                                <div style="display:flex;align-items:center;gap:8px;font-weight:700;color:#92400e;font-size:13px;margin-bottom:3px;">
+                                    <span>📤</span> 业务定位：财务出资打款与转账放款 (平台 ➔ 用户/技师)
+                                </div>
+                                <div style="font-size:12px;color:#78350f;line-height:1.5;">
+                                    本区域配置平台在完成二手设备回收质检后向客户发放回收款、或向师傅结算提现的<strong>官方商家转账出资渠道</strong>（资金流向：平台专户 ➔ 用户零钱/支付宝）。<br>
+                                    如需配置同城生活服务客户向平台付款的收款参数，请前往<strong>【💳 在线支付配置 (用户付款)】</strong>。
+                                </div>
+                            </div>
+
                             <!-- 6.1 支付宝转账配置 -->
                             <div style="background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:20px;margin-bottom:20px;">
                                 <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:12px;">
@@ -625,7 +808,7 @@
                                     <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:12px;">
                                         <div class="login-form-group" style="margin:0;">
                                             <label>仓库收件人姓名 <span style="color:#ef4444;">*</span></label>
-                                            <input type="text" id="cfg-sf-receive-contact" class="form-control" placeholder="如: 启灵回收质检中心">
+                                            <input type="text" id="cfg-sf-receive-contact" class="form-control" placeholder="如: 启灵同城服务质检中心">
                                         </div>
                                         <div class="login-form-group" style="margin:0;">
                                             <label>仓库联系电话/固话 <span style="color:#ef4444;">*</span></label>

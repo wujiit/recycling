@@ -1,6 +1,6 @@
 <?php
 /**
- * 启灵回收系统 - IP 归属地与网络运营商解析服务
+ * 启灵同城服务系统 - IP 归属地与网络运营商解析服务
  * 提供单 IP 查询、批量解析与多级缓存机制
  */
 
@@ -197,8 +197,8 @@ class IpService
             CURLOPT_FOLLOWLOCATION => true,
             CURLOPT_HTTP_VERSION   => CURL_HTTP_VERSION_1_1,
             CURLOPT_CUSTOMREQUEST  => 'GET',
-            CURLOPT_SSL_VERIFYPEER => false,
-            CURLOPT_SSL_VERIFYHOST => false,
+            CURLOPT_SSL_VERIFYPEER => true,
+            CURLOPT_SSL_VERIFYHOST => 2,
             CURLOPT_HTTPHEADER     => [
                 'X-API-Key: ' . $apiKey,
                 'Content-Type: application/json'

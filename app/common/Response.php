@@ -46,12 +46,14 @@ class Response
             http_response_code($httpStatus);
             header('Content-Type: application/json; charset=utf-8');
             header('X-Content-Type-Options: nosniff');
+            header('X-Trace-Id: ' . Request::traceId());
         }
 
         $payload = [
-            'code' => $code,
-            'msg'  => $msg,
-            'data' => $data ?? new \stdClass()
+            'code'     => $code,
+            'msg'      => $msg,
+            'data'     => $data ?? new \stdClass(),
+            'trace_id' => Request::traceId()
         ];
 
         echo json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);

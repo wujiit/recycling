@@ -251,7 +251,7 @@ class InstallController
      */
     public function saveDatabaseOnly(array $params): array
     {
-        if ($this->isInstalled() && $this->checkCurrentDbConnection()) {
+        if ($this->isInstalled()) {
             return ['code' => 403, 'msg' => '系统已安装受保护，禁止任意重写数据库配置。如需重配请先手动删除服务器上的 install.lock 文件'];
         }
 
@@ -292,6 +292,15 @@ class InstallController
             return ['code' => 500, 'msg' => $e->getMessage()];
         }
 
+        // 同步写入 Redis 独立多网站隔离配置
+        if (!empty($params['redis']) && is_array($params['redis'])) {
+            try {
+                $this->writeRedisConfig($params['redis']);
+            } catch (\Throwable $e) {
+                // 静默容灾
+            }
+        }
+
         // 写入锁文件
         $this->writeLockFile();
 
@@ -303,7 +312,7 @@ class InstallController
      */
     public function executeInstall(array $params): array
     {
-        $canInstall = !$this->isInstalled() || !$this->checkCurrentDbConnection();
+        $canInstall = !$this->isInstalled();
         if (!$canInstall) {
             return ['code' => 403, 'msg' => '系统已经安装完毕，严防重复出资与数据被覆写！如需重装请先手动删除服务器上的 install.lock 文件'];
         }
@@ -330,14 +339,31 @@ class InstallController
             return ['code' => 400, 'msg' => '管理员密码长度不得少于 6 位'];
         }
 
-        // 1. 连接数据库
+        // 1. 连接数据库 (支持目标库不存在时自动建立)
         try {
+            $pdo = null;
             $dsn = sprintf('mysql:host=%s;port=%d;dbname=%s;charset=utf8mb4', $dbHost, $dbPort, $dbName);
-            $pdo = new \PDO($dsn, $dbUser, $dbPass, [
-                \PDO::ATTR_ERRMODE => \PDO::ERRMODE_EXCEPTION
-            ]);
+            try {
+                $pdo = new \PDO($dsn, $dbUser, $dbPass, [
+                    \PDO::ATTR_ERRMODE => \PDO::ERRMODE_EXCEPTION,
+                    \PDO::ATTR_TIMEOUT => 5
+                ]);
+            } catch (\PDOException $eDb) {
+                // 若指定数据库连接失败，尝试不带 dbname 连接 MySQL 并自动建库
+                $dsnNoDb = sprintf('mysql:host=%s;port=%d;charset=utf8mb4', $dbHost, $dbPort);
+                $pdoServer = new \PDO($dsnNoDb, $dbUser, $dbPass, [
+                    \PDO::ATTR_ERRMODE => \PDO::ERRMODE_EXCEPTION,
+                    \PDO::ATTR_TIMEOUT => 5
+                ]);
+                $pdoServer->exec(sprintf("CREATE DATABASE IF NOT EXISTS `%s` DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci", $dbName));
+                // 建库后重新连接
+                $pdo = new \PDO($dsn, $dbUser, $dbPass, [
+                    \PDO::ATTR_ERRMODE => \PDO::ERRMODE_EXCEPTION,
+                    \PDO::ATTR_TIMEOUT => 5
+                ]);
+            }
         } catch (\PDOException $e) {
-            return ['code' => 400, 'msg' => '无法连接目标数据库: ' . $e->getMessage()];
+            return ['code' => 400, 'msg' => '无法连接或创建目标数据库: ' . $e->getMessage()];
         }
 
         // 2. 读取并分块执行 SQL
@@ -346,18 +372,46 @@ class InstallController
             $sqlFile = $this->baseDir . DIRECTORY_SEPARATOR . 'install' . DIRECTORY_SEPARATOR . 'sql' . DIRECTORY_SEPARATOR . 'install.sql';
         }
         if (!is_file($sqlFile)) {
+            $sqlFile = $this->baseDir . DIRECTORY_SEPARATOR . 'public' . DIRECTORY_SEPARATOR . 'install' . DIRECTORY_SEPARATOR . 'sql' . DIRECTORY_SEPARATOR . 'install.sql';
+        }
+        if (!is_file($sqlFile)) {
             return ['code' => 400, 'msg' => 'install.sql 初始化脚本不存在'];
         }
 
         $sqlContent = file_get_contents($sqlFile);
         $sqlContent = str_replace('__PREFIX__', $prefix, $sqlContent);
 
-        // 分割 SQL 语句
-        $statements = array_filter(array_map('trim', explode(";\n", $sqlContent)));
+        // 规范化换行符（兼容 Windows CRLF / Linux LF）
+        $sqlContent = str_replace(["\r\n", "\r"], "\n", $sqlContent);
+
+        // 逐行解析，精准剥离注释，确保每条语句（CREATE/INSERT/DROP）完整分块执行
+        $lines = explode("\n", $sqlContent);
+        $statements = [];
+        $currentStmt = '';
+
+        foreach ($lines as $line) {
+            $trimmedLine = trim($line);
+            // 过滤纯单行注释和空行
+            if ($trimmedLine === '' || strncmp($trimmedLine, '--', 2) === 0 || strncmp($trimmedLine, '#', 1) === 0) {
+                continue;
+            }
+            $currentStmt .= $line . "\n";
+            // 判断当前语句是否以分号结尾
+            if (substr(rtrim($trimmedLine), -1) === ';') {
+                $cleanSql = trim($currentStmt);
+                if (!empty($cleanSql)) {
+                    $statements[] = $cleanSql;
+                }
+                $currentStmt = '';
+            }
+        }
+        if (!empty(trim($currentStmt))) {
+            $statements[] = trim($currentStmt);
+        }
 
         try {
             foreach ($statements as $stmt) {
-                if (!empty($stmt) && strncmp($stmt, '--', 2) !== 0) {
+                if (!empty($stmt)) {
                     $pdo->exec($stmt);
                 }
             }
@@ -515,7 +569,7 @@ class InstallController
         $targetFile = $configDir . DIRECTORY_SEPARATOR . 'app.php';
 
         $code = "<?php\n// 自动生成的应用全局配置\nreturn [\n"
-            . "    'app_name' => " . var_export(!empty($app['name']) ? $app['name'] : '启灵专业二手回收系统', true) . ",\n"
+            . "    'app_name' => " . var_export(!empty($app['name']) ? $app['name'] : '启灵同城服务', true) . ",\n"
             . "    'app_key'  => " . var_export(bin2hex(random_bytes(16)), true) . ",\n"
             . "    'debug'    => false,\n"
             . "    'timezone' => 'Asia/Shanghai',\n"

@@ -1,7 +1,7 @@
 <?php
 /**
- * 启灵回收系统 - 顺丰速运开放平台服务端异步回调推送控制器
- * 处理运费推送 (EXP_RECE_WAYBILLS_FEE_PUSH) 与路由推送
+ * 启灵同城服务系统 - 顺丰速运开放平台服务端异步回调推送控制器
+ * 处理运费推送 (EXP_RECE_WAYBILLS_FEE_PUSH)、路由推送与订单状态推送
  */
 
 declare(strict_types=1);
@@ -53,13 +53,15 @@ class SfController extends Controller
 
         try {
             $result = $this->sfService->handleWaybillsFeePush($params, $rawBody);
-            http_response_code(200);
+            $httpCode = (!empty($result['code']) && (int)$result['code'] === 403) ? 403 : 200;
+            http_response_code($httpCode);
             echo json_encode($result, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
             exit;
         } catch (\Throwable $e) {
             $this->sfService->logInfo('顺丰运费推送控制器捕获异常', [
                 'error' => $e->getMessage()
             ]);
+
             http_response_code(200);
             echo json_encode([
                 'code'        => 200,
@@ -101,13 +103,15 @@ class SfController extends Controller
 
         try {
             $result = $this->sfService->handleRoutePush($params, $rawBody);
-            http_response_code(200);
+            $httpCode = (!empty($result['return_code']) && $result['return_code'] === '4003') ? 403 : 200;
+            http_response_code($httpCode);
             echo json_encode($result, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
             exit;
         } catch (\Throwable $e) {
             $this->sfService->logInfo('顺丰路由推送控制器捕获异常', [
                 'error' => $e->getMessage()
             ]);
+
             http_response_code(200);
             echo json_encode([
                 'return_code' => '0000',
@@ -146,13 +150,15 @@ class SfController extends Controller
 
         try {
             $result = $this->sfService->handleOrderStatePush($params, $rawBody);
-            http_response_code(200);
+            $httpCode = (!empty($result['code']) && $result['code'] === '403') ? 403 : 200;
+            http_response_code($httpCode);
             echo json_encode($result, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
             exit;
         } catch (\Throwable $e) {
             $this->sfService->logInfo('顺丰订单状态推送控制器捕获异常', [
                 'error' => $e->getMessage()
             ]);
+
             http_response_code(200);
             echo json_encode([
                 'success' => 'true',

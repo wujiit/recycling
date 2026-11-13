@@ -1,5 +1,5 @@
 /**
- * 启灵回收系统 - 前台核心底座模块
+ * 启灵同城服务系统 - 前台核心底座模块
  * 包含全局状态管理、API通信客户端、XSS转义工具与UI弹窗组件
  */
 (function(window) {
@@ -255,8 +255,12 @@
     // 挂载全局与模块命名空间
     window.escapeHtml = escapeHtml;
     window.getStatusBadge = getStatusBadge;
+    window.apiFetch = function(endpoint, method = 'GET', data = null) {
+        return api.request(endpoint, method, data);
+    };
     window.HomeApp.state = state;
     window.HomeApp.api = api;
+    window.HomeApp.apiFetch = window.apiFetch;
     window.HomeApp.SysUI = SysUI;
     window.HomeApp.escapeHtml = escapeHtml;
     window.HomeApp.getStatusBadge = getStatusBadge;

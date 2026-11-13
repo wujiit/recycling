@@ -1,6 +1,6 @@
 <?php
 /**
- * 启灵回收系统 - 微信支付官方商家转账服务 (APIv3 标准接口)
+ * 启灵同城服务系统 - 微信支付官方商家转账服务 (APIv3 标准接口)
  * 支持发起商家转账到零钱、转账单号查询与账户余额查询
  */
 
@@ -566,8 +566,8 @@ class WechatTransferService
             curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
             curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 5); // 连接超时 5 秒
             curl_setopt($ch, CURLOPT_TIMEOUT, 15);        // 响应超时 15 秒
-            curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
-            curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 0);
+            curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, true);
+            curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 2);
             curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
 
             $raw = curl_exec($ch);

@@ -1,5 +1,5 @@
 /**
- * 启灵回收系统 - PC 后台单页调度应用
+ * 启灵同城服务系统 - PC 后台单页调度应用
  * 包含路由分发、菜单切换、用户鉴权与视图生命周期管理
  */
 (function (window) {
@@ -62,12 +62,12 @@
                 renderForbiddenDisguise(app);
                 return;
             }
-            document.title = '启灵回收 · 管理后台';
+            document.title = '启灵同城服务 · 管理后台';
             renderLogin(app);
             return;
         }
 
-        document.title = '启灵回收 · 管理后台';
+        document.title = '启灵同城服务 · 管理后台';
         renderMainLayout(app);
     }
 
@@ -80,7 +80,7 @@
                 <div class="login-card">
                     <div class="login-logo">
                         <div style="width:48px;height:48px;background:#1e58ff;color:#fff;border-radius:12px;margin:0 auto;display:flex;align-items:center;justify-content:center;font-size:24px;font-weight:bold;">启</div>
-                        <h2>启灵回收管理系统</h2>
+                        <h2>启灵同城服务</h2>
                         <p style="color:#64748b;font-size:13px;margin-top:4px;">回收业务综合管理后台</p>
                     </div>
                     <form id="login-form">
@@ -127,19 +127,171 @@
     }
 
     /**
+     * 合成温和悦耳的双音提示音 (原生 Web Audio API，无需加载外部音频文件)
+     */
+    function playOrderChime() {
+        try {
+            const AudioCtx = window.AudioContext || window.webkitAudioContext;
+            if (!AudioCtx) return;
+            const ctx = new AudioCtx();
+            if (ctx.state === 'suspended') {
+                ctx.resume();
+            }
+            const now = ctx.currentTime;
+            
+            // 第一声清脆音 (D5, 587Hz)
+            const osc1 = ctx.createOscillator();
+            const gain1 = ctx.createGain();
+            osc1.type = 'sine';
+            osc1.frequency.setValueAtTime(587.33, now);
+            osc1.frequency.exponentialRampToValueAtTime(880, now + 0.12);
+            gain1.gain.setValueAtTime(0.18, now);
+            gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.45);
+            osc1.connect(gain1);
+            gain1.connect(ctx.destination);
+            osc1.start(now);
+            osc1.stop(now + 0.45);
+
+            // 第二声提升音 (D6, 1174Hz)
+            const osc2 = ctx.createOscillator();
+            const gain2 = ctx.createGain();
+            osc2.type = 'sine';
+            osc2.frequency.setValueAtTime(1174.66, now + 0.12);
+            gain2.gain.setValueAtTime(0.22, now + 0.12);
+            gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.65);
+            osc2.connect(gain2);
+            gain2.connect(ctx.destination);
+            osc2.start(now + 0.12);
+            osc2.stop(now + 0.65);
+        } catch (e) {
+            // 静默容错
+        }
+    }
+
+    /**
+     * 刷新待处理业务与新订单统计数据
+     */
+    async function refreshPendingCounts() {
+        if (!state.token) return;
+        try {
+            const res = await api.get('/admin/order/pendingCount');
+            if (!res || res.code !== 200 || !res.data) return;
+            const d = res.data;
+            const totalPending = parseInt(d.total_pending, 10) || 0;
+            const servicePending = parseInt(d.service_pending_dispatch, 10) || 0;
+            const recyclePending = parseInt(d.recycle_pending, 10) || 0;
+            const payoutPending = parseInt(d.recycle_payout_pending, 10) || 0;
+            const latestTime = parseInt(d.latest_order_time, 10) || 0;
+            const latestSn = d.latest_order_sn || '';
+
+            // 1. 刷新侧边栏菜单数字角标
+            const updateBadge = (id, count) => {
+                const badge = document.getElementById(`menu-badge-${id}`);
+                if (!badge) return;
+                if (count > 0) {
+                    badge.innerText = count > 99 ? '99+' : count;
+                    badge.style.display = 'inline-flex';
+                    badge.classList.add('has-pulse');
+                } else {
+                    badge.style.display = 'none';
+                    badge.classList.remove('has-pulse');
+                }
+            };
+
+            updateBadge('orders', totalPending);
+            updateBadge('services', servicePending);
+            updateBadge('inspection', recyclePending);
+            updateBadge('payout', payoutPending);
+
+            // 2. 刷新顶部铃铛小红点与下拉卡片
+            const headerBadge = document.getElementById('header-notify-count');
+            const totalBadge = document.getElementById('notify-total-badge');
+            if (headerBadge) {
+                if (totalPending > 0) {
+                    headerBadge.innerText = totalPending > 99 ? '99+' : totalPending;
+                    headerBadge.style.display = 'inline-flex';
+                } else {
+                    headerBadge.style.display = 'none';
+                }
+            }
+            if (totalBadge) {
+                totalBadge.innerText = `${totalPending} 待处理`;
+            }
+
+            const updateItem = (countId, descId, count, pendingText, zeroText) => {
+                const countEl = document.getElementById(countId);
+                const descEl = document.getElementById(descId);
+                if (countEl) {
+                    if (count > 0) {
+                        countEl.innerText = count > 99 ? '99+' : count;
+                        countEl.style.display = 'inline-block';
+                    } else {
+                        countEl.style.display = 'none';
+                    }
+                }
+                if (descEl) {
+                    descEl.innerText = count > 0 ? `${count} ${pendingText}` : zeroText;
+                }
+            };
+
+            updateItem('notify-count-service', 'notify-desc-service', servicePending, '单待指派师傅履约', '暂无待派单服务');
+            updateItem('notify-count-recycle', 'notify-desc-recycle', recyclePending, '件待收货/质检确认', '暂无待验货设备');
+            updateItem('notify-count-payout', 'notify-desc-payout', payoutPending, '笔待打款放款', '暂无待放款订单');
+
+            // 3. 检测是否有崭新订单到达 (时间戳递增)
+            if (state.lastLatestOrderTime && latestTime > state.lastLatestOrderTime) {
+                playOrderChime();
+                SysUI.toast(`🔔 收到新订单 [${latestSn}]，请及时查看与处理！`, 'info');
+                
+                // 网页标题高亮动态提醒
+                if (!state.origDocTitle) {
+                    state.origDocTitle = document.title;
+                }
+                document.title = `【新订单】${state.origDocTitle}`;
+                setTimeout(() => {
+                    if (state.origDocTitle) document.title = state.origDocTitle;
+                }, 6000);
+
+                // 若当前正停留在订单工作台，自动无缝静默刷新列表
+                if (state.currentTab === 'orders' && typeof window.reloadOrders === 'function') {
+                    window.reloadOrders();
+                }
+            }
+
+            state.lastLatestOrderTime = latestTime;
+        } catch (e) {
+            console.error('拉取待办统计异常', e);
+        }
+    }
+
+    /**
+     * 启动订单与待办实时轮询机制
+     */
+    function startOrderNotificationPolling() {
+        if (state.pollTimer) {
+            clearInterval(state.pollTimer);
+            state.pollTimer = null;
+        }
+        refreshPendingCounts();
+        state.pollTimer = setInterval(refreshPendingCounts, 20000);
+    }
+
+    /**
      * 渲染主工作台框架
      */
     function renderMainLayout(container) {
         const tabs = [
             { id: 'dashboard', name: '数据概览', icon: 'M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z' },
-            { id: 'templates', name: '主题风格', icon: 'M12 3c-4.97 0-9 4.03-9 9 0 2.12.74 4.07 1.97 5.61L4.35 19.4c-.39.39-.39 1.02 0 1.41.39.39 1.02.39 1.41 0l1.9-1.9C9.31 19.57 10.6 20 12 20c4.97 0 9-4.03 9-9s-4.03-9-9-9zm0 15c-1.25 0-2.42-.36-3.41-.98l-.24-.15-2.06 2.06.69-.69-.69.69 1.37-1.37-.15-.24C6.86 15.42 6.5 14.25 6.5 13c0-3.03 2.47-5.5 5.5-5.5s5.5 2.47 5.5 5.5-2.47 5.5-5.5 5.5z' },
+            { id: 'templates', name: '行业模板与设置', icon: 'M12 3c-4.97 0-9 4.03-9 9 0 2.12.74 4.07 1.97 5.61L4.35 19.4c-.39.39-.39 1.02 0 1.41.39.39 1.02.39 1.41 0l1.9-1.9C9.31 19.57 10.6 20 12 20c4.97 0 9-4.03 9-9s-4.03-9-9-9zm0 15c-1.25 0-2.42-.36-3.41-.98l-.24-.15-2.06 2.06.69-.69-.69.69 1.37-1.37-.15-.24C6.86 15.42 6.5 14.25 6.5 13c0-3.03 2.47-5.5 5.5-5.5s5.5 2.47 5.5 5.5-2.47 5.5-5.5 5.5z' },
             { id: 'decoration', name: '首页装修', icon: 'M4 4h7V2H4c-1.1 0-2 .9-2 2v7h2V4zm6 9l-4 5h12l-3-4-2.03 2.71L10 13zm7-4.5c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5.67 1.5 1.5 1.5 1.5-.67 1.5-1.5zM20 2h-7v2h7v7h2V4c0-1.1-.9-2-2-2zm0 18h-7v2h7c1.1 0 2-.9 2-2v-7h-2v7zM4 13H2v7c0 1.1.9 2 2 2h7v-2H4v-7z' },
             { id: 'miniapp', name: '小程序装修', icon: 'M17 1.01L7 1c-1.1 0-2 .9-2 2v18c0 1.1.9 2 2 2h10c1.1 0 2-.9 2-2V3c0-1.1-.9-1.99-2-1.99zM17 19H7V5h10v14z' },
             { id: 'devices', name: '品类与商品', icon: 'M21.41 11.58l-9-9C12.05 2.22 11.55 2 11 2H4c-1.1 0-2 .9-2 2v7c0 .55.22 1.05.59 1.42l9 9c.36.36.86.58 1.41.58.55 0 1.05-.22 1.41-.59l7-7c.37-.36.59-.86.59-1.41 0-.55-.23-1.06-.59-1.42zM5.5 7C4.67 7 4 6.33 4 5.5S4.67 4 5.5 4 7 4.67 7 5.5 6.33 7 5.5 7z' },
+            { id: 'services', name: '生活服务', icon: 'M22.7 19l-9.1-9.1c.9-2.3.4-5-1.5-6.9-2-2-5-2.4-7.4-1.3L9 6 6 9 1.6 4.7C.4 7.1.9 10.1 2.9 12.1c1.9 1.9 4.6 2.4 6.9 1.5l9.1 9.1c.4.4 1 .4 1.4 0l2.3-2.3c.5-.4.5-1.1.1-1.4z' },
+            { id: 'technicians', name: '自营技师', icon: 'M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z' },
             { id: 'questions', name: '估价设置', icon: 'M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z' },
             { id: 'media', name: '图库管理', icon: 'M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z' },
             { id: 'stores', name: '门店管理', icon: 'M20 4H4v2h16V4zm1 10v-2l-1-5H4l-1 5v2h1v6h10v-6h4v6h2v-6h1zm-9 4H6v-4h6v4z' },
-            { id: 'articles', name: '文章单页', icon: 'M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z' },
+            { id: 'articles', name: '文章与公告', icon: 'M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z' },
             { id: 'orders', name: '订单管理', icon: 'M20 6h-4V4c0-1.11-.89-2-2-2h-4c-1.11 0-2 .89-2 2v2H4c-1.11 0-1.99.89-1.99 2L2 19c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V8c0-1.11-.89-2-2-2zm-6 0h-4V4h4v2z' },
             { id: 'inspection', name: '质检验收', icon: 'M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z' },
             { id: 'users', name: '用户管理', icon: 'M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z' },
@@ -156,7 +308,8 @@
             const activeClass = state.currentTab === t.id ? 'active' : '';
             menuHtml += `<div class="menu-item ${activeClass}" data-tab="${t.id}">
                 <span class="menu-icon"><svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="${t.icon}"/></svg></span>
-                <span>${t.name}</span>
+                <span style="flex:1;">${t.name}</span>
+                <span class="menu-badge" id="menu-badge-${t.id}" style="display:none;"></span>
             </div>`;
         });
 
@@ -168,7 +321,7 @@
                     <div class="sidebar-brand">
                         <div class="logo-icon">启</div>
                         <div>
-                            <div style="font-size:15px;">启灵回收系统</div>
+                            <div style="font-size:15px;">启灵同城服务</div>
                             <div style="font-size:11px;color:#94a3b8;font-weight:normal;">管理后台</div>
                         </div>
                     </div>
@@ -185,6 +338,50 @@
                         </div>
                         <div class="header-user" style="display:flex;align-items:center;gap:14px;">
                             <a href="../../index.html" target="_blank" style="font-size:13px;color:#1e58ff;text-decoration:none;font-weight:600;display:flex;align-items:center;gap:4px;"><svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/></svg>访问前台</a>
+                            
+                            <!-- 待处理新订单与业务通知铃铛 -->
+                            <div class="header-notify-wrap" id="header-notify-bell" title="业务待办与新订单通知">
+                                <div class="notify-bell-btn" id="btn-notify-toggle">
+                                    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
+                                    <span class="notify-dot-badge" id="header-notify-count" style="display:none;">0</span>
+                                </div>
+                                <div class="notify-dropdown-menu" id="notify-dropdown-menu" style="display:none;">
+                                    <div class="notify-drop-header">
+                                        <strong>待办业务与订单通知</strong>
+                                        <span id="notify-total-badge" class="badge-mini">0 待处理</span>
+                                    </div>
+                                    <div class="notify-drop-list">
+                                        <div class="notify-drop-item" onclick="window.navigateToTab('orders')">
+                                            <div class="notify-item-icon" style="background:#e0e7ff;color:#4f46e5;">📦</div>
+                                            <div class="notify-item-info">
+                                                <div class="notify-item-title">同城生活服务</div>
+                                                <div class="notify-item-desc" id="notify-desc-service">暂无待派单服务</div>
+                                            </div>
+                                            <span class="notify-item-count" id="notify-count-service" style="display:none;">0</span>
+                                        </div>
+                                        <div class="notify-drop-item" onclick="window.navigateToTab('inspection')">
+                                            <div class="notify-item-icon" style="background:#fef3c7;color:#d97706;">🔍</div>
+                                            <div class="notify-item-info">
+                                                <div class="notify-item-title">二手回收验机</div>
+                                                <div class="notify-item-desc" id="notify-desc-recycle">暂无待验货设备</div>
+                                            </div>
+                                            <span class="notify-item-count" id="notify-count-recycle" style="display:none;">0</span>
+                                        </div>
+                                        <div class="notify-drop-item" onclick="window.navigateToTab('payout')">
+                                            <div class="notify-item-icon" style="background:#dcfce7;color:#16a34a;">💰</div>
+                                            <div class="notify-item-info">
+                                                <div class="notify-item-title">财务放款打款</div>
+                                                <div class="notify-item-desc" id="notify-desc-payout">暂无待打款订单</div>
+                                            </div>
+                                            <span class="notify-item-count" id="notify-count-payout" style="display:none;">0</span>
+                                        </div>
+                                    </div>
+                                    <div class="notify-drop-footer">
+                                        <button class="btn btn-secondary btn-sm" style="width:100%;font-size:12px;padding:6px 0;" onclick="window.navigateToTab('orders')">查看全部订单工作台 →</button>
+                                    </div>
+                                </div>
+                            </div>
+
                             <span class="user-badge" id="btn-admin-profile" style="cursor:pointer;" title="管理员设置">${escapeHtml(state.admin.realname || '管理员')} (${escapeHtml(state.admin.role || 'admin')})</span>
                             <button class="btn-logout" id="btn-logout">退出</button>
                         </div>
@@ -221,7 +418,7 @@
                     licBadge.style.background = '#e0f2fe';
                     licBadge.style.color = '#0369a1';
                     licBadge.innerText = '● 本地开发';
-                    licBadge.title = '本地调试环境免授权';
+                    licBadge.title = '本地开发调试环境 (免授权)';
                 } else {
                     licBadge.style.background = '#fee2e2';
                     licBadge.style.color = '#b91c1c';
@@ -258,11 +455,36 @@
                 isDanger: false
             });
             if (confirmed) {
+                if (state.pollTimer) {
+                    clearInterval(state.pollTimer);
+                    state.pollTimer = null;
+                }
                 state.token = '';
                 localStorage.removeItem('ql_admin_token');
                 render();
             }
         });
+
+        // 绑定通知铃铛下拉展开与收起
+        const notifyToggleBtn = document.getElementById('btn-notify-toggle');
+        const notifyDropdown = document.getElementById('notify-dropdown-menu');
+        if (notifyToggleBtn && notifyDropdown) {
+            notifyToggleBtn.addEventListener('click', function (e) {
+                e.stopPropagation();
+                const isShown = notifyDropdown.style.display !== 'none';
+                notifyDropdown.style.display = isShown ? 'none' : 'block';
+                notifyToggleBtn.classList.toggle('active', !isShown);
+            });
+            document.addEventListener('click', function (e) {
+                if (!e.target.closest('#header-notify-bell')) {
+                    notifyDropdown.style.display = 'none';
+                    notifyToggleBtn.classList.remove('active');
+                }
+            });
+        }
+
+        // 启动待办与订单实时长效轮询 (小红点数字角标与音效提醒)
+        startOrderNotificationPolling();
 
         // 加载当前 Tab 内容
         loadTabContent(state.currentTab);
@@ -314,6 +536,16 @@
             case 'devices':
                 if (typeof window.renderDevicesView === 'function') {
                     window.renderDevicesView(contentBox);
+                }
+                break;
+            case 'services':
+                if (typeof window.renderServicesView === 'function') {
+                    window.renderServicesView(contentBox);
+                }
+                break;
+            case 'technicians':
+                if (typeof window.renderTechniciansView === 'function') {
+                    window.renderTechniciansView(contentBox);
                 }
                 break;
             case 'media':

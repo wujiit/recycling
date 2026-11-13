@@ -94,7 +94,7 @@ class LicenseService
     }
 
     /**
-     * 判断是否为本地局域网开发测试环境
+     * 判断是否为真正的本地离线开发环境 (严格限制于本地回环地址与局域网调试)
      */
     public function isLocalDevDomain(string $domain): bool
     {
@@ -103,27 +103,31 @@ class LicenseService
             return false;
         }
 
+        $isHostLocal = false;
         if (in_array($clean, ['localhost', '127.0.0.1', '::1'], true)) {
-            return true;
-        }
-
-        // 局域网 IP
-        if (filter_var($clean, FILTER_VALIDATE_IP)) {
+            $isHostLocal = true;
+        } elseif (filter_var($clean, FILTER_VALIDATE_IP)) {
             if (
                 preg_match('/^10\./', $clean) ||
                 preg_match('/^192\.168\./', $clean) ||
                 preg_match('/^172\.(1[6-9]|2[0-9]|3[0-1])\./', $clean)
             ) {
-                return true;
+                $isHostLocal = true;
             }
+        } elseif (preg_match('/\.(test|local|localhost|internal)$/i', $clean)) {
+            $isHostLocal = true;
         }
 
-        // 常见本地测试顶级域
-        if (preg_match('/\.(test|local|localhost|internal)$/i', $clean)) {
-            return true;
+        if (!$isHostLocal) {
+            return false;
         }
 
-        return false;
+        // 防范 Host 头伪造：要求物理来源客户端 IP 也必须为本地或内网 IP
+        $clientIp = \App\Common\Request::ip();
+        $isClientLocal = in_array($clientIp, ['127.0.0.1', '::1', 'localhost'], true)
+            || preg_match('/^(10\.|192\.168\.|172\.(1[6-9]|2[0-9]|3[0-1])\.)/', $clientIp);
+
+        return $isClientLocal;
     }
 
     /**
@@ -190,12 +194,13 @@ class LicenseService
 
         $isAuthorized = false;
 
-        if ($isLocalDev) {
-            $isAuthorized = true;
-            $displayStatus = 'local_dev';
-        } elseif ($isLocalValid || $status === 'valid') {
+        // 严格商业授权判定：本地有效离线凭据 > 本地localhost调试 > 实际授权状态
+        if ($isLocalValid || $status === 'valid') {
             $isAuthorized = true;
             $displayStatus = 'valid';
+        } elseif ($isLocalDev) {
+            $isAuthorized = true;
+            $displayStatus = 'local_dev';
         } else {
             $displayStatus = $status;
         }
@@ -396,8 +401,8 @@ class LicenseService
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 3);
         curl_setopt($ch, CURLOPT_TIMEOUT, 5);
-        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
-        curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, true);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 2);
         curl_setopt($ch, CURLOPT_USERAGENT, 'QilingRecycleClient/' . self::SYSTEM_VERSION);
 
         $body = curl_exec($ch);

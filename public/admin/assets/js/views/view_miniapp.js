@@ -1,5 +1,5 @@
 /**
- * 启灵回收系统 - 小程序装修与移动端可视化配置
+ * 启灵同城服务系统 - 小程序装修与移动端可视化配置
  * 包含小程序首页轮播、品类导航、服务保障、回收流程与个人中心配置
  */
 (function (window) {
@@ -21,19 +21,19 @@
     const DEFAULT_CONFIGS = {
         miniapp_appid: '',
         miniapp_secret: '',
-        miniapp_app_name: '启灵回收',
+        miniapp_app_name: '启灵同城服务',
         miniapp_original_id: '',
         miniapp_wx_login_enabled: '1',
         miniapp_wx_phone_enabled: '1',
         miniapp_guest_appraisal: '1',
         miniapp_theme_color: '#1e58ff',
-        miniapp_nav_title: '启灵专业数码回收',
+        miniapp_nav_title: '启灵同城服务',
         miniapp_nav_bg: 'gradient',
         miniapp_card_radius: '20',
         miniapp_search_placeholder: '搜索你想卖的手机 / 平板 / 电脑型号',
         miniapp_hero_enabled: '1',
         miniapp_hero_gradient: 'blue',
-        miniapp_hero_tag: '启灵高价回收 · 官方验机',
+        miniapp_hero_tag: '启灵同城服务 · 官方验机',
         miniapp_hero_title: '旧机别放着，立即变现',
         miniapp_hero_subtitle: '顺丰包邮 · 隐私深度清除 · 质检一致当天打款',
         miniapp_category_enabled: '1',
@@ -69,8 +69,8 @@
         miniapp_service_hours: '周一至周日 09:00 - 21:00',
         miniapp_privacy_title: '隐私清除保障说明',
         miniapp_privacy_content: '平台采用专业数据擦除技术，对设备存储介质进行全盘覆写清除，出具《隐私数据清除报告》，杜绝个人数据残留，保障您的个人隐私安全。',
-        miniapp_about_title: '关于启灵回收',
-        miniapp_about_content: '启灵回收是官方直营的数字化全品类二手回收服务平台，深耕绿色循环经济。通过自动化质检流水线与专业估价模型，为广大用户提供高价、安全、便捷、透明的一站式闲置变现服务。'
+        miniapp_about_title: '关于启灵同城服务',
+        miniapp_about_content: '启灵同城服务是官方直营的数字化全品类二手回收服务平台，深耕绿色循环经济。通过自动化质检流水线与专业估价模型，为广大用户提供高价、安全、便捷、透明的一站式闲置变现服务。'
     };
 
     // 官方精选分类图标素材库 (高清矢量 SVG / PNG，按通用行业大类归类)
@@ -238,6 +238,10 @@
                     <div style="font-size:13px;color:#64748b;margin-top:4px;">可视化定制微信小程序及手机 H5 端的视觉主题、首屏大卡、全品类专区、服务保障、底部原生导航及弹窗文案</div>
                 </div>
                 <div style="display:flex;align-items:center;gap:10px;">
+                    <button type="button" class="btn btn-outline" id="btn-sync-industry-miniapp" style="font-size:13px;display:inline-flex;align-items:center;gap:6px;border-color:#3b82f6;color:#2563eb;background:#eff6ff;font-weight:600;">
+                        <svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor"><path d="M12 4V1L8 5l4 4V6c3.31 0 6 2.69 6 6 0 1.01-.25 1.97-.7 2.8l1.46 1.46C19.54 15.03 20 13.57 20 12c0-4.42-3.58-8-8-8zm0 14c-3.31 0-6-2.69-6-6 0-1.01.25-1.97.7-2.8L5.24 7.74C4.46 8.97 4 10.43 4 12c0 4.42 3.58 8 8 8v3l4-4-4-4v3z"/></svg>
+                        ⚡ 依当前行业模板一键同步装修
+                    </button>
                     <button type="button" class="btn btn-outline" id="btn-reset-miniapp-defaults" style="font-size:13px;display:inline-flex;align-items:center;gap:6px;">
                         <svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor"><path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>
                         恢复推荐默认值
@@ -349,7 +353,7 @@
                                 <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
                                     <div class="login-form-group">
                                         <label style="font-weight:600;font-size:13px;">小程序应用名称</label>
-                                        <input type="text" id="cfg-miniapp-app-name" class="form-control" value="${escapeHtml(cfgs.miniapp_app_name || cfgs.brand_name || '启灵回收')}" placeholder="如: 启灵回收">
+                                        <input type="text" id="cfg-miniapp-app-name" class="form-control" value="${escapeHtml(cfgs.miniapp_app_name || cfgs.brand_name || '启灵同城服务')}" placeholder="如: 启灵同城服务">
                                         <small style="color:#64748b;margin-top:4px;display:block;">显示在小程序转发卡片与授权窗口的主体名</small>
                                     </div>
                                     <div class="login-form-group">
@@ -735,7 +739,7 @@
                                 </div>
                                 <div class="login-form-group">
                                     <label style="font-weight:600;font-size:12px;">关于我们弹窗标题</label>
-                                    <input type="text" id="cfg-miniapp-about-title" class="form-control" value="${escapeHtml(cfgs.miniapp_about_title || '关于启灵回收')}" style="margin-bottom:6px;">
+                                    <input type="text" id="cfg-miniapp-about-title" class="form-control" value="${escapeHtml(cfgs.miniapp_about_title || '关于启灵同城服务')}" style="margin-bottom:6px;">
                                     <label style="font-weight:600;font-size:12px;">平台简介与企业使命</label>
                                     <textarea id="cfg-miniapp-about-content" class="form-control" rows="3">${escapeHtml(cfgs.miniapp_about_content || '')}</textarea>
                                 </div>
@@ -1145,7 +1149,7 @@
                 const serviceTelTitle = document.getElementById('cfg-miniapp-service-tel-title')?.value.trim() || '官方客服热线';
                 const serviceTel = document.getElementById('cfg-miniapp-service-tel')?.value.trim() || '400-800-8888';
                 const privacyTitle = document.getElementById('cfg-miniapp-privacy-title')?.value.trim() || '隐私深度清除保障说明';
-                const aboutTitle = document.getElementById('cfg-miniapp-about-title')?.value.trim() || '关于启灵回收';
+                const aboutTitle = document.getElementById('cfg-miniapp-about-title')?.value.trim() || '关于启灵同城服务';
 
                 scrollBody.innerHTML = `
                     <!-- 个人资料背景卡 -->
@@ -1816,20 +1820,20 @@
             const payload = {
                 miniapp_appid: document.getElementById('cfg-miniapp-appid')?.value.trim() || '',
                 miniapp_secret: document.getElementById('cfg-miniapp-secret')?.value.trim() || '',
-                miniapp_app_name: document.getElementById('cfg-miniapp-app-name')?.value.trim() || '启灵回收',
+                miniapp_app_name: document.getElementById('cfg-miniapp-app-name')?.value.trim() || '启灵同城服务',
                 miniapp_original_id: document.getElementById('cfg-miniapp-original-id')?.value.trim() || '',
                 miniapp_wx_login_enabled: document.getElementById('cfg-miniapp-wx-login-enabled')?.checked ? '1' : '0',
                 miniapp_wx_phone_enabled: document.getElementById('cfg-miniapp-wx-phone-enabled')?.checked ? '1' : '0',
                 miniapp_guest_appraisal: document.getElementById('cfg-miniapp-guest-appraisal')?.checked ? '1' : '0',
                 wechat_appid: document.getElementById('cfg-miniapp-appid')?.value.trim() || '',
                 miniapp_theme_color: document.getElementById('cfg-miniapp-theme-color')?.value.trim() || '#1e58ff',
-                miniapp_nav_title: document.getElementById('cfg-miniapp-nav-title')?.value.trim() || '启灵专业数码回收',
+                miniapp_nav_title: document.getElementById('cfg-miniapp-nav-title')?.value.trim() || '启灵同城服务',
                 miniapp_nav_bg: document.getElementById('cfg-miniapp-nav-bg')?.value || 'gradient',
                 miniapp_card_radius: document.getElementById('cfg-miniapp-card-radius')?.value || '20',
                 miniapp_search_placeholder: document.getElementById('cfg-miniapp-search-placeholder')?.value.trim() || '搜索你想卖的手机 / 平板 / 电脑型号',
                 miniapp_hero_enabled: document.getElementById('cfg-miniapp-hero-enabled')?.checked ? '1' : '0',
                 miniapp_hero_gradient: document.getElementById('cfg-miniapp-hero-gradient')?.value || 'blue',
-                miniapp_hero_tag: document.getElementById('cfg-miniapp-hero-tag')?.value.trim() || '启灵高价回收 · 官方验机',
+                miniapp_hero_tag: document.getElementById('cfg-miniapp-hero-tag')?.value.trim() || '启灵同城服务 · 官方验机',
                 miniapp_hero_title: document.getElementById('cfg-miniapp-hero-title')?.value.trim() || '旧机别放着，立即变现',
                 miniapp_hero_subtitle: document.getElementById('cfg-miniapp-hero-subtitle')?.value.trim() || '顺丰包邮 · 隐私深度清除 · 质检一致当天打款',
                 miniapp_category_enabled: document.getElementById('cfg-miniapp-category-enabled')?.checked ? '1' : '0',
@@ -1865,7 +1869,7 @@
                 miniapp_service_hours: document.getElementById('cfg-miniapp-service-hours')?.value.trim() || '周一至周日 09:00 - 21:00',
                 miniapp_privacy_title: document.getElementById('cfg-miniapp-privacy-title')?.value.trim() || '隐私深度清除保障说明',
                 miniapp_privacy_content: document.getElementById('cfg-miniapp-privacy-content')?.value.trim() || '',
-                miniapp_about_title: document.getElementById('cfg-miniapp-about-title')?.value.trim() || '关于启灵回收',
+                miniapp_about_title: document.getElementById('cfg-miniapp-about-title')?.value.trim() || '关于启灵同城服务',
                 miniapp_about_content: document.getElementById('cfg-miniapp-about-content')?.value.trim() || '',
                 miniapp_custom_categories: JSON.stringify(miniappCategoriesList)
             };
@@ -1878,6 +1882,30 @@
                 SysUI.toast('小程序与移动端全套装修配置保存成功！双端已即时同步生效', 'success');
             } else {
                 SysUI.toast(saveRes ? saveRes.msg : '保存失败，请检查网络或参数', 'error');
+            }
+        });
+
+        // 依当前行业模板一键同步装修监听
+        document.getElementById('btn-sync-industry-miniapp')?.addEventListener('click', async function () {
+            if (!confirm('确认将小程序装修一键同步为当前系统生效的行业业务模板？\n这会自动更新小程序主题配色、顶栏标题、首屏宣传文案、四大保障、服务流程与分类标题，杜绝与前台行业冲突。')) {
+                return;
+            }
+            const btn = this;
+            btn.disabled = true;
+            btn.innerText = '正在同步行业装修...';
+            try {
+                const res = await api.post('/admin/config/syncMiniappTemplate', {});
+                if (res && res.code === 200) {
+                    SysUI.toast(res.msg || '小程序装修已成功按当前行业模板同步！', 'success');
+                    await renderMiniappDecorationView(container);
+                } else {
+                    SysUI.toast((res && res.msg) || '同步失败，请重试', 'error');
+                }
+            } catch (e) {
+                SysUI.toast('同步发生网络错误', 'error');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor"><path d="M12 4V1L8 5l4 4V6c3.31 0 6 2.69 6 6 0 1.01-.25 1.97-.7 2.8l1.46 1.46C19.54 15.03 20 13.57 20 12c0-4.42-3.58-8-8-8zm0 14c-3.31 0-6-2.69-6-6 0-1.01.25-1.97.7-2.8L5.24 7.74C4.46 8.97 4 10.43 4 12c0 4.42 3.58 8 8 8v3l4-4-4-4v3z"/></svg> ⚡ 依当前行业模板一键同步装修';
             }
         });
 

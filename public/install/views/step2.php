@@ -101,8 +101,8 @@ $dbPrefix = !empty($curConfig['prefix']) ? $curConfig['prefix'] : 'ql_';
         <div class="form-row">
             <div class="form-col form-group">
                 <label class="form-label" for="redis_db">专用隔离 DB 库号 (0-15)</label>
-                <input type="number" class="form-input" id="redis_db" value="2" min="0" max="15">
-                <div class="form-tip">指定独立库（如 DB 2），与服务器上其他网站的 DB 0 / 1 物理隔离</div>
+                <input type="number" class="form-input" id="redis_db" value="6" min="0" max="15">
+                <div class="form-tip">指定独立库（如 DB 6），与服务器上其他网站的 DB 0 / 1 / 2 等物理隔离</div>
             </div>
             <div class="form-col form-group">
                 <label class="form-label" for="redis_prefix">强制业务隔离前缀</label>
@@ -121,7 +121,7 @@ $dbPrefix = !empty($curConfig['prefix']) ? $curConfig['prefix'] : 'ql_';
         <div class="form-row">
             <div class="form-col form-group">
                 <label class="form-label" for="app_name">系统平台名称</label>
-                <input type="text" class="form-input" id="app_name" value="启灵专业二手回收系统" required>
+                <input type="text" class="form-input" id="app_name" value="启灵同城服务" required>
             </div>
             <div class="form-col form-group">
                 <label class="form-label" for="admin_realname">管理员称谓</label>

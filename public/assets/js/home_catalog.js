@@ -1,5 +1,5 @@
 /**
- * 启灵回收系统 - 前台品类商品与在线估价模块
+ * 启灵同城服务系统 - 前台品类商品与在线估价模块
  * 包含品类导航、品牌联动、商品列表瀑布流、在线估价器、质检评估问答打分与搜索交互
  */
 (function(window) {
@@ -23,6 +23,11 @@
                     state.categories = catRes.data || [];
                 }
 
+                // 若当前为纯生活服务模式或综合便民生活服务门户，保留由 home.js 渲染的行业生活服务导航，不被纯回收商品菜单覆盖
+                if (state.platformMeta && (state.platformMeta.module_recycle_enabled === '0' || state.platformMeta.module_service_enabled === '1')) {
+                    return;
+                }
+
                 // 2. 加载网站前台自定义多级导航菜单配置 (优先从平台全局信息读取，否则单独接口拉取)
                 let menus = [];
                 if (state.platformMeta && Array.isArray(state.platformMeta.nav_menus) && state.platformMeta.nav_menus.length > 0) {
@@ -37,7 +42,7 @@
                 // 3. 兜底保护：若尚未配置菜单且品类库存在，动态构建默认菜单树
                 if (!menus || menus.length === 0) {
                     menus = [
-                        { id: 'cat-0', title: '全部行业品类', type: 'category', target_id: 0, url: '', target: '_self', icon: '🏷️', badge: '', status: 1, children: [] }
+                        { id: 'cat-0', title: '全部行业品类', type: 'category', target_id: 0, url: '', target: '_self', icon: '', badge: '', status: 1, children: [] }
                     ];
                     (state.categories || []).forEach(c => {
                         menus.push({
@@ -47,7 +52,7 @@
                             target_id: c.id,
                             url: '',
                             target: '_self',
-                            icon: c.icon || '📦',
+                            icon: c.icon || '',
                             badge: '',
                             status: 1,
                             children: []
@@ -212,6 +217,19 @@
                     `;
                 }
 
+                // 若系统开启了同城生活服务模块 (综合生活服务平台模式)，在导航栏注入直达生活服务专区的高亮导航
+                const isServiceEnabled = state.platformMeta && (state.platformMeta.module_service_enabled === '1' || state.platformMeta.module_service_enabled === 1);
+                if (isServiceEnabled) {
+                    html += `
+                        <div class="nav-menu-item-wrap">
+                            <a href="javascript:void(0)" class="nav-cat-item nav-cat-item-service" onclick="document.getElementById('section-life-services')?.scrollIntoView({behavior:'smooth'})" style="color:var(--primary);font-weight:700;">
+                                <span class="nav-cat-text">🛠️ 同城生活服务</span>
+                                <span class="nav-menu-badge" style="background:#fee2e2;color:#ef4444;font-size:10px;margin-left:4px;">热门</span>
+                            </a>
+                        </div>
+                    `;
+                }
+
                 box.innerHTML = html;
                 bindNavMenuEvents(box);
             }
@@ -226,7 +244,7 @@
                 if (!modal || !bodyEl) return;
 
                 if (isMore) {
-                    if (iconEl) iconEl.innerText = '📁';
+                    if (iconEl) iconEl.innerHTML = '<svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M10 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z"/></svg>';
                     if (titleEl) titleEl.innerText = '全部分类与更多服务';
                     if (descEl) descEl.innerText = '覆盖全品类回收大项，点击即可一键切换';
 
@@ -279,7 +297,7 @@
                     const isCat = item.type === 'category';
                     const targetId = isCat ? (parseInt(item.target_id) || 0) : null;
 
-                    if (iconEl) iconEl.innerText = item.icon || '📱';
+                    if (iconEl) iconEl.innerHTML = item.icon || '<svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M17 1.01L7 1c-1.1 0-2 .9-2 2v18c0 1.1.9 2 2 2h10c1.1 0 2-.9 2-2V3c0-1.1-.9-1.99-2-1.99zM17 19H7V5h10v14z"/></svg>';
                     if (titleEl) titleEl.innerText = item.title || '品类导航';
                     if (descEl) descEl.innerText = '点击查看全部商品或挑选品牌规格';
 
@@ -554,52 +572,93 @@
             // 4. 加载商品列表
             async function loadDevices() {
                 const grid = document.getElementById('devices-grid-box');
+                if (!grid) return;
                 grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--text-muted);">正在加载商品列表中...</div>';
 
-                const res = await api.request(`/api/appraisal/searchDevices&category_id=${state.currentCat}&brand_id=${state.currentBrand}&keyword=${encodeURIComponent(state.keyword)}&page=1`);
-                if (res && res.code === 200) {
-                    state.devices = res.data.list || [];
-                    document.getElementById('device-count-tag').innerText = `共 ${res.data.total || 0} 款商品`;
+                const countTag = document.getElementById('device-count-tag');
 
-                    if (state.devices.length === 0) {
+                try {
+                    const res = await api.request(`/api/appraisal/searchDevices&category_id=${state.currentCat}&brand_id=${state.currentBrand}&keyword=${encodeURIComponent(state.keyword)}&page=1`);
+                    if (res && res.code === 200 && res.data) {
+                        state.devices = res.data.list || [];
+                        if (countTag) {
+                            countTag.innerText = `共 ${res.data.total || 0} 款商品`;
+                        }
+
+                        if (state.devices.length === 0) {
+                            grid.innerHTML = `
+                                <div class="empty-state-card">
+                                    <div class="empty-icon-wrap">
+                                        <svg viewBox="0 0 24 24" width="38" height="38" fill="none" stroke="#94a3b8" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="8" y1="11" x2="14" y2="11"/></svg>
+                                    </div>
+                                    <div class="empty-title">当前分类暂无商品</div>
+                                    <div class="empty-desc">该分类暂无商品，您可以查看其他分类或直接在上方搜索商品型号。</div>
+                                    <div class="empty-actions">
+                                        <button class="btn btn-primary" onclick="window.returnHome(event)" style="height:42px;padding:0 24px;border-radius:10px;">
+                                            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:6px;"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+                                            查看全部分类商品
+                                        </button>
+                                    </div>
+                                </div>
+                            `;
+                            return;
+                        }
+
+                        let html = '';
+                        state.devices.forEach(d => {
+                            const img = d.cover_img || '/uploads/default/dev_default.svg';
+                            const unit = d.unit || '台';
+                            html += `
+                                <div class="device-card" onclick="window.startAppraisal(${d.id})">
+                                    ${d.is_hot ? '<span class="device-tag"><svg viewBox="0 0 24 24" width="11" height="11" fill="currentColor" style="margin-right:2px;vertical-align:-1px;"><path d="M12 23c6.075 0 11-4.925 11-11C23 5.4 18.667 1.5 12 1 12 7 9 9 9 9s-3-2-3-4C3 8 2 10.5 2 12c0 6.075 4.925 11 10 11z"/></svg>热门回收</span>' : ''}
+                                    <div class="device-img-wrap">
+                                        <img src="${escapeHtml(img)}" class="device-img" alt="${escapeHtml(d.name)}" onerror="this.src='/uploads/default/dev_default.svg'">
+                                    </div>
+                                    <div>
+                                        <div class="device-name" title="${escapeHtml(d.name)}">${escapeHtml(d.name)}</div>
+                                        <div class="device-price-label">基础回收价</div>
+                                        <div class="device-price-num">¥ ${escapeHtml(d.guide_price)} <span style="font-size:12px;font-weight:normal;color:var(--text-muted);">/${escapeHtml(unit)}</span></div>
+                                    </div>
+                                    <button class="btn-evaluate">立即在线估价 →</button>
+                                </div>
+                            `;
+                        });
+                        grid.innerHTML = html;
+                    } else {
+                        const errMsg = (res && res.msg) ? escapeHtml(res.msg) : '商品列表加载失败，请检查网络或配置';
+                        if (countTag) {
+                            countTag.innerText = '加载异常';
+                        }
                         grid.innerHTML = `
                             <div class="empty-state-card">
-                                <div class="empty-icon-wrap">
-                                    <svg viewBox="0 0 24 24" width="38" height="38" fill="none" stroke="#94a3b8" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="8" y1="11" x2="14" y2="11"/></svg>
+                                <div class="empty-icon-wrap" style="background:#fee2e2;color:#ef4444;">
+                                    <svg viewBox="0 0 24 24" width="36" height="36" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
                                 </div>
-                                <div class="empty-title">当前分类暂无商品</div>
-                                <div class="empty-desc">该分类暂无商品，您可以查看其他分类或直接在上方搜索商品型号。</div>
+                                <div class="empty-title">商品列表加载遇到问题</div>
+                                <div class="empty-desc">${errMsg}</div>
                                 <div class="empty-actions">
-                                    <button class="btn btn-primary" onclick="window.returnHome(event)" style="height:42px;padding:0 24px;border-radius:10px;">
-                                        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:6px;"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
-                                        查看全部分类商品
+                                    <button class="btn btn-primary" onclick="window.loadDevices()" style="height:38px;padding:0 22px;border-radius:8px;">
+                                        点击重试
                                     </button>
                                 </div>
                             </div>
                         `;
-                        return;
                     }
-
-                    let html = '';
-                    state.devices.forEach(d => {
-                        const img = d.cover_img || '/uploads/default/dev_default.svg';
-                        const unit = d.unit || '台';
-                        html += `
-                            <div class="device-card" onclick="window.startAppraisal(${d.id})">
-                                ${d.is_hot ? '<span class="device-tag"><svg viewBox="0 0 24 24" width="11" height="11" fill="currentColor" style="margin-right:2px;vertical-align:-1px;"><path d="M12 23c6.075 0 11-4.925 11-11C23 5.4 18.667 1.5 12 1 12 7 9 9 9 9s-3-2-3-4C3 8 2 10.5 2 12c0 6.075 4.925 11 10 11z"/></svg>热门回收</span>' : ''}
-                                <div class="device-img-wrap">
-                                    <img src="${escapeHtml(img)}" class="device-img" alt="${escapeHtml(d.name)}" onerror="this.src='/uploads/default/dev_default.svg'">
-                                </div>
-                                <div>
-                                    <div class="device-name" title="${escapeHtml(d.name)}">${escapeHtml(d.name)}</div>
-                                    <div class="device-price-label">基础回收价</div>
-                                    <div class="device-price-num">¥ ${escapeHtml(d.guide_price)} <span style="font-size:12px;font-weight:normal;color:var(--text-muted);">/${escapeHtml(unit)}</span></div>
-                                </div>
-                                <button class="btn-evaluate">立即在线估价 →</button>
+                } catch (err) {
+                    if (countTag) {
+                        countTag.innerText = '网络异常';
+                    }
+                    grid.innerHTML = `
+                        <div class="empty-state-card">
+                            <div class="empty-title">网络连接异常</div>
+                            <div class="empty-desc">连接服务器失败，请检查网络后重试。</div>
+                            <div class="empty-actions">
+                                <button class="btn btn-primary" onclick="window.loadDevices()" style="height:38px;padding:0 22px;border-radius:8px;">
+                                    点击重试
+                                </button>
                             </div>
-                        `;
-                    });
-                    grid.innerHTML = html;
+                        </div>
+                    `;
                 }
             }
 
@@ -943,16 +1002,46 @@
                     loadDevices();
                 }, 300);
             });
+            function performUniversalSearch(kw) {
+                state.keyword = kw;
+                const isServiceOn = state.platformMeta && (state.platformMeta.module_service_enabled === '1' || state.platformMeta.module_service_enabled === 1);
+                const isRecycleOn = !state.platformMeta || (state.platformMeta.module_recycle_enabled !== '0' && state.platformMeta.module_recycle_enabled !== 0);
+
+                // 智能识别是否命中生活服务关键词 (宠物伴宠、家电保洁清洗、水电家庭维修)
+                const serviceKeywords = ['遛狗', '猫', '宠', '保洁', '清洗', '家电', '空调', '油烟机', '维修', '快修', '电路', '跳闸', '水管', '龙头', '门锁', '疏通', '开荒', '帮办', '跑腿'];
+                const matchService = kw && serviceKeywords.some(k => kw.includes(k));
+
+                if (isServiceOn && (!isRecycleOn || matchService)) {
+                    if (typeof window.searchServices === 'function') {
+                        window.searchServices(kw);
+                    }
+                    const target = document.getElementById('section-life-services');
+                    if (target) {
+                        target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    }
+                    if (!isRecycleOn) return;
+                }
+
+                if (isRecycleOn) {
+                    loadDevices();
+                    if (!matchService && kw) {
+                        const target = document.getElementById('section-recycle-catalog');
+                        if (target) {
+                            target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                        }
+                    }
+                }
+            }
+
             document.getElementById('main-search-input')?.addEventListener('keyup', (e) => {
                 if (e.key === 'Enter') {
                     clearTimeout(searchTimeout);
-                    state.keyword = e.target.value.trim();
-                    loadDevices();
+                    performUniversalSearch(e.target.value.trim());
                 }
             });
             document.getElementById('btn-main-search')?.addEventListener('click', () => {
-                state.keyword = document.getElementById('main-search-input')?.value.trim() || '';
-                loadDevices();
+                const kw = document.getElementById('main-search-input')?.value.trim() || '';
+                performUniversalSearch(kw);
             });
 
             // 回到首页核心方法：重置分类、品牌、搜索词，恢复展示全部品类行情并平滑回顶
@@ -990,12 +1079,7 @@
             window.quickSearch = function(kw) {
                 const input = document.getElementById('main-search-input');
                 if (input) input.value = kw;
-                state.keyword = kw;
-                loadDevices();
-                const target = document.getElementById('current-list-title');
-                if (target) {
-                    target.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                }
+                performUniversalSearch(kw);
             };
 
             // 常见问答展开折叠交互

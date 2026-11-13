@@ -1,6 +1,6 @@
 <?php
 /**
- * 启灵回收系统 - 顺丰速运开放平台对接服务
+ * 启灵同城服务系统 - 顺丰速运开放平台对接服务
  * 支持自动预约上门取件、生成运单号、运费与路由状态推送处理
  */
 
@@ -153,6 +153,31 @@ class SfExpressService
     }
 
     /**
+     * 校验顺丰开放平台服务端异步推送数字签名 (支持时序安全比较与双算法容灾)
+     */
+    public function verifyPushSignature(string $msgData, string $timestamp, string $incomingDigest): bool
+    {
+        if (empty($this->checkWord)) {
+            return true;
+        }
+
+        if (empty($incomingDigest)) {
+            return false;
+        }
+
+        // 优先根据当前配置的签名算法计算
+        $expected = $this->generateDigest($msgData, $timestamp, $this->checkWord, $this->signType);
+        if (hash_equals($expected, $incomingDigest)) {
+            return true;
+        }
+
+        // 容灾回退：尝试另一种签名算法 (standard 与 simple 互备)
+        $fallbackType = ($this->signType === 'simple') ? 'standard' : 'simple';
+        $fallbackExpected = $this->generateDigest($msgData, $timestamp, $this->checkWord, $fallbackType);
+        return hash_equals($fallbackExpected, $incomingDigest);
+    }
+
+    /**
      * 生成 32 位唯一 RequestID
      */
     private function generateRequestId(): string
@@ -188,11 +213,8 @@ class SfExpressService
             return ['code' => 400, 'msg' => '回收订单号不能为空', 'data' => null];
         }
 
-        // 寄件人信息 (用户)
-        $senderName = trim((string)($order['contact_name'] ?? '客户'));
         $senderMobile = trim((string)($order['contact_mobile'] ?? ''));
         $senderAddress = trim((string)($order['contact_address'] ?? ''));
-
         if (empty($senderMobile)) {
             return ['code' => 400, 'msg' => '寄件人联系电话不能为空', 'data' => null];
         }
@@ -200,176 +222,137 @@ class SfExpressService
             return ['code' => 400, 'msg' => '寄件人详细地址不能为空', 'data' => null];
         }
 
-        // 收件人信息 (平台仓库)
+        $msgDataArray = $this->buildCreateOrderMsgData($order);
+        $msgDataJson = json_encode($msgDataArray, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        $timestamp = (string)time();
+        $digest = $this->generateDigest($msgDataJson, $timestamp, $this->checkWord, $this->signType);
+
+        $params = [
+            'partnerID'   => $this->partnerId,
+            'requestID'   => $this->generateRequestId(),
+            'serviceCode' => self::SERVICE_CODE_CREATE_ORDER,
+            'timestamp'   => $timestamp,
+            'msgDigest'   => $digest,
+            'msgData'     => $msgDataJson
+        ];
+
+        $this->logInfo('发起顺丰速运下订单预约请求', [
+            'order_sn'     => $orderSn,
+            'service_code' => self::SERVICE_CODE_CREATE_ORDER,
+            'gateway'      => $this->getGatewayUrl(),
+            'sign_type'    => $this->signType,
+            'payload'      => $msgDataArray
+        ]);
+
+        $res = $this->executeHttp($this->getGatewayUrl(), $params);
+        if (!$res['success']) {
+            $this->logError('顺丰下订单 HTTP 请求失败', ['order_sn' => $orderSn, 'error' => $res['error']]);
+            return ['code' => 500, 'msg' => '请求顺丰速运网络失败: ' . $res['error'], 'data' => null];
+        }
+
+        $respData = json_decode($res['body'], true);
+        if (!is_array($respData)) {
+            $this->logError('解析顺丰下订单响应 JSON 失败', ['order_sn' => $orderSn, 'raw_body' => $res['body']]);
+            return ['code' => 500, 'msg' => '解析顺丰速运返回结果失败', 'data' => ['raw' => $res['body']]];
+        }
+
+        return $this->parseCreateOrderResponse($respData, $orderSn);
+    }
+
+    /**
+     * 构建顺丰下订单业务载荷 msgData
+     */
+    private function buildCreateOrderMsgData(array $order): array
+    {
+        $senderName = trim((string)($order['contact_name'] ?? '客户'));
+        $senderMobile = trim((string)($order['contact_mobile'] ?? ''));
+        $senderAddress = trim((string)($order['contact_address'] ?? ''));
+
         $receiverName = !empty($this->receiveContact) ? $this->receiveContact : '平台回收质检中心';
         $receiverMobile = !empty($this->receiveMobile) ? $this->receiveMobile : '4008008820';
         $receiverAddress = !empty($this->receiveAddress) ? $this->receiveAddress : '广东省深圳市南山区高新科技园回收质检中心';
 
-        // 组装 contactInfoList (严格 100% 对齐官方下订单 PDF 文档)
         $contactInfoList = [
-            [
-                'contactType' => 1, // 1: 寄件方
-                'contact'     => $senderName,
-                'mobile'      => $senderMobile,
-                'address'     => $senderAddress,
-            ],
-            [
-                'contactType' => 2, // 2: 收件方
-                'contact'     => $receiverName,
-                'mobile'      => $receiverMobile,
-                'province'    => $this->receiveProvince ?: null,
-                'city'        => $this->receiveCity ?: null,
-                'county'      => $this->receiveDistrict ?: null,
-                'address'     => $receiverAddress,
-            ]
+            ['contactType' => 1, 'contact' => $senderName, 'mobile' => $senderMobile, 'address' => $senderAddress],
+            ['contactType' => 2, 'contact' => $receiverName, 'mobile' => $receiverMobile, 'province' => $this->receiveProvince ?: null, 'city' => $this->receiveCity ?: null, 'county' => $this->receiveDistrict ?: null, 'address' => $receiverAddress]
         ];
 
-        // 托寄物明细 (顺丰下订单接口必填 name 字段)
         $cargoName = !empty($order['device_name']) ? trim((string)$order['device_name']) : '二手电子设备';
         if (mb_strlen($cargoName) > 80) {
             $cargoName = mb_substr($cargoName, 0, 80);
         }
-        $cargoItem = [
-            'name'  => $cargoName,
-            'count' => 1
-        ];
-        // 顺丰官方 unit 为非必填字段：若订单数据明确包含自定义单位则带上，未指定则不传 unit，避免误标为“台”
-        if (!empty($order['unit'])) {
-            $cargoItem['unit'] = trim((string)$order['unit']);
-        }
-        if (!empty($order['estimate_price']) && (float)$order['estimate_price'] > 0) {
-            $cargoItem['amount'] = round((float)$order['estimate_price'], 2);
-        }
-        $cargoDetails = [$cargoItem];
 
-        // 业务报文 msgData 结构
         $msgDataArray = [
-            'language'        => 'zh-CN',
-            'orderId'         => $orderSn,
-            'isDocall'        => $this->isDocall,
-            'payMethod'       => $this->payMethod,
-            'expressTypeId'   => $this->expressTypeId,
+            'orderId'         => trim((string)($order['order_sn'] ?? '')),
+            'expressTypeId'   => (int)$this->expressTypeId,
+            'payMethod'       => (int)$this->payMethod,
+            'monthlyCard'     => $this->monthlyCard,
             'contactInfoList' => $contactInfoList,
-            'cargoDetails'    => $cargoDetails,
-            'remark'          => '回收订单寄件：' . $orderSn
+            'cargoDetails'    => [['name' => $cargoName, 'count' => 1, 'unit' => '件']],
+            'remark'          => '启灵同城服务业务快件，请验视包装并上门取件'
         ];
 
-        // 若配置了月结卡号，则填入
-        if (!empty($this->monthlyCard)) {
-            $msgDataArray['monthlyCard'] = $this->monthlyCard;
-        }
-
-        // 若预约时间有效，填入 sendStartTm (格式：YYYY-MM-DD HH:mm:ss，顺丰官方要求预约上门收件时间)
         if (!empty($order['appointment_time'])) {
-            if (preg_match('/(\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}(?::\d{2})?)/', (string)$order['appointment_time'], $tmMatches)) {
-                $rawTm = $tmMatches[1];
-                if (strlen($rawTm) === 16) {
-                    $rawTm .= ':00';
-                }
-                $msgDataArray['sendStartTm'] = $rawTm;
+            $aptTime = trim((string)$order['appointment_time']);
+            if (strtotime($aptTime) !== false) {
+                $msgDataArray['sendStartTm'] = $aptTime;
             }
         }
+        return $msgDataArray;
+    }
 
-        $msgDataJson = json_encode($msgDataArray, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
-        if ($msgDataJson === false) {
-            return ['code' => 500, 'msg' => '业务数据 JSON 序列化失败', 'data' => null];
-        }
+    /**
+     * 解析顺丰下订单网关及业务响应
+     */
+    private function parseCreateOrderResponse(array $respData, string $orderSn): array
+    {
+        $apiResultCode = (string)($respData['apiResultCode'] ?? '');
+        $apiErrorMsg = (string)($respData['apiErrorMsg'] ?? '');
 
-        // 计算数字签名 (适配简易MD5与标准MD5)
-        $timestamp = (string)round(microtime(true) * 1000);
-        $requestId = $this->generateRequestId();
-        $msgDigest = $this->generateDigest($msgDataJson, $timestamp, $this->checkWord, $this->signType);
-
-        // POST 表单参数
-        $postData = [
-            'partnerID'   => $this->partnerId,
-            'requestID'   => $requestId,
-            'serviceCode' => self::SERVICE_CODE,
-            'timestamp'   => $timestamp,
-            'msgDigest'   => $msgDigest,
-            'msgData'     => $msgDataJson
-        ];
-
-        // 发起网络通信
-        $gateway = $this->getGatewayUrl();
-        $httpRes = $this->executeHttp($gateway, $postData);
-
-        if (!$httpRes['success']) {
-            $this->logError('顺丰接口 HTTP 请求失败', [
-                'order_sn' => $orderSn,
-                'gateway'  => $gateway,
-                'error'    => $httpRes['msg']
-            ]);
-            return ['code' => 500, 'msg' => '顺丰速运接口通信异常：' . $httpRes['msg'], 'data' => null];
-        }
-
-        $respJson = $httpRes['data'];
-
-        // 验证网关层响应 (顺丰标准 A1000)
-        if (($respJson['apiResultCode'] ?? '') !== 'A1000') {
-            $errorMsg = (string)($respJson['apiErrorMsg'] ?? '顺丰网关未知错误');
-            $this->logError('顺丰网关拒绝请求', [
-                'order_sn' => $orderSn,
-                'response' => $respJson
-            ]);
+        if ($apiResultCode !== 'A1000') {
+            $this->logError('顺丰开放平台下订单网关拦截', ['order_sn' => $orderSn, 'apiResultCode' => $apiResultCode, 'apiErrorMsg' => $apiErrorMsg]);
             return [
                 'code' => 400,
-                'msg'  => '顺丰网关响应：' . $errorMsg . ' (代码: ' . ($respJson['apiResultCode'] ?? 'UNKNOWN') . ')',
-                'data' => $respJson
+                'msg'  => !empty($apiErrorMsg) ? "顺丰下单失败: {$apiErrorMsg} ({$apiResultCode})" : "顺丰接口返回错误码 {$apiResultCode}",
+                'data' => $respData
             ];
         }
 
-        // 解析业务层响应 apiResultData (顺丰可能返回 JSON 字符串或已解码对象)
-        $apiResultData = $respJson['apiResultData'] ?? null;
-        if (is_string($apiResultData)) {
-            $apiResultData = json_decode($apiResultData, true);
+        $innerData = [];
+        if (!empty($respData['apiResultData'])) {
+            $inner = $respData['apiResultData'];
+            $innerData = is_string($inner) ? (json_decode($inner, true) ?: []) : (is_array($inner) ? $inner : []);
         }
 
-        if (!is_array($apiResultData)) {
-            $this->logError('顺丰业务层返回非合规 JSON 报文', ['raw' => $respJson]);
-            return ['code' => 500, 'msg' => '顺丰业务数据反序列化失败', 'data' => $respJson];
-        }
+        $bizSuccess = (bool)($innerData['success'] ?? false);
+        $bizErrorCode = (string)($innerData['errorCode'] ?? '');
+        $bizErrorMsg = (string)($innerData['errorMsg'] ?? '');
+        $msgDataSub = $innerData['msgData'] ?? [];
 
-        // 检查业务层 success 状态
-        if (empty($apiResultData['success'])) {
-            $bizMsg = (string)($apiResultData['errorMsg'] ?? '顺丰速运下单未成功');
-            $bizCode = (string)($apiResultData['errorCode'] ?? '');
-            $this->logError('顺丰业务下单失败', [
-                'order_sn' => $orderSn,
-                'result'   => $apiResultData
-            ]);
+        if (!$bizSuccess) {
+            $this->logError('顺丰业务层下单失败', ['order_sn' => $orderSn, 'errorCode' => $bizErrorCode, 'errorMsg' => $bizErrorMsg]);
             return [
                 'code' => 400,
-                'msg'  => '顺丰速运下单未通过：' . $bizMsg . ($bizCode ? " [{$bizCode}]" : ''),
-                'data' => $apiResultData
+                'msg'  => !empty($bizErrorMsg) ? "顺丰下单未受理: {$bizErrorMsg} ({$bizErrorCode})" : "顺丰业务处理未通过: {$bizErrorCode}",
+                'data' => $innerData
             ];
         }
 
-        // 提取运单号 waybillNo
         $waybillNo = '';
-        $msgData = $apiResultData['msgData'] ?? [];
-        if (!empty($msgData['waybillNoInfoList']) && is_array($msgData['waybillNoInfoList'])) {
-            foreach ($msgData['waybillNoInfoList'] as $wb) {
-                if (!empty($wb['waybillNo'])) {
-                    $waybillNo = (string)$wb['waybillNo'];
-                    break;
-                }
-            }
+        if (!empty($msgDataSub['waybillNoInfoList']) && is_array($msgDataSub['waybillNoInfoList'])) {
+            $firstWaybill = $msgDataSub['waybillNoInfoList'][0] ?? [];
+            $waybillNo = (string)($firstWaybill['waybillNo'] ?? '');
+        }
+        if (empty($waybillNo) && !empty($msgDataSub['waybillNo'])) {
+            $waybillNo = (string)$msgDataSub['waybillNo'];
         }
 
-        // 提取路由标签 (用于面单打印等)
-        $routeLabelInfo = $msgData['routeLabelInfo'] ?? null;
+        $this->logInfo('顺丰速运下订单成功并获得运单号', ['order_sn' => $orderSn, 'waybill_no' => $waybillNo, 'msgData' => $msgDataSub]);
 
         return [
             'code' => 200,
-            'msg'  => '顺丰下单成功',
-            'data' => [
-                'order_sn'         => $orderSn,
-                'waybill_no'       => $waybillNo,
-                'express_company'  => '顺丰速运',
-                'route_label_info' => $routeLabelInfo,
-                'raw'              => $apiResultData
-            ]
+            'msg'  => '顺丰预约下单成功',
+            'data' => ['waybill_no' => $waybillNo, 'order_sn' => $orderSn, 'return_extra' => $msgDataSub]
         ];
     }
 
@@ -396,13 +379,43 @@ class SfExpressService
         }
 
         $gateway = $env === 'prod' ? self::PROD_GATEWAY : self::SANDBOX_GATEWAY;
+        $testData = $this->buildDiagnosticPayload($monthlyCard);
+        $msgDataJson = json_encode($testData, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        $timestamp = (string)round(microtime(true) * 1000);
+        $requestId = $this->generateRequestId();
 
-        // 构建试探性请求
-        $testOrderSn = 'TEST_DIAG_' . date('YmdHis') . '_' . mt_rand(100, 999);
+        $appliedSignType = $signType;
+        $msgDigest = $this->generateDigest($msgDataJson, $timestamp, $checkWord, $appliedSignType);
+
+        $postData = [
+            'partnerID'   => $partnerId,
+            'requestID'   => $requestId,
+            'serviceCode' => self::SERVICE_CODE,
+            'timestamp'   => $timestamp,
+            'msgDigest'   => $msgDigest,
+            'msgData'     => $msgDataJson
+        ];
+
+        $probeRes = $this->probeConnectionWithSignFallback(
+            $gateway, $postData, $msgDataJson, $timestamp, $checkWord, $appliedSignType
+        );
+
+        if (!$probeRes['success']) {
+            return $probeRes['error_response'];
+        }
+
+        return $this->parseDiagnosticResult($probeRes['data'], $gateway, $env, $appliedSignType);
+    }
+
+    /**
+     * 构建接口连通性诊断测试报文
+     */
+    private function buildDiagnosticPayload(string $monthlyCard): array
+    {
         $testData = [
             'language'        => 'zh-CN',
-            'orderId'         => $testOrderSn,
-            'isDocall'        => 0, // 测试时不触发实际上门揽件
+            'orderId'         => 'TEST_DIAG_' . date('YmdHis') . '_' . mt_rand(100, 999),
+            'isDocall'        => 0,
             'payMethod'       => 2,
             'expressTypeId'   => 2,
             'contactInfoList' => [
@@ -429,33 +442,36 @@ class SfExpressService
             $testData['monthlyCard'] = $monthlyCard;
         }
 
-        $msgDataJson = json_encode($testData, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
-        $timestamp = (string)round(microtime(true) * 1000);
-        $requestId = $this->generateRequestId();
+        return $testData;
+    }
 
-        // 优先使用当前指定的算法模式计算签名 (默认 simple: 简易MD5，拼接 msgData + timestamp + checkWord)
-        $appliedSignType = $signType;
-        $msgDigest = $this->generateDigest($msgDataJson, $timestamp, $checkWord, $appliedSignType);
-
-        $postData = [
-            'partnerID'   => $partnerId,
-            'requestID'   => $requestId,
-            'serviceCode' => self::SERVICE_CODE,
-            'timestamp'   => $timestamp,
-            'msgDigest'   => $msgDigest,
-            'msgData'     => $msgDataJson
-        ];
-
+    /**
+     * 探测顺丰网关并自适应签名算法 (simple / standard 自动容灾降级尝试)
+     */
+    private function probeConnectionWithSignFallback(
+        string $gateway, 
+        array $postData, 
+        string $msgDataJson, 
+        string $timestamp, 
+        string $checkWord, 
+        string &$appliedSignType
+    ): array {
         $httpRes = $this->executeHttp($gateway, $postData);
         if (!$httpRes['success']) {
-            return ['code' => 500, 'msg' => '连接顺丰网关异常：' . $httpRes['msg'], 'data' => ['gateway' => $gateway]];
+            return [
+                'success' => false,
+                'error_response' => [
+                    'code' => 500,
+                    'msg'  => '连接顺丰网关异常：' . $httpRes['msg'],
+                    'data' => ['gateway' => $gateway]
+                ]
+            ];
         }
 
         $respJson = $httpRes['data'];
         $apiResultCode = (string)($respJson['apiResultCode'] ?? '');
         $apiErrorMsg = (string)($respJson['apiErrorMsg'] ?? '');
 
-        // 智能双重探测自适应：如果返回数字签名无效 (A1006 或包含签名字样)，自动使用备用算法再尝试一次
         if ($apiResultCode !== 'A1000' && (strpos($apiErrorMsg, '签名') !== false || $apiResultCode === 'A1006')) {
             $fallbackSignType = ($appliedSignType === 'simple') ? 'standard' : 'simple';
             $fallbackDigest = $this->generateDigest($msgDataJson, $timestamp, $checkWord, $fallbackSignType);
@@ -463,7 +479,6 @@ class SfExpressService
 
             $retryHttpRes = $this->executeHttp($gateway, $postData);
             if ($retryHttpRes['success'] && (($retryHttpRes['data']['apiResultCode'] ?? '') === 'A1000')) {
-                // 备用算法探测成功，自动修正应用类型
                 $appliedSignType = $fallbackSignType;
                 $respJson = $retryHttpRes['data'];
                 $apiResultCode = 'A1000';
@@ -472,19 +487,29 @@ class SfExpressService
 
         if ($apiResultCode !== 'A1000') {
             return [
-                'code' => 400,
-                'msg'  => '顺丰网关校验未通过：' . ($respJson['apiErrorMsg'] ?? '未知错误') . " (网关代码: {$apiResultCode})",
-                'data' => [
-                    'gateway'           => $gateway,
-                    'applied_sign_type' => $appliedSignType,
-                    'apiResultCode'     => $apiResultCode,
-                    'apiErrorMsg'       => $respJson['apiErrorMsg'] ?? '',
-                    'apiResponseID'     => $respJson['apiResponseID'] ?? ''
+                'success' => false,
+                'error_response' => [
+                    'code' => 400,
+                    'msg'  => '顺丰网关校验未通过：' . ($respJson['apiErrorMsg'] ?? '未知错误') . " (网关代码: {$apiResultCode})",
+                    'data' => [
+                        'gateway'           => $gateway,
+                        'applied_sign_type' => $appliedSignType,
+                        'apiResultCode'     => $apiResultCode,
+                        'apiErrorMsg'       => $respJson['apiErrorMsg'] ?? '',
+                        'apiResponseID'     => $respJson['apiResponseID'] ?? ''
+                    ]
                 ]
             ];
         }
 
-        // 解析业务结果
+        return ['success' => true, 'data' => $respJson];
+    }
+
+    /**
+     * 格式化顺丰连通性测试诊断业务响应
+     */
+    private function parseDiagnosticResult(array $respJson, string $gateway, string $env, string $appliedSignType): array
+    {
         $apiResultData = $respJson['apiResultData'] ?? null;
         if (is_string($apiResultData)) {
             $apiResultData = json_decode($apiResultData, true);
@@ -509,7 +534,7 @@ class SfExpressService
                     'env'               => $env,
                     'applied_sign_type' => $appliedSignType,
                     'test_waybill_no'   => $testWaybillNo,
-                    'apiResultCode'     => $apiResultCode,
+                    'apiResultCode'     => $respJson['apiResultCode'] ?? 'A1000',
                     'apiResultData'     => $apiResultData
                 ]
             ];
@@ -541,8 +566,8 @@ class SfExpressService
             curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
             curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 3); // 连接超时 3 秒
             curl_setopt($ch, CURLOPT_TIMEOUT, 8);         // 读取超时 8 秒
-            curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
-            curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 0);
+            curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, true);
+            curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 2);
             curl_setopt($ch, CURLOPT_HTTPHEADER, [
                 'Content-Type: application/x-www-form-urlencoded;charset=UTF-8'
             ]);
@@ -584,6 +609,61 @@ class SfExpressService
      */
     public function handleWaybillsFeePush(array $params = [], string $rawBody = ''): array
     {
+        $incomingDigest = trim((string)($params['msgDigest'] ?? ''));
+        $timestamp = trim((string)($params['timestamp'] ?? ''));
+        $msgDataRaw = $params['msgData'] ?? null;
+        if ($msgDataRaw === null && !empty($rawBody)) {
+            $parsedBody = json_decode($rawBody, true);
+            if (is_array($parsedBody)) {
+                $incomingDigest = trim((string)($parsedBody['msgDigest'] ?? $incomingDigest));
+                $timestamp = trim((string)($parsedBody['timestamp'] ?? $timestamp));
+                $msgDataRaw = $parsedBody['msgData'] ?? null;
+            }
+        }
+        $msgDataStr = is_string($msgDataRaw) ? $msgDataRaw : (is_array($msgDataRaw) ? json_encode($msgDataRaw, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) : '');
+
+        // 仅在包含业务数据且系统已配置校验码时强制验签 (放行顺丰控制台空探测网络测试)
+        if (!empty($msgDataStr) && !empty($this->checkWord)) {
+            if (!$this->verifyPushSignature($msgDataStr, $timestamp, $incomingDigest)) {
+                $this->logInfo('顺丰运费推送数字签名校验未通过，已被安全拦截', [
+                    'digest'    => $incomingDigest,
+                    'timestamp' => $timestamp
+                ]);
+                return [
+                    'code'        => 403,
+                    'partnerCode' => $this->partnerId ?: 'SF_PARTNER',
+                    'service'     => self::SERVICE_CODE_FEE_PUSH,
+                    'message'     => 'Signature verification failed',
+                    'msgData'     => ''
+                ];
+            }
+        }
+
+        list($effectivePartnerCode, $items) = $this->parseFeePushPayload($params, $rawBody);
+
+        foreach ($items as $item) {
+            $this->processSingleWaybillFee($item);
+        }
+
+        // 无论具体单据处理结果如何，均向顺丰服务端应答 HTTP 200 与官方成功 JSON，防止顺丰反复重试
+        return [
+            'code'        => 200,
+            'partnerCode' => $effectivePartnerCode,
+            'service'     => self::SERVICE_CODE_FEE_PUSH,
+            'message'     => 'success',
+            'msgData'     => ''
+        ];
+    }
+
+    /**
+     * 解析顺丰清单运费推送请求体与待处理清单项
+     *
+     * @param array $params 请求参数
+     * @param string $rawBody 原始请求体
+     * @return array [string $effectivePartnerCode, array $items]
+     */
+    protected function parseFeePushPayload(array $params = [], string $rawBody = ''): array
+    {
         $partnerId = trim((string)($params['partnerID'] ?? ($params['partnerCode'] ?? '')));
         $serviceCode = trim((string)($params['serviceCode'] ?? ($params['service'] ?? self::SERVICE_CODE_FEE_PUSH)));
         $effectivePartnerCode = $partnerId ?: ($this->partnerId ?: 'SF_PARTNER');
@@ -606,15 +686,8 @@ class SfExpressService
             'hasMsgData'  => !empty($msgDataRaw)
         ]);
 
-        // 情况 1: 顺丰控制台连通性测试 (网络测试时不传 msgData 或 msgData 为空/探测标记)
         if (empty($msgDataRaw)) {
-            return [
-                'code'        => 200,
-                'partnerCode' => $effectivePartnerCode,
-                'service'     => self::SERVICE_CODE_FEE_PUSH,
-                'message'     => 'success',
-                'msgData'     => ''
-            ];
+            return [$effectivePartnerCode, []];
         }
 
         // 解析 msgData 内容 (可能为 JSON 字符串或已解码数组)
@@ -626,15 +699,8 @@ class SfExpressService
             }
         }
 
-        // 若不是数组，或者为空，直接返回成功
         if (!is_array($items) || empty($items)) {
-            return [
-                'code'        => 200,
-                'partnerCode' => $effectivePartnerCode,
-                'service'     => self::SERVICE_CODE_FEE_PUSH,
-                'message'     => 'success',
-                'msgData'     => ''
-            ];
+            return [$effectivePartnerCode, []];
         }
 
         // 若 items 为关联数组 (单条推送)，将其规范化为二维数组
@@ -642,159 +708,165 @@ class SfExpressService
             $items = [$items];
         }
 
-        // 遍历处理每个运费明细推送
-        foreach ($items as $item) {
-            if (!is_array($item)) {
-                continue;
-            }
+        return [$effectivePartnerCode, $items];
+    }
 
-            $orderNo = trim((string)($item['orderNo'] ?? ''));
-            $waybillNo = trim((string)($item['waybillNo'] ?? ''));
-            $meterageWeight = isset($item['meterageWeightQty']) ? (float)$item['meterageWeightQty'] : 0.0;
-            $realWeight = isset($item['realWeightQty']) ? (float)$item['realWeightQty'] : 0.0;
-            $feeList = isset($item['feeList']) && is_array($item['feeList']) ? $item['feeList'] : [];
-
-            // 计算该运单顺丰扣费合计金额与明细描述
-            $totalFee = 0.0;
-            $feeDetails = [];
-            foreach ($feeList as $fee) {
-                if (!is_array($fee)) continue;
-                $feeAmt = isset($fee['feeAmt']) ? (float)$fee['feeAmt'] : 0.0;
-                $totalFee += $feeAmt;
-                $feeName = trim((string)($fee['feeTypeName'] ?? '运费项'));
-                $feeDetails[] = sprintf('%s: ¥%.2f', $feeName, $feeAmt);
-            }
-
-            $feeSummary = sprintf(
-                '【顺丰运费推送】实重: %.2fkg, 计费重: %.2fkg, 运费合计: ¥%.2f (%s)',
-                $realWeight,
-                $meterageWeight,
-                $totalFee,
-                !empty($feeDetails) ? implode('; ', $feeDetails) : '标准运费'
-            );
-
-            // 查找关联订单 (根据客户订单号或运单号匹配)
-            try {
-            $lockKey = 'sf_fee:' . (!empty($waybillNo) ? $waybillNo : $orderNo);
-            $cache = CacheService::getInstance();
-            $lockToken = $cache->acquireLock($lockKey, 10);
-
-            try {
-                // 查找匹配的本地回收订单
-                $orderRow = null;
-                if (!empty($orderNo)) {
-                    $orderRow = $this->db->fetch(
-                        "SELECT `id`, `order_sn`, `express_sn`, `status`, `user_remark`, `shipping_fee`, `shipping_real_weight`, `shipping_fee_detail` FROM `{$this->p}rc_order` WHERE `order_sn` = :order_sn LIMIT 1",
-                        [':order_sn' => $orderNo]
-                    );
-                }
-                if (!$orderRow && !empty($waybillNo)) {
-                    $orderRow = $this->db->fetch(
-                        "SELECT `id`, `order_sn`, `express_sn`, `status`, `user_remark`, `shipping_fee`, `shipping_real_weight`, `shipping_fee_detail` FROM `{$this->p}rc_order` WHERE `express_sn` = :waybill_no LIMIT 1",
-                        [':waybill_no' => $waybillNo]
-                    );
-                }
-
-                if ($orderRow) {
-                    $orderId = (int)$orderRow['id'];
-                    $currentRemark = (string)($orderRow['user_remark'] ?? '');
-
-                    // 幂等防重放检查：若本单运费金额与实重已完全一致且运费明细已存在，且备注已追加，则平滑跳过重复更新
-                    if (
-                        abs((float)($orderRow['shipping_fee'] ?? 0) - (float)$totalFee) < 0.001 &&
-                        abs((float)($orderRow['shipping_real_weight'] ?? 0) - (float)$realWeight) < 0.001 &&
-                        !empty($orderRow['shipping_fee_detail']) &&
-                        strpos($currentRemark, '【顺丰运费推送】') !== false
-                    ) {
-                        $this->logInfo('顺丰运费推送已记录，触发幂等防重放跳过', [
-                            'order_id'   => $orderId,
-                            'waybill_no' => $waybillNo,
-                            'total_fee'  => $totalFee
-                        ]);
-                        continue;
-                    }
-
-                    // 若该运费记录尚未追加到备注中，则安全追加并同步运单号
-                    $updateFields = [];
-                    $updateParams = [':id' => $orderId, ':updated_at' => time()];
-
-                    if (strpos($currentRemark, '【顺丰运费推送】') === false) {
-                        $newRemark = trim($currentRemark . ' ' . $feeSummary);
-                        // 防溢出截断 (数据库 user_remark 字段长度 255)
-                        if (mb_strlen($newRemark, 'UTF-8') > 250) {
-                            $newRemark = mb_substr($newRemark, 0, 247, 'UTF-8') . '...';
-                        }
-                        $updateFields[] = "`user_remark` = :user_remark";
-                        $updateParams[':user_remark'] = $newRemark;
-                    }
-
-                    if (empty($orderRow['express_sn']) && !empty($waybillNo)) {
-                        $updateFields[] = "`express_sn` = :express_sn";
-                        $updateParams[':express_sn'] = $waybillNo;
-                        $updateFields[] = "`express_company` = '顺丰速运'";
-                    }
-
-                    // 写入结构化顺丰运费与称重数据
-                    $updateFields[] = "`shipping_fee` = :shipping_fee";
-                    $updateParams[':shipping_fee'] = $totalFee;
-                    $updateFields[] = "`shipping_weight` = :shipping_weight";
-                    $updateParams[':shipping_weight'] = $meterageWeight;
-                    $updateFields[] = "`shipping_real_weight` = :shipping_real_weight";
-                    $updateParams[':shipping_real_weight'] = $realWeight;
-                    $updateFields[] = "`shipping_fee_detail` = :shipping_fee_detail";
-                    $updateParams[':shipping_fee_detail'] = json_encode($feeList, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
-
-                    // 严谨状态机防护：仅在订单仍为待发货时推进至运输中，严禁覆盖质检中或已完结状态
-                    $currentStatus = (string)($orderRow['status'] ?? '');
-                    if ($currentStatus === 'pending_send') {
-                        $updateFields[] = "`status` = 'in_transit'";
-                    }
-
-                    if (!empty($updateFields)) {
-                        $updateFields[] = "`updated_at` = :updated_at";
-                        $setSql = implode(', ', $updateFields);
-                        $this->db->execute(
-                            "UPDATE `{$this->p}rc_order` SET {$setSql} WHERE `id` = :id LIMIT 1",
-                            $updateParams
-                        );
-                    }
-
-                    $this->logInfo('顺丰运费推送处理成功并匹配订单', [
-                        'order_id'    => $orderId,
-                        'order_sn'    => $orderRow['order_sn'],
-                        'waybill_no'  => $waybillNo,
-                        'total_fee'   => $totalFee,
-                        'real_weight' => $realWeight
-                    ]);
-                } else {
-                    $this->logInfo('收到顺丰运费推送但未匹配到本地订单 (可能是非本系统测试单或外部单号)', [
-                        'orderNo'   => $orderNo,
-                        'waybillNo' => $waybillNo,
-                        'totalFee'  => $totalFee
-                    ]);
-                }
-            } catch (\Throwable $e) {
-                $this->logError('处理顺丰运费推送更新订单时异常', [
-                    'orderNo'   => $orderNo,
-                    'waybillNo' => $waybillNo,
-                    'error'     => $e->getMessage()
-                ]);
-            } finally {
-                if ($lockToken !== null) {
-                    $cache->releaseLock($lockKey, $lockToken);
-                }
-            }
+    /**
+     * 处理单条顺丰清单运费明细并落库更新
+     *
+     * @param array $item 单条清单推送项
+     * @return void
+     */
+    protected function processSingleWaybillFee(array $item): void
+    {
+        if (!is_array($item)) {
+            return;
         }
 
-        // 无论具体单据处理结果如何，均向顺丰服务端应答 HTTP 200 与官方成功 JSON，防止顺丰反复重试
-        return [
-            'code'        => 200,
-            'partnerCode' => $effectivePartnerCode,
-            'service'     => self::SERVICE_CODE_FEE_PUSH,
-            'message'     => 'success',
-            'msgData'     => ''
-        ];
+        $orderNo = trim((string)($item['orderNo'] ?? ''));
+        $waybillNo = trim((string)($item['waybillNo'] ?? ''));
+        $meterageWeight = isset($item['meterageWeightQty']) ? (float)$item['meterageWeightQty'] : 0.0;
+        $realWeight = isset($item['realWeightQty']) ? (float)$item['realWeightQty'] : 0.0;
+        $feeList = isset($item['feeList']) && is_array($item['feeList']) ? $item['feeList'] : [];
+
+        // 计算该运单顺丰扣费合计金额与明细描述
+        $totalFee = 0.0;
+        $feeDetails = [];
+        foreach ($feeList as $fee) {
+            if (!is_array($fee)) continue;
+            $feeAmt = isset($fee['feeAmt']) ? (float)$fee['feeAmt'] : 0.0;
+            $totalFee += $feeAmt;
+            $feeName = trim((string)($fee['feeTypeName'] ?? '运费项'));
+            $feeDetails[] = sprintf('%s: ¥%.2f', $feeName, $feeAmt);
+        }
+
+        $feeSummary = sprintf(
+            '【顺丰运费推送】实重: %.2fkg, 计费重: %.2fkg, 运费合计: ¥%.2f (%s)',
+            $realWeight,
+            $meterageWeight,
+            $totalFee,
+            !empty($feeDetails) ? implode('; ', $feeDetails) : '标准运费'
+        );
+
+        // 查找关联订单 (根据客户订单号或运单号匹配) 并加锁
+        $lockKey = 'sf_fee:' . (!empty($waybillNo) ? $waybillNo : $orderNo);
+        $cache = CacheService::getInstance();
+        $lockToken = $cache->acquireLock($lockKey, 10);
+
+        try {
+            $orderRow = null;
+            if (!empty($orderNo)) {
+                $orderRow = $this->db->fetch(
+                    "SELECT `id`, `order_sn`, `express_sn`, `status`, `user_remark`, `shipping_fee`, `shipping_real_weight`, `shipping_fee_detail` FROM `{$this->p}rc_order` WHERE `order_sn` = :order_sn LIMIT 1",
+                    [':order_sn' => $orderNo]
+                );
+            }
+            if (!$orderRow && !empty($waybillNo)) {
+                $orderRow = $this->db->fetch(
+                    "SELECT `id`, `order_sn`, `express_sn`, `status`, `user_remark`, `shipping_fee`, `shipping_real_weight`, `shipping_fee_detail` FROM `{$this->p}rc_order` WHERE `express_sn` = :waybill_no LIMIT 1",
+                    [':waybill_no' => $waybillNo]
+                );
+            }
+
+            if (!$orderRow) {
+                $this->logInfo('收到顺丰运费推送但未匹配到本地订单 (可能是非本系统测试单或外部单号)', [
+                    'orderNo'   => $orderNo,
+                    'waybillNo' => $waybillNo,
+                    'totalFee'  => $totalFee
+                ]);
+                return;
+            }
+
+            $orderId = (int)$orderRow['id'];
+            $currentRemark = (string)($orderRow['user_remark'] ?? '');
+
+            // 幂等防重放检查：若本单运费金额与实重已完全一致且运费明细已存在，且备注已追加，则平滑跳过重复更新
+            if (
+                abs((float)($orderRow['shipping_fee'] ?? 0) - (float)$totalFee) < 0.001 &&
+                abs((float)($orderRow['shipping_real_weight'] ?? 0) - (float)$realWeight) < 0.001 &&
+                !empty($orderRow['shipping_fee_detail']) &&
+                strpos($currentRemark, '【顺丰运费推送】') !== false
+            ) {
+                $this->logInfo('顺丰运费推送已记录，触发幂等防重放跳过', [
+                    'order_id'   => $orderId,
+                    'waybill_no' => $waybillNo,
+                    'total_fee'  => $totalFee
+                ]);
+                return;
+            }
+
+            // 持久化顺丰运费至订单
+            $this->persistWaybillFeeToOrder($orderRow, $waybillNo, $totalFee, $realWeight, $meterageWeight, $feeList, $feeSummary);
+
+            $this->logInfo('顺丰运费推送处理成功并匹配订单', [
+                'order_id'    => $orderId,
+                'order_sn'    => $orderRow['order_sn'],
+                'waybill_no'  => $waybillNo,
+                'total_fee'   => $totalFee,
+                'real_weight' => $realWeight
+            ]);
+        } catch (\Throwable $e) {
+            $this->logError('处理顺丰运费推送更新订单时异常', [
+                'orderNo'   => $orderNo,
+                'waybillNo' => $waybillNo,
+                'error'     => $e->getMessage()
+            ]);
+        } finally {
+            if ($lockToken !== null) {
+                $cache->releaseLock($lockKey, $lockToken);
+            }
+        }
     }
+
+    /**
+     * 将解析后的顺丰实扣运费与快件重量持久化更新至回收订单
+     */
+    private function persistWaybillFeeToOrder(array $orderRow, string $waybillNo, float $totalFee, float $realWeight, float $meterageWeight, array $feeList, string $feeSummary): void
+    {
+        $orderId = (int)$orderRow['id'];
+        $currentRemark = (string)($orderRow['user_remark'] ?? '');
+        $updateFields = [];
+        $updateParams = [':id' => $orderId, ':updated_at' => time()];
+
+        if (strpos($currentRemark, '【顺丰运费推送】') === false) {
+            $newRemark = trim($currentRemark . ' ' . $feeSummary);
+            if (mb_strlen($newRemark, 'UTF-8') > 250) {
+                $newRemark = mb_substr($newRemark, 0, 247, 'UTF-8') . '...';
+            }
+            $updateFields[] = "`user_remark` = :user_remark";
+            $updateParams[':user_remark'] = $newRemark;
+        }
+
+        if (empty($orderRow['express_sn']) && !empty($waybillNo)) {
+            $updateFields[] = "`express_sn` = :express_sn";
+            $updateParams[':express_sn'] = $waybillNo;
+            $updateFields[] = "`express_company` = '顺丰速运'";
+        }
+
+        $updateFields[] = "`shipping_fee` = :shipping_fee";
+        $updateParams[':shipping_fee'] = $totalFee;
+        $updateFields[] = "`shipping_weight` = :shipping_weight";
+        $updateParams[':shipping_weight'] = $meterageWeight;
+        $updateFields[] = "`shipping_real_weight` = :shipping_real_weight";
+        $updateParams[':shipping_real_weight'] = $realWeight;
+        $updateFields[] = "`shipping_fee_detail` = :shipping_fee_detail";
+        $updateParams[':shipping_fee_detail'] = json_encode($feeList, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+
+        $currentStatus = (string)($orderRow['status'] ?? '');
+        if ($currentStatus === 'pending_send') {
+            $updateFields[] = "`status` = 'in_transit'";
+        }
+
+        if (!empty($updateFields)) {
+            $updateFields[] = "`updated_at` = :updated_at";
+            $setSql = implode(', ', $updateFields);
+            $this->db->execute(
+                "UPDATE `{$this->p}rc_order` SET {$setSql} WHERE `id` = :id LIMIT 1",
+                $updateParams
+            );
+        }
+    }
+
 
     /**
      * 处理顺丰速运增量路由推送接口 (RoutePushService - 速运类API)
@@ -817,7 +889,6 @@ class SfExpressService
         }
         if (empty($payload) && !empty($params)) {
             $payload = $params;
-            // 兼容 form 提交时 content 字段传 JSON
             if (!empty($params['content']) && is_string($params['content'])) {
                 $cDecoded = json_decode($params['content'], true);
                 if (is_array($cDecoded)) {
@@ -826,170 +897,143 @@ class SfExpressService
             }
         }
 
-        // 记录顺丰路由接入日志
         $this->logInfo('收到顺丰路由推送/网络测试请求', [
             'hasBody'    => !empty($payload['Body']),
             'raw_length' => strlen($rawBody)
         ]);
 
-        // 提取 Body.WaybillRoute
-        $routeList = $payload['Body']['WaybillRoute'] ?? null;
+        $incomingDigest = trim((string)($params['msgDigest'] ?? ($payload['msgDigest'] ?? '')));
+        $timestamp = trim((string)($params['timestamp'] ?? ($payload['timestamp'] ?? '')));
+        $bodyData = $payload['Body'] ?? null;
+        $bodyStr = is_string($bodyData) ? $bodyData : (is_array($bodyData) ? json_encode($bodyData, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) : '');
 
-        // 情况 1: 顺丰控制台连通性测试 (网络测试时不带真实路由节点，或单纯探测)
-        if (empty($routeList) || !is_array($routeList)) {
-            return [
-                'return_code' => '0000',
-                'return_msg'  => '成功'
-            ];
+        if (!empty($bodyStr) && !empty($incomingDigest) && !empty($this->checkWord)) {
+            if (!$this->verifyPushSignature($bodyStr, $timestamp, $incomingDigest)) {
+                $this->logInfo('顺丰路由推送数字签名校验未通过，已被安全拦截');
+                return ['return_code' => '4003', 'return_msg' => 'Signature verification failed'];
+            }
         }
 
-        // 若为单个节点关联数组，规范化为数组
+        $routeList = $payload['Body']['WaybillRoute'] ?? null;
+        if (empty($routeList) || !is_array($routeList)) {
+            return ['return_code' => '0000', 'return_msg' => '成功'];
+        }
+
         if (isset($routeList['mailno']) || isset($routeList['orderid'])) {
             $routeList = [$routeList];
         }
 
         foreach ($routeList as $node) {
-            if (!is_array($node)) continue;
-
-            $mailno = trim((string)($node['mailno'] ?? ''));
-            $orderid = trim((string)($node['orderid'] ?? ''));
-            $acceptTime = trim((string)($node['acceptTime'] ?? date('Y-m-d H:i:s')));
-            $acceptAddress = trim((string)($node['acceptAddress'] ?? ''));
-            $remark = trim((string)($node['remark'] ?? ''));
-            $opCode = trim((string)($node['opCode'] ?? ''));
-            $nodeId = trim((string)($node['id'] ?? ''));
-
-            if (empty($mailno) && empty($orderid)) {
-                continue;
-            }
-
-            $lockKey = 'sf_route:' . (!empty($mailno) ? $mailno : $orderid);
-            $cache = CacheService::getInstance();
-            $lockToken = $cache->acquireLock($lockKey, 10);
-
-            try {
-                // 查找匹配的本地回收订单
-                $orderRow = null;
-                if (!empty($orderid)) {
-                    $orderRow = $this->db->fetch(
-                        "SELECT `id`, `order_sn`, `express_sn`, `status`, `shipping_routes` FROM `{$this->p}rc_order` WHERE `order_sn` = :order_sn LIMIT 1",
-                        [':order_sn' => $orderid]
-                    );
-                }
-                if (!$orderRow && !empty($mailno)) {
-                    $orderRow = $this->db->fetch(
-                        "SELECT `id`, `order_sn`, `express_sn`, `status`, `shipping_routes` FROM `{$this->p}rc_order` WHERE `express_sn` = :mailno LIMIT 1",
-                        [':mailno' => $mailno]
-                    );
-                }
-
-                if ($orderRow) {
-                    $orderId = (int)$orderRow['id'];
-                    $currentStatus = (string)($orderRow['status'] ?? '');
-                    $existRoutes = [];
-                    if (!empty($orderRow['shipping_routes'])) {
-                        $parsedRoutes = json_decode($orderRow['shipping_routes'], true);
-                        if (is_array($parsedRoutes)) {
-                            $existRoutes = $parsedRoutes;
-                        }
-                    }
-
-                    // 幂等去重检查 (同一顺丰节点ID或时间+描述已存在则不重复写入)
-                    $isDuplicate = false;
-                    foreach ($existRoutes as $ex) {
-                        if (!empty($nodeId) && !empty($ex['id']) && $ex['id'] === $nodeId) {
-                            $isDuplicate = true;
-                            break;
-                        }
-                        if (($ex['acceptTime'] ?? '') === $acceptTime && ($ex['remark'] ?? '') === $remark) {
-                            $isDuplicate = true;
-                            break;
-                        }
-                    }
-
-                    $updateFields = [];
-                    $updateParams = [':id' => $orderId, ':updated_at' => time()];
-
-                    if (!$isDuplicate) {
-                        $existRoutes[] = [
-                            'id'            => $nodeId,
-                            'mailno'        => $mailno,
-                            'acceptTime'    => $acceptTime,
-                            'acceptAddress' => $acceptAddress,
-                            'remark'        => $remark,
-                            'opCode'        => $opCode,
-                        ];
-                        // 按路由时间由新到旧排序展示
-                        usort($existRoutes, function($a, $b) {
-                            return strcmp($b['acceptTime'] ?? '', $a['acceptTime'] ?? '');
-                        });
-
-                        $updateFields[] = "`shipping_routes` = :shipping_routes";
-                        $updateParams[':shipping_routes'] = json_encode($existRoutes, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
-                    }
-
-                    // 若订单尚未填入快递单号，顺便同步
-                    if (empty($orderRow['express_sn']) && !empty($mailno)) {
-                        $updateFields[] = "`express_sn` = :express_sn";
-                        $updateParams[':express_sn'] = $mailno;
-                        $updateFields[] = "`express_company` = '顺丰速运'";
-                    }
-
-                    // 状态推进:
-                    // 1. 若为揽件节点 (opCode 50 或包含已收取)，且订单为待发货，推进至运输中 (in_transit)
-                    if (($opCode === '50' || mb_strpos($remark, '已收取') !== false) && $currentStatus === 'pending_send') {
-                        $updateFields[] = "`status` = 'in_transit'";
-                    }
-
-                    // 2. 若为签收节点 (opCode 80 或包含已签收)，且订单处于待发货或运输中，自动推进至已签收待质检 (received)
-                    // 严格禁止覆盖已进入质检中(inspecting)、已成交(completed)、已放款(paid)等后续状态
-                    if (($opCode === '80' || mb_strpos($remark, '已签收') !== false) && in_array($currentStatus, ['pending_send', 'in_transit'], true)) {
-                        $updateFields[] = "`status` = 'received'";
-                    }
-
-                    if (!empty($updateFields)) {
-                        $updateFields[] = "`updated_at` = :updated_at";
-                        $setSql = implode(', ', $updateFields);
-                        $this->db->execute(
-                            "UPDATE `{$this->p}rc_order` SET {$setSql} WHERE `id` = :id LIMIT 1",
-                            $updateParams
-                        );
-                    }
-
-                    $this->logInfo('顺丰路由推送成功处理并更新订单', [
-                        'order_id'   => $orderId,
-                        'order_sn'   => $orderRow['order_sn'],
-                        'mailno'     => $mailno,
-                        'acceptTime' => $acceptTime,
-                        'remark'     => $remark,
-                        'opCode'     => $opCode,
-                        'is_dup'     => $isDuplicate
-                    ]);
-                } else {
-                    $this->logInfo('收到顺丰路由推送但未匹配到本地订单 (可能是测试单)', [
-                        'orderid' => $orderid,
-                        'mailno'  => $mailno,
-                        'remark'  => $remark
-                    ]);
-                }
-            } catch (\Throwable $e) {
-                $this->logError('处理顺丰路由推送更新订单时异常', [
-                    'orderid' => $orderid,
-                    'mailno'  => $mailno,
-                    'error'   => $e->getMessage()
-                ]);
-            } finally {
-                if ($lockToken !== null) {
-                    $cache->releaseLock($lockKey, $lockToken);
-                }
-            }
+            $this->processSingleRouteNode($node);
         }
 
-        // 必须向顺丰应答官方指定成功 JSON
-        return [
-            'return_code' => '0000',
-            'return_msg'  => '成功'
-        ];
+        return ['return_code' => '0000', 'return_msg' => '成功'];
+    }
+
+    /**
+     * 处理单个顺丰路由节点并追加至回收订单轨迹
+     */
+    private function processSingleRouteNode(array $node): void
+    {
+        if (!is_array($node)) return;
+
+        $mailno = trim((string)($node['mailno'] ?? ''));
+        $orderid = trim((string)($node['orderid'] ?? ''));
+        $acceptTime = trim((string)($node['acceptTime'] ?? date('Y-m-d H:i:s')));
+        $acceptAddress = trim((string)($node['acceptAddress'] ?? ''));
+        $remark = trim((string)($node['remark'] ?? ''));
+        $opCode = trim((string)($node['opCode'] ?? ''));
+        $nodeId = trim((string)($node['id'] ?? ''));
+
+        if (empty($mailno) && empty($orderid)) {
+            return;
+        }
+
+        $lockKey = 'sf_route:' . (!empty($mailno) ? $mailno : $orderid);
+        $cache = CacheService::getInstance();
+        $lockToken = $cache->acquireLock($lockKey, 10);
+
+        try {
+            $orderRow = null;
+            if (!empty($orderid)) {
+                $orderRow = $this->db->fetch(
+                    "SELECT `id`, `order_sn`, `express_sn`, `status`, `shipping_routes` FROM `{$this->p}rc_order` WHERE `order_sn` = :order_sn LIMIT 1",
+                    [':order_sn' => $orderid]
+                );
+            }
+            if (!$orderRow && !empty($mailno)) {
+                $orderRow = $this->db->fetch(
+                    "SELECT `id`, `order_sn`, `express_sn`, `status`, `shipping_routes` FROM `{$this->p}rc_order` WHERE `express_sn` = :mailno LIMIT 1",
+                    [':mailno' => $mailno]
+                );
+            }
+
+            if (!$orderRow) {
+                $this->logInfo('收到顺丰路由推送但未匹配到本地订单 (可能是外部测试件)', ['orderid' => $orderid, 'mailno' => $mailno]);
+                return;
+            }
+
+            $orderId = (int)$orderRow['id'];
+            $currentStatus = (string)($orderRow['status'] ?? '');
+
+            $routes = [];
+            if (!empty($orderRow['shipping_routes'])) {
+                $decoded = json_decode($orderRow['shipping_routes'], true);
+                if (is_array($decoded)) {
+                    $routes = $decoded;
+                }
+            }
+
+            $nodeFingerprint = md5($acceptTime . '|' . $opCode . '|' . $remark);
+            $exists = false;
+            foreach ($routes as $r) {
+                if (md5(($r['acceptTime'] ?? '') . '|' . ($r['opCode'] ?? '') . '|' . ($r['remark'] ?? '')) === $nodeFingerprint) {
+                    $exists = true;
+                    break;
+                }
+            }
+
+            if (!$exists) {
+                $routes[] = [
+                    'acceptTime'    => $acceptTime,
+                    'acceptAddress' => $acceptAddress,
+                    'remark'        => $remark,
+                    'opCode'        => $opCode,
+                    'id'            => $nodeId
+                ];
+
+                usort($routes, function($a, $b) {
+                    return strcmp($a['acceptTime'] ?? '', $b['acceptTime'] ?? '');
+                });
+
+                $routesJson = json_encode($routes, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+                $updateFields = ["`shipping_routes` = :routes", "`updated_at` = :updated_at"];
+                $updateParams = [':routes' => $routesJson, ':updated_at' => time(), ':id' => $orderId];
+
+                if (empty($orderRow['express_sn']) && !empty($mailno)) {
+                    $updateFields[] = "`express_sn` = :express_sn";
+                    $updateParams[':express_sn'] = $mailno;
+                    $updateFields[] = "`express_company` = '顺丰速运'";
+                }
+
+                if ($opCode === '50' && $currentStatus === 'pending_send') {
+                    $updateFields[] = "`status` = 'in_transit'";
+                } elseif ($opCode === '80' && in_array($currentStatus, ['pending_send', 'in_transit'], true)) {
+                    $updateFields[] = "`status` = 'in_transit'";
+                }
+
+                $setSql = implode(', ', $updateFields);
+                $this->db->execute("UPDATE `{$this->p}rc_order` SET {$setSql} WHERE `id` = :id LIMIT 1", $updateParams);
+
+                $this->logInfo('顺丰路由轨迹节点追加成功', ['order_id' => $orderId, 'order_sn' => $orderRow['order_sn'], 'mailno' => $mailno, 'opCode' => $opCode]);
+            }
+        } catch (\Throwable $e) {
+            $this->logError('处理顺丰路由推送异常', ['orderid' => $orderid, 'mailno' => $mailno, 'error' => $e->getMessage()]);
+        } finally {
+            if ($lockToken !== null) {
+                $cache->releaseLock($lockKey, $lockToken);
+            }
+        }
     }
 
     /**
@@ -1021,156 +1065,121 @@ class SfExpressService
             }
         }
 
-        // 记录顺丰订单状态推送接入日志
         $this->logInfo('收到顺丰订单状态推送/网络测试请求', [
             'hasOrderState' => !empty($payload['orderState']),
             'raw_length'    => strlen($rawBody)
         ]);
 
-        // 提取 orderState 列表
-        $stateList = $payload['orderState'] ?? null;
+        $incomingDigest = trim((string)($params['msgDigest'] ?? ($payload['msgDigest'] ?? '')));
+        $timestamp = trim((string)($params['timestamp'] ?? ($payload['timestamp'] ?? '')));
+        $stateData = $payload['orderState'] ?? null;
+        $stateStr = is_string($stateData) ? $stateData : (is_array($stateData) ? json_encode($stateData, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) : '');
 
-        // 情况 1: 顺丰控制台连通性测试 (网络测试时不带真实订单数据，或单纯探测)
-        if (empty($stateList) || !is_array($stateList)) {
-            return [
-                'success' => 'true',
-                'code'    => '0',
-                'msg'     => ''
-            ];
+        if (!empty($stateStr) && !empty($incomingDigest) && !empty($this->checkWord)) {
+            if (!$this->verifyPushSignature($stateStr, $timestamp, $incomingDigest)) {
+                $this->logInfo('顺丰订单状态推送数字签名校验未通过，已被安全拦截');
+                return ['success' => 'false', 'code' => '403', 'msg' => 'Signature verification failed'];
+            }
         }
 
-        // 若为单个节点关联数组，规范化为二维数组
+        $stateList = $payload['orderState'] ?? null;
+        if (empty($stateList) || !is_array($stateList)) {
+            return ['success' => 'true', 'code' => '0', 'msg' => ''];
+        }
+
         if (isset($stateList['orderNo']) || isset($stateList['waybillNo'])) {
             $stateList = [$stateList];
         }
 
         foreach ($stateList as $item) {
-            if (!is_array($item)) continue;
-
-            $orderNo = trim((string)($item['orderNo'] ?? ''));
-            $waybillNo = trim((string)($item['waybillNo'] ?? ''));
-            $stateCode = trim((string)($item['orderStateCode'] ?? ''));
-            $stateDesc = trim((string)($item['orderStateDesc'] ?? ''));
-            $empPhone = trim((string)($item['empPhone'] ?? ''));
-            $empCode = trim((string)($item['empCode'] ?? ''));
-            $netCode = trim((string)($item['netCode'] ?? ''));
-
-            if (empty($orderNo) && empty($waybillNo)) {
-                continue;
-            }
-
-            $lockKey = 'sf_state:' . (!empty($waybillNo) ? $waybillNo : $orderNo);
-            $cache = CacheService::getInstance();
-            $lockToken = $cache->acquireLock($lockKey, 10);
-
-            try {
-                // 查找匹配的本地回收订单
-                $orderRow = null;
-                if (!empty($orderNo)) {
-                    $orderRow = $this->db->fetch(
-                        "SELECT `id`, `order_sn`, `express_sn`, `status`, `shipping_courier_phone`, `shipping_courier_name`, `shipping_dispatch_status` FROM `{$this->p}rc_order` WHERE `order_sn` = :order_sn LIMIT 1",
-                        [':order_sn' => $orderNo]
-                    );
-                }
-                if (!$orderRow && !empty($waybillNo)) {
-                    $orderRow = $this->db->fetch(
-                        "SELECT `id`, `order_sn`, `express_sn`, `status`, `shipping_courier_phone`, `shipping_courier_name`, `shipping_dispatch_status` FROM `{$this->p}rc_order` WHERE `express_sn` = :waybill_no LIMIT 1",
-                        [':waybill_no' => $waybillNo]
-                    );
-                }
-
-                if ($orderRow) {
-                    $orderId = (int)$orderRow['id'];
-                    $currentStatus = (string)($orderRow['status'] ?? '');
-
-                    // 幂等防重放检查：若调度状态与快递员信息已一致，跳过重复更新
-                    $isStatusIdentical = ($orderRow['shipping_dispatch_status'] === $stateDesc)
-                        && (empty($empPhone) || $orderRow['shipping_courier_phone'] === $empPhone)
-                        && (empty($empCode) || $orderRow['shipping_courier_name'] === $empCode);
-
-                    $canProgress = ($stateCode === '05-40003' || $stateCode === '04-40019' || mb_strpos($stateDesc, '已正常收件') !== false || mb_strpos($stateDesc, '已取件') !== false) && $currentStatus === 'pending_send';
-
-                    if ($isStatusIdentical && !$canProgress && !empty($orderRow['express_sn'])) {
-                        $this->logInfo('顺丰订单状态推送已对齐，触发幂等防重放跳过', [
-                            'order_id'   => $orderId,
-                            'waybill_no' => $waybillNo,
-                            'state_code' => $stateCode
-                        ]);
-                        continue;
-                    }
-
-                    $updateFields = [];
-                    $updateParams = [':id' => $orderId, ':updated_at' => time()];
-
-                    // 更新取件快递员电话与工号
-                    if (!empty($empPhone)) {
-                        $updateFields[] = "`shipping_courier_phone` = :empPhone";
-                        $updateParams[':empPhone'] = $empPhone;
-                    }
-                    if (!empty($empCode)) {
-                        $updateFields[] = "`shipping_courier_name` = :empCode";
-                        $updateParams[':empCode'] = $empCode;
-                    }
-                    if (!empty($stateDesc)) {
-                        $updateFields[] = "`shipping_dispatch_status` = :stateDesc";
-                        $updateParams[':stateDesc'] = $stateDesc;
-                    }
-
-                    // 同步补齐快递单号
-                    if (empty($orderRow['express_sn']) && !empty($waybillNo)) {
-                        $updateFields[] = "`express_sn` = :express_sn";
-                        $updateParams[':express_sn'] = $waybillNo;
-                        $updateFields[] = "`express_company` = '顺丰速运'";
-                    }
-
-                    // 严谨状态机防护：仅在待发货状态推进至运输中，严防覆盖已签收、质检或成交订单
-                    if ($canProgress) {
-                        $updateFields[] = "`status` = 'in_transit'";
-                    }
-
-                    if (!empty($updateFields)) {
-                        $updateFields[] = "`updated_at` = :updated_at";
-                        $setSql = implode(', ', $updateFields);
-                        $this->db->execute(
-                            "UPDATE `{$this->p}rc_order` SET {$setSql} WHERE `id` = :id LIMIT 1",
-                            $updateParams
-                        );
-                    }
-
-                    $this->logInfo('顺丰订单状态推送处理成功并更新订单', [
-                        'order_id'   => $orderId,
-                        'order_sn'   => $orderRow['order_sn'],
-                        'state_code' => $stateCode,
-                        'state_desc' => $stateDesc,
-                        'emp_phone'  => $empPhone,
-                        'emp_code'   => $empCode
-                    ]);
-                } else {
-                    $this->logInfo('收到顺丰订单状态推送但未匹配到本地订单 (可能是测试单)', [
-                        'orderNo'   => $orderNo,
-                        'waybillNo' => $waybillNo,
-                        'stateDesc' => $stateDesc
-                    ]);
-                }
-            } catch (\Throwable $e) {
-                $this->logError('处理顺丰订单状态推送更新订单时异常', [
-                    'orderNo'   => $orderNo,
-                    'waybillNo' => $waybillNo,
-                    'error'     => $e->getMessage()
-                ]);
-            } finally {
-                if ($lockToken !== null) {
-                    $cache->releaseLock($lockKey, $lockToken);
-                }
-            }
+            $this->processSingleOrderStateItem($item);
         }
 
-        // 必须向顺丰应答官方指定格式
-        return [
-            'success' => 'true',
-            'code'    => '0',
-            'msg'     => ''
-        ];
+        return ['success' => 'true', 'code' => '0', 'msg' => ''];
+    }
+
+    /**
+     * 处理单个顺丰订单状态节点 (如派单、接单、已揽件)
+     */
+    private function processSingleOrderStateItem(array $item): void
+    {
+        if (!is_array($item)) return;
+
+        $orderNo = trim((string)($item['orderNo'] ?? ''));
+        $waybillNo = trim((string)($item['waybillNo'] ?? ''));
+        $stateCode = trim((string)($item['orderStateCode'] ?? ''));
+        $stateDesc = trim((string)($item['orderStateDesc'] ?? ''));
+        $empPhone = trim((string)($item['empPhone'] ?? ''));
+        $empCode = trim((string)($item['empCode'] ?? ''));
+
+        if (empty($orderNo) && empty($waybillNo)) {
+            return;
+        }
+
+        $lockKey = 'sf_state:' . (!empty($waybillNo) ? $waybillNo : $orderNo);
+        $cache = CacheService::getInstance();
+        $lockToken = $cache->acquireLock($lockKey, 10);
+
+        try {
+            $orderRow = null;
+            if (!empty($orderNo)) {
+                $orderRow = $this->db->fetch(
+                    "SELECT `id`, `order_sn`, `express_sn`, `status`, `shipping_courier_phone`, `shipping_courier_name`, `shipping_dispatch_status` FROM `{$this->p}rc_order` WHERE `order_sn` = :order_sn LIMIT 1",
+                    [':order_sn' => $orderNo]
+                );
+            }
+            if (!$orderRow && !empty($waybillNo)) {
+                $orderRow = $this->db->fetch(
+                    "SELECT `id`, `order_sn`, `express_sn`, `status`, `shipping_courier_phone`, `shipping_courier_name`, `shipping_dispatch_status` FROM `{$this->p}rc_order` WHERE `express_sn` = :waybill_no LIMIT 1",
+                    [':waybill_no' => $waybillNo]
+                );
+            }
+
+            if (!$orderRow) {
+                $this->logInfo('收到顺丰订单状态推送但未匹配到本地订单', ['orderNo' => $orderNo, 'waybillNo' => $waybillNo]);
+                return;
+            }
+
+            $orderId = (int)$orderRow['id'];
+            $currentStatus = (string)($orderRow['status'] ?? '');
+            $updateFields = [];
+            $updateParams = [':id' => $orderId, ':updated_at' => time()];
+
+            if (!empty($stateDesc)) {
+                $updateFields[] = "`shipping_dispatch_status` = :dispatch_status";
+                $updateParams[':dispatch_status'] = $stateDesc;
+            }
+            if (!empty($empPhone)) {
+                $updateFields[] = "`shipping_courier_phone` = :emp_phone";
+                $updateParams[':emp_phone'] = $empPhone;
+            }
+            if (!empty($empCode)) {
+                $updateFields[] = "`shipping_courier_name` = :emp_code";
+                $updateParams[':emp_code'] = "顺丰小哥({$empCode})";
+            }
+            if (empty($orderRow['express_sn']) && !empty($waybillNo)) {
+                $updateFields[] = "`express_sn` = :express_sn";
+                $updateParams[':express_sn'] = $waybillNo;
+                $updateFields[] = "`express_company` = '顺丰速运'";
+            }
+            if (in_array($stateCode, ['30', '31', '33'], true) && $currentStatus === 'pending_send') {
+                $updateFields[] = "`status` = 'in_transit'";
+            }
+
+            if (!empty($updateFields)) {
+                $updateFields[] = "`updated_at` = :updated_at";
+                $setSql = implode(', ', $updateFields);
+                $this->db->execute("UPDATE `{$this->p}rc_order` SET {$setSql} WHERE `id` = :id LIMIT 1", $updateParams);
+            }
+
+            $this->logInfo('顺丰订单状态推送处理成功', ['order_id' => $orderId, 'order_sn' => $orderRow['order_sn'], 'stateCode' => $stateCode]);
+        } catch (\Throwable $e) {
+            $this->logError('处理顺丰订单状态推送异常', ['orderNo' => $orderNo, 'waybillNo' => $waybillNo, 'error' => $e->getMessage()]);
+        } finally {
+            if ($lockToken !== null) {
+                $cache->releaseLock($lockKey, $lockToken);
+            }
+        }
     }
 
     /**

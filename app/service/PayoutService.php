@@ -1,6 +1,6 @@
 <?php
 /**
- * 启灵回收系统 - 资金打款与商家转账服务
+ * 启灵同城服务系统 - 资金打款与商家转账服务
  * 支持微信商家转账、支付宝转账、银行卡转账及大额安全审核
  */
 
@@ -86,114 +86,15 @@ class PayoutService
             ]);
 
             if ($channel === 'alipay') {
-                // 支付宝官方商家转账出资
-                $payeeAccount = trim((string)($order['payout_account'] ?? ''));
-                if (empty($payeeAccount)) {
-                    $payeeAccount = trim((string)($order['contact_mobile'] ?? ''));
-                }
-                if (empty($payeeAccount)) {
-                    $this->payoutModel->updateResult($outBillNo, 'fail', '', '客户未指定真实支付宝收款账号或手机号');
-                    return ['code' => 400, 'msg' => '未获取到客户真实支付宝收款账号（手机号或邮箱），无法发起转账'];
-                }
-
-                $payeeName = trim((string)($order['payout_name'] ?? ''));
-                if (empty($payeeName)) {
-                    $payeeName = trim((string)($order['contact_name'] ?? ''));
-                }
-                if (empty($payeeName)) {
-                    $this->payoutModel->updateResult($outBillNo, 'fail', '', '客户未填写真实姓名');
-                    return ['code' => 400, 'msg' => '订单缺少收款人真实姓名，支付宝强制要求强实名一致性核验，无法出资'];
-                }
-
-                $alipayService = new AlipayService();
-                $orderTitle = '二手回收款项结算-' . ($order['order_sn'] ?? '');
-                $remark = '二手回收放款';
-
-                $alipayRes = $alipayService->transfer($outBillNo, $amount, $payeeAccount, $payeeName, $orderTitle, $remark);
-                $finalBillNo = $alipayRes['out_biz_no'] ?? $outBillNo;
-                if ($finalBillNo !== $outBillNo) {
-                    $this->payoutModel->updateOutBillNo($outBillNo, $finalBillNo);
-                }
-
-                if ($alipayRes['success']) {
-                    $this->payoutModel->updateResult($finalBillNo, 'success', $alipayRes['order_id'] ?? '');
-                    $this->orderModel->updateStatus($orderId, 'paid');
-                    $this->orderModel->updatePayoutAudit($orderId, 'approved', $operatorId, '支付宝转账出资完成');
-                    return [
-                        'code' => 200,
-                        'msg'  => $alipayRes['msg'] ?? '支付宝商家转账成功，资金已实时到账客户账户',
-                        'data' => [
-                            'out_bill_no'       => $finalBillNo,
-                            'order_id'          => $alipayRes['order_id'] ?? '',
-                            'pay_fund_order_id' => $alipayRes['pay_fund_order_id'] ?? ''
-                        ]
-                    ];
-                } else {
-                    $this->payoutModel->updateResult($finalBillNo, 'fail', '', $alipayRes['msg'] ?? '出资失败');
-                    return ['code' => 400, 'msg' => $alipayRes['msg'] ?? '支付宝商家转账出资失败'];
-                }
+                return $this->executeAlipayPayout($order, $outBillNo, $amount, $operatorId);
             }
 
             if (in_array($channel, ['offline', 'bank', 'cash'], true)) {
-                $channelLabels = [
-                    'bank'    => '银行卡网银转账',
-                    'cash'    => '现场现金结清',
-                    'offline' => '线下对公/人工转账'
-                ];
-                $label = $channelLabels[$channel] ?? '人工放款';
-                $this->payoutModel->updateResult($outBillNo, 'success', strtoupper($channel) . '_' . date('YmdHis'));
-                $this->orderModel->updateStatus($orderId, 'paid');
-                $this->orderModel->updatePayoutAudit($orderId, 'approved', $operatorId, "{$label}放款出资完成");
-                return ['code' => 200, 'msg' => "【{$label}】已确认放款出资完成，订单已结清归档", 'data' => ['out_bill_no' => $outBillNo]];
+                return $this->executeOfflinePayout($orderId, $outBillNo, $channel, $operatorId);
             }
 
-            // 微信商家转账到零钱 (官方 APIv3 升级版标准接口)
             if ($channel === 'wechat') {
-                $openid = '';
-                $rawAccount = trim((string)($order['payout_account'] ?? ''));
-                if (!empty($rawAccount) && preg_match('/^[a-zA-Z0-9_\-]{20,40}$/', $rawAccount)) {
-                    $openid = $rawAccount;
-                }
-                if (empty($openid) && !empty($order['user_id'])) {
-                    $user = $this->userModel->findById((int)$order['user_id']);
-                    if ($user && !empty($user['openid'])) {
-                        $openid = trim((string)$user['openid']);
-                    }
-                }
-
-                if (empty($openid)) {
-                    $this->payoutModel->updateResult($outBillNo, 'fail', '', '客户未提供有效微信 OpenID');
-                    return ['code' => 400, 'msg' => '客户未绑定微信 OpenID 或未填写收款 OpenID，无法自动向微信零钱打款出资，请核对或使用线下/银行转账方式'];
-                }
-
-                $payeeName = trim((string)($order['payout_name'] ?? ''));
-                if (empty($payeeName)) {
-                    $payeeName = trim((string)($order['contact_name'] ?? ''));
-                }
-
-                $wechatService = new WechatTransferService();
-                $remark = '回收款结算-' . ($order['order_sn'] ?? '');
-                $deviceName = (string)($order['device_name'] ?? '数码回收');
-
-                $wechatRes = $wechatService->transfer($outBillNo, $amount, $openid, $payeeName, $remark, $deviceName);
-                if ($wechatRes['success']) {
-                    $this->payoutModel->updateResult($outBillNo, 'success', $wechatRes['transfer_bill_no'] ?? '');
-                    $this->orderModel->updateStatus($orderId, 'paid');
-                    $this->orderModel->updatePayoutAudit($orderId, 'approved', $operatorId, '微信商家转账出资完成');
-                    return [
-                        'code' => 200,
-                        'msg'  => $wechatRes['msg'] ?? '微信商家转账成功，资金已实时到账用户微信零钱',
-                        'data' => [
-                            'out_bill_no'      => $outBillNo,
-                            'transfer_bill_no' => $wechatRes['transfer_bill_no'] ?? '',
-                            'status'           => $wechatRes['status'] ?? 'SUCCESS',
-                            'package_info'     => $wechatRes['package_info'] ?? ''
-                        ]
-                    ];
-                } else {
-                    $this->payoutModel->updateResult($outBillNo, 'fail', '', $wechatRes['msg'] ?? '出资失败');
-                    return ['code' => 400, 'msg' => $wechatRes['msg'] ?? '微信商家转账出资失败'];
-                }
+                return $this->executeWechatPayout($order, $outBillNo, $amount, $operatorId);
             }
 
             return ['code' => 400, 'msg' => '不支持的放款渠道类型'];
@@ -207,6 +108,130 @@ class PayoutService
     /**
      * 预览支付宝转账 OpenAPI 标准请求报文 (基于真实订单数据)
      */
+
+    /**
+     * 支付宝官方商家转账出资执行
+     */
+    private function executeAlipayPayout(array $order, string $outBillNo, float $amount, int $operatorId): array
+    {
+        $orderId = (int)$order['id'];
+        $payeeAccount = trim((string)($order['payout_account'] ?? ''));
+        if (empty($payeeAccount)) {
+            $payeeAccount = trim((string)($order['contact_mobile'] ?? ''));
+        }
+        if (empty($payeeAccount)) {
+            $this->payoutModel->updateResult($outBillNo, 'fail', '', '客户未指定真实支付宝收款账号或手机号');
+            return ['code' => 400, 'msg' => '未获取到客户真实支付宝收款账号（手机号或邮箱），无法发起转账'];
+        }
+
+        $payeeName = trim((string)($order['payout_name'] ?? ''));
+        if (empty($payeeName)) {
+            $payeeName = trim((string)($order['contact_name'] ?? ''));
+        }
+        if (empty($payeeName)) {
+            $this->payoutModel->updateResult($outBillNo, 'fail', '', '客户未填写真实姓名');
+            return ['code' => 400, 'msg' => '订单缺少收款人真实姓名，支付宝强制要求强实名一致性核验，无法出资'];
+        }
+
+        $alipayService = new AlipayService();
+        $orderTitle = '二手回收款项结算-' . ($order['order_sn'] ?? '');
+        $remark = '二手回收放款';
+
+        $alipayRes = $alipayService->transfer($outBillNo, $amount, $payeeAccount, $payeeName, $orderTitle, $remark);
+        $finalBillNo = $alipayRes['out_biz_no'] ?? $outBillNo;
+        if ($finalBillNo !== $outBillNo) {
+            $this->payoutModel->updateOutBillNo($outBillNo, $finalBillNo);
+        }
+
+        if ($alipayRes['success']) {
+            $this->payoutModel->updateResult($finalBillNo, 'success', $alipayRes['order_id'] ?? '');
+            $this->orderModel->updateStatus($orderId, 'paid');
+            $this->orderModel->updatePayoutAudit($orderId, 'approved', $operatorId, '支付宝转账出资完成');
+            return [
+                'code' => 200,
+                'msg'  => $alipayRes['msg'] ?? '支付宝商家转账成功，资金已实时到账客户账户',
+                'data' => [
+                    'out_bill_no'       => $finalBillNo,
+                    'order_id'          => $alipayRes['order_id'] ?? '',
+                    'pay_fund_order_id' => $alipayRes['pay_fund_order_id'] ?? ''
+                ]
+            ];
+        } else {
+            $this->payoutModel->updateResult($finalBillNo, 'fail', '', $alipayRes['msg'] ?? '出资失败');
+            return ['code' => 400, 'msg' => $alipayRes['msg'] ?? '支付宝商家转账出资失败'];
+        }
+    }
+
+    /**
+     * 线下/银行转账/现场现金出资确认执行
+     */
+    private function executeOfflinePayout(int $orderId, string $outBillNo, string $channel, int $operatorId): array
+    {
+        $channelLabels = [
+            'bank'    => '银行卡网银转账',
+            'cash'    => '现场现金结清',
+            'offline' => '线下对公/人工转账'
+        ];
+        $label = $channelLabels[$channel] ?? '人工放款';
+        $this->payoutModel->updateResult($outBillNo, 'success', strtoupper($channel) . '_' . date('YmdHis'));
+        $this->orderModel->updateStatus($orderId, 'paid');
+        $this->orderModel->updatePayoutAudit($orderId, 'approved', $operatorId, "{$label}放款出资完成");
+        return ['code' => 200, 'msg' => "【{$label}】已确认放款出资完成，订单已结清归档", 'data' => ['out_bill_no' => $outBillNo]];
+    }
+
+    /**
+     * 微信商家转账到零钱出资执行
+     */
+    private function executeWechatPayout(array $order, string $outBillNo, float $amount, int $operatorId): array
+    {
+        $orderId = (int)$order['id'];
+        $openid = '';
+        $rawAccount = trim((string)($order['payout_account'] ?? ''));
+        if (!empty($rawAccount) && preg_match('/^[a-zA-Z0-9_\-]{20,40}$/', $rawAccount)) {
+            $openid = $rawAccount;
+        }
+        if (empty($openid) && !empty($order['user_id'])) {
+            $user = $this->userModel->findById((int)$order['user_id']);
+            if ($user && !empty($user['openid'])) {
+                $openid = trim((string)$user['openid']);
+            }
+        }
+
+        if (empty($openid)) {
+            $this->payoutModel->updateResult($outBillNo, 'fail', '', '客户未提供有效微信 OpenID');
+            return ['code' => 400, 'msg' => '客户未绑定微信 OpenID 或未填写收款 OpenID，无法自动向微信零钱打款出资，请核对或使用线下/银行转账方式'];
+        }
+
+        $payeeName = trim((string)($order['payout_name'] ?? ''));
+        if (empty($payeeName)) {
+            $payeeName = trim((string)($order['contact_name'] ?? ''));
+        }
+
+        $wechatService = new WechatTransferService();
+        $remark = '回收款结算-' . ($order['order_sn'] ?? '');
+        $deviceName = (string)($order['device_name'] ?? '数码回收');
+
+        $wechatRes = $wechatService->transfer($outBillNo, $amount, $openid, $payeeName, $remark, $deviceName);
+        if ($wechatRes['success']) {
+            $this->payoutModel->updateResult($outBillNo, 'success', $wechatRes['transfer_bill_no'] ?? '');
+            $this->orderModel->updateStatus($orderId, 'paid');
+            $this->orderModel->updatePayoutAudit($orderId, 'approved', $operatorId, '微信商家转账出资完成');
+            return [
+                'code' => 200,
+                'msg'  => $wechatRes['msg'] ?? '微信商家转账成功，资金已实时到账用户微信零钱',
+                'data' => [
+                    'out_bill_no'      => $outBillNo,
+                    'transfer_bill_no' => $wechatRes['transfer_bill_no'] ?? '',
+                    'status'           => $wechatRes['status'] ?? 'SUCCESS',
+                    'package_info'     => $wechatRes['package_info'] ?? ''
+                ]
+            ];
+        } else {
+            $this->payoutModel->updateResult($outBillNo, 'fail', '', $wechatRes['msg'] ?? '出资失败');
+            return ['code' => 400, 'msg' => $wechatRes['msg'] ?? '微信商家转账出资失败'];
+        }
+    }
+
     public function previewAlipayPayout(int $orderId): array
     {
         $order = $this->orderModel->findById($orderId);

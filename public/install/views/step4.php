@@ -7,7 +7,7 @@ if (!defined('IN_INSTALL')) exit('Access Denied');
 ?>
 <div class="success-card">
     <div class="success-icon">✓</div>
-    <div class="success-title">恭喜！启灵二手回收系统已成功安装就绪</div>
+    <div class="success-title">恭喜！启灵同城服务已成功安装就绪</div>
     <p style="color: #718096; font-size: 14px;">数据库专表已全部建好，行业默认品类库与问答模板已自动预置完成。</p>
 
     <div class="info-table">

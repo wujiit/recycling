@@ -1,5 +1,5 @@
-/**
- * 启灵回收系统 - 系统设置基础视图组件
+﻿/**
+ * 启灵同城服务系统 - 系统设置基础视图组件
  * 提供基础品牌、SEO、宣传横幅、用户认证与IP模块的HTML模板
  */
 (function(window) {
@@ -17,11 +17,11 @@
                             <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
                                 <div class="login-form-group">
                                     <label>平台站点全称 (Title/页脚显示)</label>
-                                    <input type="text" id="cfg-site-name" class="form-control" placeholder="如: 启灵全品类数字化回收服务平台">
+                                    <input type="text" id="cfg-site-name" class="form-control" placeholder="如: 启灵同城服务">
                                 </div>
                                 <div class="login-form-group">
                                     <label>品牌简称 (前台导航栏左上角精简展示，建议2-6字)</label>
-                                    <input type="text" id="cfg-brand-name" class="form-control" placeholder="如: 启灵回收">
+                                    <input type="text" id="cfg-brand-name" class="form-control" placeholder="如: 启灵同城服务">
                                 </div>
                             </div>
 
@@ -213,13 +213,6 @@
                                 8. 登录与注册设置
                             </div>
                             <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
-                                <div style="background:#f8fafc;padding:16px;border:1px solid #e2e8f0;border-radius:10px;">
-                                    <label style="display:flex;align-items:center;gap:10px;font-weight:700;cursor:pointer;">
-                                        <input type="checkbox" id="cfg-settings-user-auth-fast" style="width:18px;height:18px;">
-                                        <span>允许免密快捷登录</span>
-                                    </label>
-                                    <div style="font-size:12px;color:#64748b;margin-top:6px;padding-left:28px;">用户输入手机号即可免密登录。</div>
-                                </div>
                                 <div style="background:#f8fafc;padding:16px;border:1px solid #e2e8f0;border-radius:10px;">
                                     <label style="display:flex;align-items:center;gap:10px;font-weight:700;cursor:pointer;">
                                         <input type="checkbox" id="cfg-settings-user-auth-password" style="width:18px;height:18px;">

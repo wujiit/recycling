@@ -1,5 +1,5 @@
 /**
- * 启灵回收系统 - 前端 API 请求客户端模块
+ * 启灵同城服务系统 - 前端 API 请求客户端模块
  * 职责：封装与后端的 JSON API 请求、文件上传、Token 校验与鉴权失效处理
  * 编码：UTF-8 无 BOM
  */
@@ -21,9 +21,13 @@
             let cleanEndpoint = endpoint;
             let extraQuery = '';
             const qIdx = endpoint.indexOf('?');
+            const ampIdx = endpoint.indexOf('&');
             if (qIdx !== -1) {
                 cleanEndpoint = endpoint.substring(0, qIdx);
                 extraQuery = '&' + endpoint.substring(qIdx + 1);
+            } else if (ampIdx !== -1) {
+                cleanEndpoint = endpoint.substring(0, ampIdx);
+                extraQuery = '&' + endpoint.substring(ampIdx + 1);
             }
 
             let url = `${this.baseUrl}?s=${cleanEndpoint}${extraQuery}&token=${encodeURIComponent(token)}`;

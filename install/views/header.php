@@ -11,13 +11,13 @@ $currentStep = (int)($step ?? 1);
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>系统图形化安装向导 - 启灵专业二手回收系统</title>
+    <title>系统图形化安装向导 - 启灵同城服务</title>
     <link rel="stylesheet" href="assets/install.css">
 </head>
 <body>
 <div class="install-container">
     <div class="install-header">
-        <h1>启灵专业二手回收系统 · 安装向导</h1>
+        <h1>启灵同城服务 · 安装向导</h1>
         <p>全品类二手回收业务系统 · 极速一键部署与专表数据库初始化</p>
     </div>
     <div class="install-steps">

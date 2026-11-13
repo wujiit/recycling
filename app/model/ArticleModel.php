@@ -1,6 +1,6 @@
 <?php
 /**
- * 启灵回收系统 - 文章与单页内容数据模型
+ * 启灵同城服务系统 - 文章与单页内容数据模型
  * 负责平台单页、条款协议与帮助指南的数据维护
  */
 
@@ -22,7 +22,7 @@ class ArticleModel
     }
 
     /**
-     * 自愈式初始化检测文章单页数据表与预置默认核心条款
+     * 初始化检测文章单页数据表并预置条款数据
      */
     private function ensureTable(): void
     {
@@ -63,7 +63,72 @@ class ArticleModel
 
                 // 预置 6 篇官方高水准开箱即用核心协议与指南
                 $now = time();
-                $articles = [
+                $articles = $this->getDefaultSeedArticles();
+                foreach ($articles as $art) {
+                    $insertSql = "INSERT INTO `{$this->p}rc_article` 
+                        (`title`, `slug`, `category`, `summary`, `content`, `is_footer`, `footer_column`, `sort_order`, `status`, `created_at`, `updated_at`) VALUES 
+                        (:title, :slug, :category, :summary, :content, :is_footer, :footer_column, :sort_order, 1, {$now}, {$now})";
+                    $this->db->execute($insertSql, [
+                        ':title'         => $art['title'],
+                        ':slug'          => $art['slug'],
+                        ':category'      => $art['category'],
+                        ':summary'       => $art['summary'],
+                        ':content'       => $art['content'],
+                        ':is_footer'     => $art['is_footer'],
+                        ':footer_column' => $art['footer_column'],
+                        ':sort_order'    => $art['sort_order'],
+                    ]);
+                }
+            }
+
+            // 确保官方公告初始化数据就绪 (若尚无公告则自动植入开箱即用官方公告)
+            $noticeCount = (int)$this->db->fetchColumn("SELECT COUNT(*) FROM `{$this->p}rc_article` WHERE `category` = 'notice'");
+            if ($noticeCount === 0) {
+                $now = time();
+                $defaultNotices = [
+                    [
+                        'title'      => '🎉 启灵同城服务与专业数码回收双通道正式上线运营',
+                        'slug'       => 'notice-launch-welcome',
+                        'category'   => 'notice',
+                        'summary'    => '开启同城上门生活服务与专业数码回收双通道，实名持证师傅准时上门，官方权威质检验机当天极速打款。',
+                        'content'    => '<p>尊敬的广大用户与合作伙伴：</p><p>为了给广大客户提供更加透明、高效、安心的一站式便民与闲置物资流转服务，<strong>启灵同城生活服务综合平台</strong>已正式上线！</p><p>平台业务涵盖：</p><ul><li><strong>专业数码物资回收</strong>：手机、平板、笔记本、摄影器材、黄金珠宝与大家电，支持顺丰免费上门包邮取件与官方验机秒级打款。</li><li><strong>同城便民上门生活服务</strong>：深度保洁、家电拆洗、管道疏通、开锁换锁及同城跑腿帮办。</li></ul><p>平台所有服务人员均经过严格实名背景核验与技能考核，全流程价格透明无隐形加价。感谢您的信赖与支持！</p>',
+                        'sort_order' => 10,
+                    ],
+                    [
+                        'title'      => '📢 关于服务人员佩戴统一工牌与严禁私下交易的安全提醒公告',
+                        'slug'       => 'notice-safety-standard',
+                        'category'   => 'notice',
+                        'summary'    => '为保障客户人身与财产安全，平台师傅上门均需出示实名工牌，严禁任何形式的脱离平台私下交易。',
+                        'content'    => '<p>尊敬的客户：</p><p>为保障您的合法权益与人身财产安全，平台提醒您：</p><ol><li>平台师傅上门前均已由系统派单分配，请在师傅到达时核对订单详情中的师傅姓名与联系电话。</li><li>平台严禁师傅索取额外小费或引导用户脱离平台进行私下转账，一切服务与核销请以系统平台订单为准。</li><li>若遇到任何服务纠纷或异常情况，请随时致电平台客服或在用户中心提交反馈。</li></ol>',
+                        'sort_order' => 20,
+                    ]
+                ];
+                foreach ($defaultNotices as $n) {
+                    $this->db->execute(
+                        "INSERT INTO `{$this->p}rc_article` (`title`, `slug`, `category`, `summary`, `content`, `is_footer`, `footer_column`, `sort_order`, `status`, `created_at`, `updated_at`) VALUES (:title, :slug, :category, :summary, :content, 0, 'guide', :sort_order, 1, {$now}, {$now})",
+                        [
+                            ':title'      => $n['title'],
+                            ':slug'       => $n['slug'],
+                            ':category'   => $n['category'],
+                            ':summary'    => $n['summary'],
+                            ':content'    => $n['content'],
+                            ':sort_order' => $n['sort_order'],
+                        ]
+                    );
+                }
+            }
+            $cache->set('schema_ensured:article_v1', 1, 86400 * 30);
+        } catch (\Throwable $e) {
+            // 静默安全捕获
+        }
+    }
+
+    /**
+     * 获取系统预置的 6 篇核心条款协议与官方指南
+     */
+    private function getDefaultSeedArticles(): array
+    {
+        return [
                     [
                         'title'         => '免责声明',
                         'slug'          => 'disclaimer',
@@ -73,7 +138,7 @@ class ArticleModel
                         'footer_column' => 'legal',
                         'sort_order'    => 10,
                         'content'       => '<h3>一、 物品来源合法性与权属承诺</h3>
-<p>用户在启灵回收平台提交任何二手设备或闲置物资回收订单前，必须保证交售物品拥有完整、合法的处分权与所有权，严禁交售任何通过盗窃、抢劫、诈骗、走私等非法途径获取的赃物。若经质检或公安机关核查属于涉案物品，平台有权直接扣押设备、冻结订单并移交司法机关追究刑事责任。</p>
+<p>用户在启灵同城服务平台提交任何二手设备或闲置物资回收订单前，必须保证交售物品拥有完整、合法的处分权与所有权，严禁交售任何通过盗窃、抢劫、诈骗、走私等非法途径获取的赃物。若经质检或公安机关核查属于涉案物品，平台有权直接扣押设备、冻结订单并移交司法机关追究刑事责任。</p>
 
 <h3>二、 回收价格与市场行情波动免责</h3>
 <p>二手回收行业价格受上游元器件行情、供应链变动及市场供需影响。平台系统估价基于智能估价算法与用户当前自选属性即时生成，且提供最长7天的保价锁定期。若因用户在保价期外寄出、实际机况与勾选严重不符（如存在进水、暗病、非原装拆修或扩容等情况），质检工程师将出具权威复检报告并给出复检报价。若用户不同意二次报价，可随时申请原件无条件退回（顺丰包邮退回或按平台规则执行）。</p>
@@ -88,12 +153,12 @@ class ArticleModel
                         'title'         => '用户服务协议',
                         'slug'          => 'agreement',
                         'category'      => 'legal',
-                        'summary'       => '启灵回收服务平台与交售用户之间的权利义务、订单生成、履约交割与货款结算约定。',
+                        'summary'       => '启灵同城服务平台与交售用户之间的权利义务、订单生成、履约交割与货款结算约定。',
                         'is_footer'     => 1,
                         'footer_column' => 'legal',
                         'sort_order'    => 20,
                         'content'       => '<h3>一、 协议生效与适用范围</h3>
-<p>欢迎使用启灵数字化全品类回收服务平台。当您勾选本协议并点击“提交订单”或“立即估价”时，即表示您已充分阅读、理解并自愿接受本协议全部条款约束。</p>
+<p>欢迎使用启灵同城服务平台。当您勾选本协议并点击“提交订单”或“立即估价”时，即表示您已充分阅读、理解并自愿接受本协议全部条款约束。</p>
 
 <h3>二、 预约交割与履约方式</h3>
 <p>1. <strong>免费上门服务</strong>：在已开通上门覆盖的城市区域，官方质检工程师将按照您预约的时间准时上门，当面验机过磅、现场出具报告并秒级放款结清。</p>
@@ -112,7 +177,7 @@ class ArticleModel
                         'footer_column' => 'legal',
                         'sort_order'    => 30,
                         'content'       => '<h3>一、 个人隐私数据清除保障</h3>
-<p>启灵回收高度重视用户的个人隐私与数据安全。所有成交入库的手机、平板、电脑等存储设备，均采用专业数据清除技术进行全盘覆写清除，确保照片、聊天记录、账号密码等个人信息彻底清除，杜绝数据泄露风险。</p>
+<p>启灵同城服务高度重视用户的个人隐私与数据安全。所有成交入库的手机、平板、电脑等存储设备，均采用专业数据清除技术进行全盘覆写清除，确保照片、聊天记录、账号密码等个人信息彻底清除，杜绝数据泄露风险。</p>
 
 <h3>二、 个人信息收集与最小化原则</h3>
 <p>我们仅收集您在下单时必要的基础信息（如姓名、联系电话、取件地址与收款账号），用于物流预约与货款自动结算。我们承诺不会将您的个人隐私信息向任何第三方商业机构或广告商出售、转让或出租。</p>'
@@ -121,12 +186,12 @@ class ArticleModel
                         'title'         => '关于我们',
                         'slug'          => 'about',
                         'category'      => 'about',
-                        'summary'       => '启灵全行业数字化回收服务平台介绍，绿色循环倡导者与官方直营承诺。',
+                        'summary'       => '启灵同城服务平台介绍，绿色循环倡导者与官方直营承诺。',
                         'is_footer'     => 1,
                         'footer_column' => 'about',
                         'sort_order'    => 10,
                         'content'       => '<h3>平台简介</h3>
-<p>启灵回收是国内领先的全品类数字化循环经济回收服务平台，业务涵盖智能手机、数码3C、废旧金属、家电重货、再生资源与奢侈名表黄金等多个行业品类。平台以“让闲置变资产，让绿色成习惯”为企业使命，通过自研的智能估价算法、透明质检体系与极速秒级放款链路，为广大个人用户和企业客户提供专业、安心、高价的回收服务。</p>
+<p>启灵同城服务是国内领先的全品类数字化循环经济回收服务平台，业务涵盖智能手机、数码3C、废旧金属、家电重货、再生资源与奢侈名表黄金等多个行业品类。平台以“让闲置变资产，让绿色成习惯”为企业使命，通过自研的智能估价算法、透明质检体系与极速秒级放款链路，为广大个人用户和企业客户提供专业、安心、高价的回收服务。</p>
 
 <h3>核心服务保障</h3>
 <p>1. <strong>官方直营质检</strong>：杜绝中间商层层压价，自主运营标准化质检中心与工程师团队；</p>
@@ -169,27 +234,6 @@ class ArticleModel
 <p>3. 用户点击【确认成交】后，资金通过支付宝单笔转账或微信支付商家转账即刻到达您的个人钱包。</p>'
                     ]
                 ];
-
-                foreach ($articles as $art) {
-                    $insertSql = "INSERT INTO `{$this->p}rc_article` 
-                        (`title`, `slug`, `category`, `summary`, `content`, `is_footer`, `footer_column`, `sort_order`, `status`, `created_at`, `updated_at`) VALUES 
-                        (:title, :slug, :category, :summary, :content, :is_footer, :footer_column, :sort_order, 1, {$now}, {$now})";
-                    $this->db->execute($insertSql, [
-                        ':title'         => $art['title'],
-                        ':slug'          => $art['slug'],
-                        ':category'      => $art['category'],
-                        ':summary'       => $art['summary'],
-                        ':content'       => $art['content'],
-                        ':is_footer'     => $art['is_footer'],
-                        ':footer_column' => $art['footer_column'],
-                        ':sort_order'    => $art['sort_order'],
-                    ]);
-                }
-            }
-            $cache->set('schema_ensured:article_v1', 1, 86400 * 30);
-        } catch (\Throwable $e) {
-            // 静默安全捕获
-        }
     }
 
     /**
@@ -278,6 +322,21 @@ class ArticleModel
         }
 
         return $grouped;
+    }
+
+    /**
+     * 获取最新官方有效公告列表 (用于前台广播跑马灯与小程序轮播)
+     */
+    public function getNotices(int $limit = 10): array
+    {
+        $limit = max(1, min(50, $limit));
+        $sql = "SELECT `id`, `title`, `slug`, `category`, `summary`, `content`, `view_count`, `created_at`
+                FROM `{$this->p}rc_article`
+                WHERE `category` = 'notice' AND `status` = 1
+                ORDER BY `sort_order` ASC, `id` DESC
+                LIMIT {$limit}";
+        $rows = $this->db->fetchAll($sql);
+        return $rows ?: [];
     }
 
     /**

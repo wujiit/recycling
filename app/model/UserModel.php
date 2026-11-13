@@ -20,7 +20,7 @@ class UserModel
     }
 
     /**
-     * 自动检测并动态补齐会员系统全链路关键字段 (自愈式向下兼容)
+     * 自动检测并补齐用户表字段
      */
     private function ensureColumns(): void
     {
@@ -47,14 +47,14 @@ class UserModel
                 @$this->db->execute("ALTER TABLE `{$this->table}` ADD COLUMN `last_login_time` int(11) unsigned NOT NULL DEFAULT '0' COMMENT '最后登录时间' AFTER `status`");
                 @$this->db->execute("ALTER TABLE `{$this->table}` ADD COLUMN `last_login_ip` varchar(45) NOT NULL DEFAULT '' COMMENT '最后登录IP' AFTER `last_login_time`");
             }
-            // 自愈补齐注册与登录 IP 及地理归属地字段
+            // 补齐注册与登录 IP 及归属地字段
             $ipCol = $this->db->fetchAll("SHOW COLUMNS FROM `{$this->table}` LIKE 'register_ip'");
             if (empty($ipCol)) {
                 @$this->db->execute("ALTER TABLE `{$this->table}` ADD COLUMN `register_ip` varchar(45) NOT NULL DEFAULT '' COMMENT '注册IP' AFTER `default_address`");
                 @$this->db->execute("ALTER TABLE `{$this->table}` ADD COLUMN `register_location` varchar(128) NOT NULL DEFAULT '' COMMENT '注册归属地' AFTER `register_ip`");
                 @$this->db->execute("ALTER TABLE `{$this->table}` ADD COLUMN `last_login_location` varchar(128) NOT NULL DEFAULT '' COMMENT '登录归属地' AFTER `last_login_ip`");
             }
-            // 自愈补齐合规账号注销全流程字段
+            // 补齐账号注销流程字段
             $deregisterCol = $this->db->fetchAll("SHOW COLUMNS FROM `{$this->table}` LIKE 'deregister_status'");
             if (empty($deregisterCol)) {
                 @$this->db->execute("ALTER TABLE `{$this->table}` ADD COLUMN `deregister_status` varchar(32) NOT NULL DEFAULT 'none' COMMENT '注销状态: none无, pending审核中, rejected已驳回' AFTER `status`");
@@ -63,9 +63,15 @@ class UserModel
                 @$this->db->execute("ALTER TABLE `{$this->table}` ADD COLUMN `deregister_reject_reason` varchar(255) NOT NULL DEFAULT '' COMMENT '注销驳回原因' AFTER `deregister_apply_time`");
             }
 
+            // 补齐软删除字段 deleted_at
+            $delCol = $this->db->fetchAll("SHOW COLUMNS FROM `{$this->table}` LIKE 'deleted_at'");
+            if (empty($delCol)) {
+                @$this->db->execute("ALTER TABLE `{$this->table}` ADD COLUMN `deleted_at` timestamp NULL DEFAULT NULL COMMENT '软删除时间戳' AFTER `updated_at`");
+            }
+
             $cache->set('schema_ensured:user_v1', 1, 86400 * 30);
         } catch (\Throwable $e) {
-            // 静默容灾
+            // 忽略错误
         }
     }
 
@@ -79,7 +85,7 @@ class UserModel
                        `default_payout_bank`, `default_address`, `register_ip`, `register_location`,
                        `status`, `deregister_status`, `deregister_reason`, `deregister_apply_time`, `deregister_reject_reason`,
                        `created_at`, `last_login_time`, `last_login_ip`, `last_login_location` 
-                FROM `{$this->table}` WHERE `id` = ? LIMIT 1";
+                FROM `{$this->table}` WHERE `id` = ? AND `deleted_at` IS NULL LIMIT 1";
         return $this->db->fetchOne($sql, [$id]);
     }
 
@@ -93,7 +99,7 @@ class UserModel
                        `default_payout_bank`, `default_address`, `register_ip`, `register_location`,
                        `status`, `deregister_status`, `deregister_reason`, `deregister_apply_time`, `deregister_reject_reason`,
                        `created_at`, `last_login_time`, `last_login_ip`, `last_login_location` 
-                FROM `{$this->table}` WHERE `openid` = ? LIMIT 1";
+                FROM `{$this->table}` WHERE `openid` = ? AND `deleted_at` IS NULL LIMIT 1";
         return $this->db->fetchOne($sql, [$openid]);
     }
 
@@ -108,7 +114,7 @@ class UserModel
                        `default_payout_bank`, `default_address`, `register_ip`, `register_location`,
                        `status`, `deregister_status`, `deregister_reason`, `deregister_apply_time`, `deregister_reject_reason`,
                        `created_at`, `last_login_time`, `last_login_ip`, `last_login_location`{$pwdField} 
-                FROM `{$this->table}` WHERE `mobile` = ? LIMIT 1";
+                FROM `{$this->table}` WHERE `mobile` = ? AND `deleted_at` IS NULL LIMIT 1";
         return $this->db->fetchOne($sql, [$mobile]);
     }
 

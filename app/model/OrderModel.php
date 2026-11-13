@@ -20,7 +20,7 @@ class OrderModel
     }
 
     /**
-     * 自动检测并动态补齐收款渠道关键字段 (自愈式向下兼容)
+     * 自动检测并补齐收款渠道关键字段
      */
     private function ensureColumns(): void
     {
@@ -28,13 +28,46 @@ class OrderModel
             return;
         }
         $cache = \App\Service\CacheService::getInstance();
-        if ($cache->get('schema_ensured:order_v1')) {
+        if ($cache->get('schema_ensured:order_v2')) {
             self::$columnsChecked = true;
             return;
         }
         self::$columnsChecked = true;
 
         try {
+            // 业务板块标识 (recycle-二手回收, service-同城上门生活服务, errand-同城跑腿)
+            $bizCols = $this->db->fetchAll("SHOW COLUMNS FROM `{$this->p}rc_order` LIKE 'biz_type'");
+            if (empty($bizCols)) {
+                @$this->db->execute("ALTER TABLE `{$this->p}rc_order` ADD COLUMN `biz_type` varchar(32) NOT NULL DEFAULT 'recycle' COMMENT '业务板块: recycle-二手回收, service-上门生活服务, errand-同城跑腿' AFTER `order_sn`");
+            }
+
+            // 正向付款流向支持 (用户 -> 平台: 购买上门保洁、上门维修、遛狗、跑腿等生活服务)
+            $payCols = $this->db->fetchAll("SHOW COLUMNS FROM `{$this->p}rc_order` LIKE 'pay_type'");
+            if (empty($payCols)) {
+                @$this->db->execute("ALTER TABLE `{$this->p}rc_order` ADD COLUMN `pay_type` varchar(32) NOT NULL DEFAULT 'none' COMMENT '用户支付方式: none-无需支付, wechat-微信支付, alipay-支付宝, balance-余额, offline-线下后付' AFTER `payout_bank`");
+                @$this->db->execute("ALTER TABLE `{$this->p}rc_order` ADD COLUMN `pay_status` tinyint(1) NOT NULL DEFAULT 0 COMMENT '支付状态: 0-未支付/待支付, 1-已支付, 2-已退款' AFTER `pay_type`");
+                @$this->db->execute("ALTER TABLE `{$this->p}rc_order` ADD COLUMN `pay_price` decimal(10,2) NOT NULL DEFAULT '0.00' COMMENT '用户实际在线支付金额' AFTER `pay_status`");
+                @$this->db->execute("ALTER TABLE `{$this->p}rc_order` ADD COLUMN `pay_time` int(11) unsigned NOT NULL DEFAULT 0 COMMENT '支付成功时间戳' AFTER `pay_price`");
+                @$this->db->execute("ALTER TABLE `{$this->p}rc_order` ADD COLUMN `pay_trade_no` varchar(64) NOT NULL DEFAULT '' COMMENT '第三方支付交易流水号' AFTER `pay_time`");
+            }
+
+            // 师傅派单/接单与上门作业核销流向支持
+            $techCols = $this->db->fetchAll("SHOW COLUMNS FROM `{$this->p}rc_order` LIKE 'technician_id'");
+            if (empty($techCols)) {
+                @$this->db->execute("ALTER TABLE `{$this->p}rc_order` ADD COLUMN `technician_id` int(11) unsigned NOT NULL DEFAULT 0 COMMENT '服务师傅/技术人员ID' AFTER `payout_audit_admin_id`");
+                @$this->db->execute("ALTER TABLE `{$this->p}rc_order` ADD COLUMN `technician_name` varchar(64) NOT NULL DEFAULT '' COMMENT '师傅姓名' AFTER `technician_id`");
+                @$this->db->execute("ALTER TABLE `{$this->p}rc_order` ADD COLUMN `technician_mobile` varchar(20) NOT NULL DEFAULT '' COMMENT '师傅联系电话' AFTER `technician_name`");
+                @$this->db->execute("ALTER TABLE `{$this->p}rc_order` ADD COLUMN `service_start_time` int(11) unsigned NOT NULL DEFAULT 0 COMMENT '开始服务时间戳' AFTER `appointment_time`");
+                @$this->db->execute("ALTER TABLE `{$this->p}rc_order` ADD COLUMN `service_finish_time` int(11) unsigned NOT NULL DEFAULT 0 COMMENT '完成服务时间戳' AFTER `service_start_time`");
+                @$this->db->execute("ALTER TABLE `{$this->p}rc_order` ADD COLUMN `service_images` text NULL COMMENT '服务核销/现场作业前后对比照片JSON快照' AFTER `service_finish_time`");
+            }
+
+            // 预约表单自定义字段支持
+            $customCols = $this->db->fetchAll("SHOW COLUMNS FROM `{$this->p}rc_order` LIKE 'custom_fields'");
+            if (empty($customCols)) {
+                @$this->db->execute("ALTER TABLE `{$this->p}rc_order` ADD COLUMN `custom_fields` text NULL COMMENT '动态预约表单键值对快照JSON' AFTER `user_remark`");
+            }
+
             $cols = $this->db->fetchAll("SHOW COLUMNS FROM `{$this->p}rc_order` LIKE 'payout_account'");
             if (empty($cols)) {
                 @$this->db->execute("ALTER TABLE `{$this->p}rc_order` ADD COLUMN `payout_name` varchar(64) NOT NULL DEFAULT '' COMMENT '客户收款人实名' AFTER `payout_type`");
@@ -99,8 +132,17 @@ class OrderModel
             if (!in_array('idx_created_at', $indexNames, true)) {
                 @$this->db->execute("ALTER TABLE `{$this->p}rc_order` ADD INDEX `idx_created_at` (`created_at`)");
             }
+            if (!in_array('idx_biz_status', $indexNames, true)) {
+                @$this->db->execute("ALTER TABLE `{$this->p}rc_order` ADD INDEX `idx_biz_status` (`biz_type`, `status`)");
+            }
+            if (!in_array('idx_biz_user', $indexNames, true)) {
+                @$this->db->execute("ALTER TABLE `{$this->p}rc_order` ADD INDEX `idx_biz_user` (`biz_type`, `user_id`)");
+            }
+            if (!in_array('idx_technician', $indexNames, true)) {
+                @$this->db->execute("ALTER TABLE `{$this->p}rc_order` ADD INDEX `idx_technician` (`technician_id`, `status`)");
+            }
 
-            $cache->set('schema_ensured:order_v1', 1, 86400 * 30);
+            $cache->set('schema_ensured:order_v2', 1, 86400 * 30);
         } catch (\Throwable $e) {
             // 静默容灾
         }
@@ -109,7 +151,7 @@ class OrderModel
     /**
      * 创建回收订单 (带初评快照与事务原子性保护)
      */
-    public function createOrderWithSnapshot(array $orderData, array $snapshotItems): ?string
+    public function createOrderWithSnapshot(array $orderData, array $snapshotItems, ?string &$errorMsg = null): ?string
     {
         $this->db->beginTransaction();
         try {
@@ -141,17 +183,36 @@ class OrderModel
             $userCouponId = (int)($orderData['user_coupon_id'] ?? 0);
             $couponAddPrice = (float)($orderData['coupon_add_price'] ?? 0.00);
 
+            // 多板块同城服务与正向支付底座解耦
+            $bizType = !empty($orderData['biz_type']) ? (string)$orderData['biz_type'] : 'recycle';
+            $payType = !empty($orderData['pay_type']) ? (string)$orderData['pay_type'] : 'none';
+            $payStatus = isset($orderData['pay_status']) ? (int)$orderData['pay_status'] : 0;
+            $payPrice = isset($orderData['pay_price']) ? (float)$orderData['pay_price'] : 0.00;
+            $technicianId = (int)($orderData['technician_id'] ?? 0);
+            $technicianName = (string)($orderData['technician_name'] ?? '');
+            $technicianMobile = (string)($orderData['technician_mobile'] ?? '');
+
+            // 初始状态自适应：二手回收默认为 pending_send；上门服务若有实付金额默认为 pending_pay，若无需线上支付则为 pending_dispatch
+            $initialStatus = !empty($orderData['status']) 
+                ? (string)$orderData['status'] 
+                : ($bizType === 'service' || $bizType === 'errand'
+                    ? ($payPrice > 0.00 && $payType !== 'offline' ? 'pending_pay' : 'pending_dispatch')
+                    : 'pending_send');
+
             $orderSql = "INSERT INTO `{$this->p}rc_order` (
-                `order_sn`, `user_id`, `device_id`, `device_name`, `estimate_price`, `final_price`,
+                `order_sn`, `biz_type`, `user_id`, `device_id`, `device_name`, `estimate_price`, `final_price`,
                 `coupon_id`, `user_coupon_id`, `coupon_add_price`,
                 `fulfillment_type`, `mail_sub_type`, `store_id`, `store_name`, `payout_type`, `payout_name`, `payout_account`, `payout_bank`,
+                `pay_type`, `pay_status`, `pay_price`,
+                `technician_id`, `technician_name`, `technician_mobile`,
                 `appraisal_mode`, `quick_tier_name`,
                 `status`, `contact_name`, `contact_mobile`, `contact_address`,
-                `appointment_time`, `user_remark`, `created_at`, `updated_at`
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending_send', ?, ?, ?, ?, ?, ?, ?)";
+                `appointment_time`, `user_remark`, `custom_fields`, `created_at`, `updated_at`
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
             $this->db->execute($orderSql, [
                 $orderData['order_sn'],
+                $bizType,
                 $orderData['user_id'],
                 $orderData['device_id'],
                 $orderData['device_name'],
@@ -168,18 +229,43 @@ class OrderModel
                 $payoutName,
                 $payoutAccount,
                 $payoutBank,
+                $payType,
+                $payStatus,
+                $payPrice,
+                $technicianId,
+                $technicianName,
+                $technicianMobile,
                 $appraisalMode,
                 $quickTierName,
+                $initialStatus,
                 $orderData['contact_name'],
                 $orderData['contact_mobile'],
                 $orderData['contact_address'] ?? '',
                 $orderData['appointment_time'] ?? '',
                 $userRemark,
+                !empty($orderData['custom_fields']) ? (is_array($orderData['custom_fields']) ? json_encode($orderData['custom_fields'], JSON_UNESCAPED_UNICODE) : (string)$orderData['custom_fields']) : null,
                 $now,
                 $now
             ]);
 
             $orderId = (int)$this->db->lastInsertId();
+
+            // 事务原子锁券：若订单核算了加价券，必须在当前事务内锁定该卡券 (状态从 unused 改为 locked)
+            if ($userCouponId > 0 && !empty($orderData['user_id'])) {
+                $couponLockSql = "UPDATE `{$this->p}rc_user_coupon` 
+                    SET `status` = 'locked', `order_id` = ?, `order_sn` = ?, `actual_add_price` = ? 
+                    WHERE `id` = ? AND `user_id` = ? AND `status` = 'unused'";
+                $lockRows = $this->db->execute($couponLockSql, [
+                    $orderId,
+                    $orderData['order_sn'],
+                    $couponAddPrice,
+                    $userCouponId,
+                    $orderData['user_id']
+                ]);
+                if ($lockRows <= 0) {
+                    throw new \RuntimeException('所选加价券已被锁定使用或已失效，请重新选择可用卡券！');
+                }
+            }
 
             // 批量插入初评选项快照
             if (!empty($snapshotItems)) {
@@ -204,6 +290,7 @@ class OrderModel
             return $orderData['order_sn'];
         } catch (\Throwable $e) {
             $this->db->rollBack();
+            $errorMsg = $e->getMessage();
             return null;
         }
     }
@@ -297,6 +384,54 @@ class OrderModel
             $fields[] = "`negotiation_status` = ?";
             $params[] = $extra['negotiation_status'];
         }
+        if (isset($extra['biz_type'])) {
+            $fields[] = "`biz_type` = ?";
+            $params[] = $extra['biz_type'];
+        }
+        if (isset($extra['pay_type'])) {
+            $fields[] = "`pay_type` = ?";
+            $params[] = $extra['pay_type'];
+        }
+        if (isset($extra['pay_status'])) {
+            $fields[] = "`pay_status` = ?";
+            $params[] = (int)$extra['pay_status'];
+        }
+        if (isset($extra['pay_price'])) {
+            $fields[] = "`pay_price` = ?";
+            $params[] = (float)$extra['pay_price'];
+        }
+        if (isset($extra['pay_time'])) {
+            $fields[] = "`pay_time` = ?";
+            $params[] = (int)$extra['pay_time'];
+        }
+        if (isset($extra['pay_trade_no'])) {
+            $fields[] = "`pay_trade_no` = ?";
+            $params[] = $extra['pay_trade_no'];
+        }
+        if (isset($extra['technician_id'])) {
+            $fields[] = "`technician_id` = ?";
+            $params[] = (int)$extra['technician_id'];
+        }
+        if (isset($extra['technician_name'])) {
+            $fields[] = "`technician_name` = ?";
+            $params[] = $extra['technician_name'];
+        }
+        if (isset($extra['technician_mobile'])) {
+            $fields[] = "`technician_mobile` = ?";
+            $params[] = $extra['technician_mobile'];
+        }
+        if (isset($extra['service_start_time'])) {
+            $fields[] = "`service_start_time` = ?";
+            $params[] = (int)$extra['service_start_time'];
+        }
+        if (isset($extra['service_finish_time'])) {
+            $fields[] = "`service_finish_time` = ?";
+            $params[] = (int)$extra['service_finish_time'];
+        }
+        if (isset($extra['service_images'])) {
+            $fields[] = "`service_images` = ?";
+            $params[] = is_array($extra['service_images']) ? json_encode($extra['service_images'], JSON_UNESCAPED_UNICODE) : (string)$extra['service_images'];
+        }
 
         $params[] = $id;
         $sql = "UPDATE `{$this->p}rc_order` SET " . implode(', ', $fields) . " WHERE `id` = ?";
@@ -329,9 +464,9 @@ class OrderModel
     }
 
     /**
-     * 用户端获取我的回收订单列表
+     * 用户端获取我的综合生活服务/回收订单列表
      */
-    public function getUserOrders(int $userId, ?string $status, int $page = 1, int $pageSize = 10): array
+    public function getUserOrders(int $userId, ?string $status, int $page = 1, int $pageSize = 10, ?string $bizType = null): array
     {
         $where = ["`user_id` = ?"];
         $params = [$userId];
@@ -341,13 +476,20 @@ class OrderModel
             $params[] = $status;
         }
 
+        if (!empty($bizType) && $bizType !== 'all') {
+            $where[] = "`biz_type` = ?";
+            $params[] = $bizType;
+        }
+
         $whereSql = implode(' AND ', $where);
         $offset = max(0, ($page - 1) * $pageSize);
 
-        $sql = "SELECT `id`, `order_sn`, `device_name`, `estimate_price`, `final_price`, 
+        $sql = "SELECT `id`, `order_sn`, `biz_type`, `device_name`, `estimate_price`, `final_price`, 
                        `subsidy_amount`, `negotiation_remark`, `negotiation_status`, `appraisal_mode`, `quick_tier_name`,
                        `fulfillment_type`, `mail_sub_type`, `store_id`, `store_name`, `payout_type`, `payout_name`, `payout_account`, `payout_bank`, 
-                       `status`, `express_company`, `express_sn`, `contact_mobile`, `created_at`
+                       `pay_type`, `pay_status`, `pay_price`, `pay_time`, `pay_trade_no`,
+                       `technician_id`, `technician_name`, `technician_mobile`, `service_start_time`, `service_finish_time`,
+                       `status`, `express_company`, `express_sn`, `contact_mobile`, `custom_fields`, `created_at`
                 FROM `{$this->p}rc_order`
                 WHERE {$whereSql}
                 ORDER BY `id` DESC
@@ -356,20 +498,32 @@ class OrderModel
     }
 
     /**
-     * 根据手机号码查询用户的回收订单 (支持前台免密查单)
+     * 根据手机号码查询用户的综合订单 (支持前台免密查单，适配同城综合生活服务板块)
      */
-    public function getOrdersByMobile(string $mobile, int $limit = 20): array
+    public function getOrdersByMobile(string $mobile, int $limit = 20, ?string $bizType = null): array
     {
-        $sql = "SELECT `id`, `order_sn`, `device_name`, `estimate_price`, `final_price`, 
+        $where = ["`contact_mobile` = ?"];
+        $params = [$mobile];
+
+        if (!empty($bizType) && $bizType !== 'all') {
+            $where[] = "`biz_type` = ?";
+            $params[] = $bizType;
+        }
+
+        $whereSql = implode(' AND ', $where);
+
+        $sql = "SELECT `id`, `order_sn`, `biz_type`, `device_name`, `estimate_price`, `final_price`, 
                        `subsidy_amount`, `negotiation_remark`, `negotiation_status`, `appraisal_mode`, `quick_tier_name`,
                        `fulfillment_type`, `mail_sub_type`, `store_id`, `store_name`, `payout_type`, `payout_name`, `payout_account`, `payout_bank`, 
+                       `pay_type`, `pay_status`, `pay_price`, `pay_time`, `pay_trade_no`,
+                       `technician_id`, `technician_name`, `technician_mobile`, `service_start_time`, `service_finish_time`,
                        `status`, `express_company`, `express_sn`, 
-                       `refund_express_sn`, `contact_name`, `contact_mobile`, `contact_address`, `created_at`
+                       `refund_express_sn`, `contact_name`, `contact_mobile`, `contact_address`, `custom_fields`, `created_at`
                 FROM `{$this->p}rc_order`
-                WHERE `contact_mobile` = ?
+                WHERE {$whereSql}
                 ORDER BY `id` DESC
                 LIMIT {$limit}";
-        $orders = $this->db->fetchAll($sql, [$mobile]);
+        $orders = $this->db->fetchAll($sql, $params);
         if (empty($orders)) {
             return [];
         }

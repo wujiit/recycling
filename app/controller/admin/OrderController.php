@@ -39,15 +39,20 @@ class OrderController extends AdminBaseController
         $status = (string)Request::get('status', '');
         $keyword = (string)Request::get('keyword', '');
         $fulfillment = (string)Request::get('fulfillment_type', '');
+        $bizType = (string)Request::get('biz_type', '');
         $page = Request::getInt('page', 1);
         $pageSize = Request::getInt('page_size', 15);
 
-        $conditions = ["1=1"];
+        $conditions = ["`deleted_at` IS NULL"];
         $params = [];
 
         if (!empty($status) && $status !== 'all') {
             $conditions[] = "`status` = ?";
             $params[] = $status;
+        }
+        if (!empty($bizType) && $bizType !== 'all') {
+            $conditions[] = "`biz_type` = ?";
+            $params[] = $bizType;
         }
         if (!empty($fulfillment) && $fulfillment !== 'all') {
             $conditions[] = "`fulfillment_type` = ?";
@@ -69,9 +74,11 @@ class OrderController extends AdminBaseController
         $total = (int)($totalRow['total'] ?? 0);
 
         // 关键性能优化：列表查询显式排除 shipping_routes (longtext) 与 shipping_fee_detail，大幅降低 MySQL 内存与网络 I/O 开销
-        $fields = "`id`, `order_sn`, `user_id`, `device_id`, `device_name`, `estimate_price`, `final_price`, "
+        $fields = "`id`, `order_sn`, `biz_type`, `user_id`, `device_id`, `device_name`, `estimate_price`, `final_price`, "
                 . "`subsidy_amount`, `negotiation_remark`, `negotiation_status`, `appraisal_mode`, `quick_tier_name`, "
                 . "`fulfillment_type`, `mail_sub_type`, `store_id`, `store_name`, `payout_type`, `payout_name`, `payout_account`, `payout_bank`, "
+                . "`pay_type`, `pay_status`, `pay_price`, `pay_time`, `pay_trade_no`, "
+                . "`technician_id`, `technician_name`, `technician_mobile`, `service_start_time`, `service_finish_time`, "
                 . "`status`, `contact_name`, `contact_mobile`, `contact_address`, `appointment_time`, "
                 . "`express_company`, `express_sn`, `refund_express_sn`, `shipping_fee`, `shipping_weight`, `shipping_real_weight`, "
                 . "`shipping_courier_phone`, `shipping_courier_name`, `shipping_dispatch_status`, `user_remark`, `created_at`, `updated_at`";
@@ -144,6 +151,30 @@ class OrderController extends AdminBaseController
         if (Request::post('user_remark')) {
             $extra['user_remark'] = trim((string)Request::post('user_remark'));
         }
+        if (Request::post('pay_type')) {
+            $extra['pay_type'] = trim((string)Request::post('pay_type'));
+        }
+        if (Request::post('pay_status') !== null && Request::post('pay_status') !== '') {
+            $extra['pay_status'] = Request::postInt('pay_status', 0);
+        }
+        if (Request::post('pay_price') !== null && Request::post('pay_price') !== '') {
+            $extra['pay_price'] = (float)Request::post('pay_price');
+        }
+        if (Request::post('pay_trade_no')) {
+            $extra['pay_trade_no'] = trim((string)Request::post('pay_trade_no'));
+        }
+        if (Request::post('technician_id') !== null && Request::post('technician_id') !== '') {
+            $extra['technician_id'] = Request::postInt('technician_id', 0);
+        }
+        if (Request::post('technician_name')) {
+            $extra['technician_name'] = trim((string)Request::post('technician_name'));
+        }
+        if (Request::post('technician_mobile')) {
+            $extra['technician_mobile'] = trim((string)Request::post('technician_mobile'));
+        }
+        if (Request::post('service_images')) {
+            $extra['service_images'] = Request::post('service_images');
+        }
 
         $ok = $this->orderModel->updateStatus($id, $status, $extra);
         if ($ok) {
@@ -163,11 +194,9 @@ class OrderController extends AdminBaseController
             $this->error('订单 ID 不能为空');
         }
         $p = $this->db->getPrefix();
-        $this->db->execute("DELETE FROM `{$p}rc_order` WHERE `id` = ?", [$id]);
-        $this->db->execute("DELETE FROM `{$p}rc_order_detail` WHERE `order_id` = ?", [$id]);
-        $this->db->execute("DELETE FROM `{$p}rc_order_inspection` WHERE `order_id` = ?", [$id]);
-        $this->db->execute("DELETE FROM `{$p}rc_payout_log` WHERE `order_id` = ?", [$id]);
-        $this->success(null, '订单已成功删除');
+        // 核心资产软删除保护：保留明细与结算财务核验流水，杜绝物理硬删
+        $this->db->execute("UPDATE `{$p}rc_order` SET `deleted_at` = ? WHERE `id` = ?", [date('Y-m-d H:i:s'), $id]);
+        $this->success(null, '订单已成功转入回收站(软删除)，历史财务留痕完整保全');
     }
 
     /**
@@ -213,6 +242,84 @@ class OrderController extends AdminBaseController
         } else {
             $this->error($res['msg'], $res['code'], $res['data'] ?? null);
         }
+    }
+
+    /**
+     * 后台管理员派单指派上门师傅/技术人员
+     */
+    public function dispatchTechnician(): void
+    {
+        $orderId = Request::postInt('order_id', 0);
+        $technicianId = Request::postInt('technician_id', 0);
+        $technicianName = trim((string)Request::post('technician_name', ''));
+        $technicianMobile = trim((string)Request::post('technician_mobile', ''));
+
+        if ($orderId <= 0) {
+            $this->error('订单 ID 不能为空');
+        }
+        if (empty($technicianName) || empty($technicianMobile)) {
+            $this->error('师傅姓名与联系电话不能为空');
+        }
+
+        $orderService = new \App\Service\OrderService();
+        $res = $orderService->dispatchTechnician($orderId, $technicianId, $technicianName, $technicianMobile, $this->getAdminId());
+
+        if ($res['code'] === 200) {
+            $this->success($res['data'] ?? null, $res['msg']);
+        } else {
+            $this->error($res['msg'], $res['code']);
+        }
+    }
+
+    /**
+     * 后台管理员完工核销与作业凭证归档
+     */
+    public function finishService(): void
+    {
+        $orderId = Request::postInt('order_id', 0);
+        $serviceImages = Request::post('service_images', []);
+        $notes = trim((string)Request::post('notes', ''));
+
+        if ($orderId <= 0) {
+            $this->error('订单 ID 不能为空');
+        }
+
+        $orderService = new \App\Service\OrderService();
+        $res = $orderService->finishService($orderId, (array)$serviceImages, $notes, $this->getAdminId());
+
+        if ($res['code'] === 200) {
+            $this->success(null, $res['msg']);
+        } else {
+            $this->error($res['msg'], $res['code']);
+        }
+    }
+
+    /**
+     * 获取未处理订单与待办统计 (用于后台即时小红点角标与新订单提醒)
+     * GET /admin/order/pendingCount
+     */
+    public function pendingCount(): void
+    {
+        $p = $this->db->getPrefix();
+        
+        $sql = "SELECT 
+                    COUNT(CASE WHEN (`biz_type` = 'service' OR `biz_type` = 'errand') AND (`pay_status` = 1 OR `pay_price` <= 0.00) AND `status` = 'pending_dispatch' THEN 1 END) as `service_pending_dispatch`,
+                    COUNT(CASE WHEN (`biz_type` = 'recycle' OR `biz_type` IS NULL OR `biz_type` = '') AND `status` IN ('pending_send', 'in_transit', 'received', 'inspecting', 'price_confirming') THEN 1 END) as `recycle_pending`,
+                    COUNT(CASE WHEN (`biz_type` = 'recycle' OR `biz_type` IS NULL OR `biz_type` = '') AND `status` = 'completed' THEN 1 END) as `recycle_payout_pending`,
+                    COUNT(CASE WHEN `status` IN ('pending_send', 'pending_dispatch', 'received', 'inspecting') OR ((`biz_type` = 'service' OR `biz_type` = 'errand') AND (`pay_status` = 1 OR `pay_price` <= 0.00) AND `status` = 'pending_dispatch') THEN 1 END) as `total_pending`,
+                    MAX(`created_at`) as `latest_order_time`,
+                    (SELECT `order_sn` FROM `{$p}rc_order` ORDER BY `id` DESC LIMIT 1) as `latest_order_sn`
+                FROM `{$p}rc_order`";
+        $row = $this->db->fetchOne($sql) ?: [];
+
+        $this->success([
+            'total_pending'             => (int)($row['total_pending'] ?? 0),
+            'service_pending_dispatch'  => (int)($row['service_pending_dispatch'] ?? 0),
+            'recycle_pending'           => (int)($row['recycle_pending'] ?? 0),
+            'recycle_payout_pending'    => (int)($row['recycle_payout_pending'] ?? 0),
+            'latest_order_time'         => (int)($row['latest_order_time'] ?? 0),
+            'latest_order_sn'           => (string)($row['latest_order_sn'] ?? ''),
+        ], '获取待处理订单统计成功');
     }
 }
 

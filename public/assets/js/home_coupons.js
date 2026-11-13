@@ -1,5 +1,5 @@
 /**
- * 启灵回收系统 - 前台加价券营销模块
+ * 启灵同城服务系统 - 前台加价券营销模块
  * 包含卡包加载、领券专区、领券中心弹窗、估价加价计算与下单选券抵扣
  */
 (function(window) {
@@ -10,6 +10,8 @@
     const api = HomeApp.api || {};
     const SysUI = HomeApp.SysUI || window.SysUI;
     const escapeHtml = HomeApp.escapeHtml || window.escapeHtml || function(s) { return s; };
+
+    let selectOrderCoupon = function(userCouponId, addPrice, bPrice) {};
 
             // 加载用户卡券列表
             async function loadUserCoupons() {
@@ -35,7 +37,7 @@
             }
 
             // 渲染用户中心卡包列表
-            window.loadUcCoupons = async function() {
+            async function loadUcCoupons() {
                 const box = document.getElementById('uc-coupons-list-box');
                 if (!box) return;
                 box.innerHTML = '<div style="text-align:center;padding:30px;color:var(--text-muted);">正在加载您的加价券包...</div>';
@@ -46,7 +48,7 @@
                     if (list.length === 0) {
                         box.innerHTML = `
                             <div style="text-align:center;padding:40px 20px;color:var(--text-muted);">
-                                <div style="font-size:36px;margin-bottom:8px;">🧧</div>
+                                <div style="display:flex;justify-content:center;margin-bottom:8px;"><svg viewBox="0 0 24 24" width="36" height="36" fill="#ea580c"><path d="M20 4H4c-1.11 0-1.99.89-1.99 2L2 18c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V6c0-1.11-.89-2-2-2zm0 14H4v-6h16v6zm0-10H4V6h16v2z"/></svg></div>
                                 <div>暂无加价补贴券</div>
                                 <p style="font-size:12px;margin:8px 0 16px;">快去领券中心领取专属加价券，下单直接多卖现金！</p>
                                 <button class="btn btn-primary" style="height:34px;padding:0 18px;font-size:13px;" onclick="window.openCouponCenterModal('market')">前往领券中心</button>
@@ -105,8 +107,8 @@
                     state.availableCoupons = res.data || [];
                     renderCouponsShowcase(state.availableCoupons);
                 }
-                if (state.platformMeta) {
-                    applyCouponDisplayConfigs(state.platformMeta);
+                if (state.platformMeta && typeof window.applyCouponDisplayConfigs === 'function') {
+                    window.applyCouponDisplayConfigs(state.platformMeta);
                 }
             }
 
@@ -156,7 +158,7 @@
             }
 
             // 用户领取加价券
-            window.claimCoupon = async function(couponId, event) {
+            async function claimCoupon(couponId, event) {
                 if (event) event.stopPropagation();
                 if (!state.userToken) {
                     SysUI.toast('请先登录后再领取加价补贴券', 'info');
@@ -175,22 +177,22 @@
                 } else {
                     SysUI.toast(res ? res.msg : '领取失败', 'error');
                 }
-            };
+            }
 
             // 领券中心弹窗控制
-            window.openCouponCenterModal = function(defaultTab = 'market') {
+            function openCouponCenterModal(defaultTab = 'market') {
                 const modal = document.getElementById('modal-coupon-center');
                 if (!modal) return;
                 modal.style.display = 'flex';
                 window.switchCouponModalTab(defaultTab);
-            };
+            }
 
-            window.closeCouponCenterModal = function() {
+            function closeCouponCenterModal() {
                 const modal = document.getElementById('modal-coupon-center');
                 if (modal) modal.style.display = 'none';
-            };
+            }
 
-            window.switchCouponModalTab = function(tab) {
+            function switchCouponModalTab(tab) {
                 const tabMarket = document.getElementById('tab-coupon-market');
                 const tabMine = document.getElementById('tab-coupon-mine');
                 if (tab === 'market') {
@@ -202,7 +204,7 @@
                     tabMarket?.classList.remove('active');
                     renderCouponModalMine();
                 }
-            };
+            }
 
             function renderCouponModalMarket() {
                 const body = document.getElementById('coupon-modal-body');
@@ -251,7 +253,7 @@
                 if (!state.userToken) {
                     body.innerHTML = `
                         <div style="text-align:center;padding:40px 20px;color:var(--text-muted);">
-                            <div style="font-size:36px;margin-bottom:8px;">🔒</div>
+                            <div style="display:flex;justify-content:center;margin-bottom:8px;"><svg viewBox="0 0 24 24" width="36" height="36" fill="#64748b"><path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/></svg></div>
                             <div style="font-size:15px;font-weight:700;color:var(--text-main);margin-bottom:6px;">请先登录查看您的加价券包</div>
                             <p style="font-size:12px;margin-bottom:16px;">登录后可查看卡包中已领取、待使用及已核销的加价券资产</p>
                             <button class="btn btn-primary" onclick="window.closeCouponCenterModal();window.openAuthModal('login');">立即登录 / 注册</button>
@@ -266,7 +268,7 @@
                     if (list.length === 0) {
                         body.innerHTML = `
                             <div style="text-align:center;padding:40px 20px;color:var(--text-muted);">
-                                <div style="font-size:36px;margin-bottom:8px;">🎟️</div>
+                                <div style="display:flex;justify-content:center;margin-bottom:8px;"><svg viewBox="0 0 24 24" width="36" height="36" fill="#94a3b8"><path d="M22 10V6c0-1.11-.9-2-2-2H4c-1.1 0-1.99.89-1.99 2v4c1.1 0 1.99.9 1.99 2s-.89 2-2 2v4c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2v-4c-1.1 0-2-.9-2-2s.9-2 2-2zm-9 7.5h-2v-2h2v2zm0-4.5h-2v-2h2v2zm0-4.5h-2v-2h2v2z"/></svg></div>
                                 <div>您的卡包空空如也</div>
                                 <p style="font-size:12px;margin:8px 0 16px;">先去领券中心免费领取加价券，估价下单多卖钱！</p>
                                 <button class="btn btn-primary" onclick="window.switchCouponModalTab('market')">去领券中心</button>
@@ -380,7 +382,7 @@
 
                 if (bestAdd > 0) {
                     const totalP = (p + bestAdd).toFixed(2);
-                    badge.innerHTML = `🧧 加价补贴 +¥${bestAdd.toFixed(2)}，预计最高到手 ¥${totalP}`;
+                    badge.innerHTML = `加价补贴 +¥${bestAdd.toFixed(2)}，预计最高到手 ¥${totalP}`;
                     badge.style.display = 'inline-flex';
                 } else {
                     badge.style.display = 'none';
@@ -507,12 +509,13 @@
                     box.innerHTML = html;
                 }
 
-                window.selectOrderCoupon = function(userCouponId, addPrice, bPrice) {
+                selectOrderCoupon = function(userCouponId, addPrice, bPrice) {
                     state.selectedUserCouponId = userCouponId;
                     state.selectedCouponAddPrice = addPrice;
                     updateOrderPriceDisplay(bPrice);
                     renderCouponOptions();
                 };
+                window.selectOrderCoupon = selectOrderCoupon;
 
                 function updateOrderPriceDisplay(bPrice) {
                     const totalP = (bPrice + state.selectedCouponAddPrice).toFixed(2);

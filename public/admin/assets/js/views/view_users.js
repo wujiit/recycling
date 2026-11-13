@@ -1,5 +1,5 @@
-/**
- * 启灵回收系统 - 用户与安全管理视图
+﻿/**
+ * 启灵同城服务系统 - 用户与安全管理视图
  * 包含会员数据维护、管理员账号协作、登录认证策略与注销审核
  */
 (function (window) {
@@ -244,14 +244,6 @@
 
                     <form id="form-user-auth-switches">
                         <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(320px, 1fr));gap:20px;">
-                            <!-- 开关 1：免密快捷登录 -->
-                            <div style="background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:18px;">
-                                <label style="display:flex;align-items:flex-start;gap:12px;cursor:pointer;">
-                                    <input type="checkbox" id="cfg-user-auth-fast" style="width:18px;height:18px;margin-top:2px;">
-                                    <div>
-                                        <div style="font-size:14px;font-weight:700;color:#0f172a;">允许免密快捷登录 (手机极速免密)</div>
-                                        <div style="font-size:12px;color:#64748b;margin-top:4px;">勾选开启后，前台登录弹窗显示“免密快捷登录”Tab，用户输入手机号即可免密极速验证；若不勾选则彻底关闭该入口。</div>
-                                    </div>
                                 </label>
                             </div>
 
@@ -780,7 +772,7 @@
                     // 认证与安全特征
                     const pwdBadge = Number(u.has_password) === 1
                         ? '<span class="badge badge-success" style="font-size:11px;">已设密码</span>'
-                        : '<span class="badge badge-info" style="font-size:11px;">免密快捷</span>';
+                        : '<span class="badge badge-warning" style="font-size:11px;">未设密码</span>';
                     const wxBadge = u.openid
                         ? '<span class="badge" style="background:#e0f2fe;color:#0369a1;font-size:11px;">微信</span>'
                         : '';
@@ -1215,8 +1207,7 @@
                     if (el) el.checked = (val !== undefined) ? (val !== '0') : def;
                 };
 
-                setCheck('cfg-user-auth-fast', c.user_auth_fast_enabled, true);
-                setCheck('cfg-user-auth-password', c.user_auth_password_enabled, true);
+                                setCheck('cfg-user-auth-password', c.user_auth_password_enabled, true);
                 setCheck('cfg-user-register-enabled', c.user_register_enabled, true);
                 setCheck('cfg-user-auth-wechat', c.user_auth_wechat_enabled, true);
                 setCheck('cfg-user-order-guest', c.user_order_guest_enabled, true);
@@ -1293,7 +1284,7 @@
             if (btn) btn.disabled = true;
 
             const configs = {
-                user_auth_fast_enabled: document.getElementById('cfg-user-auth-fast')?.checked ? '1' : '0',
+                user_auth_fast_enabled: '0',
                 user_auth_password_enabled: document.getElementById('cfg-user-auth-password')?.checked ? '1' : '0',
                 user_register_enabled: document.getElementById('cfg-user-register-enabled')?.checked ? '1' : '0',
                 user_auth_wechat_enabled: document.getElementById('cfg-user-auth-wechat')?.checked ? '1' : '0',

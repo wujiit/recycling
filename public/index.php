@@ -31,6 +31,11 @@ require_once APP_PATH . DIRECTORY_SEPARATOR . 'common' . DIRECTORY_SEPARATOR . '
 use App\Common\Response;
 use App\Common\Request;
 
+// 注入 Trace-ID 响应头
+if (!headers_sent()) {
+    header('X-Trace-Id: ' . Request::traceId());
+}
+
 // 3. 全局异常与错误静默捕获
 register_shutdown_function(function() {
     $err = error_get_last();
@@ -41,7 +46,7 @@ register_shutdown_function(function() {
             @mkdir($logDir, 0755, true);
         }
         $logFile = $logDir . DIRECTORY_SEPARATOR . date('Y-m-d') . '.log';
-        $logContent = sprintf("[%s] FATAL: %s in %s:%d\n\n", date('Y-m-d H:i:s'), $err['message'] ?? '', $err['file'] ?? '', $err['line'] ?? 0);
+        $logContent = sprintf("[%s] [Trace:%s] FATAL: %s in %s:%d\n\n", date('Y-m-d H:i:s'), Request::traceId(), $err['message'] ?? '', $err['file'] ?? '', $err['line'] ?? 0);
         @file_put_contents($logFile, $logContent, FILE_APPEND | LOCK_EX);
 
         if (!headers_sent()) {
@@ -63,7 +68,7 @@ set_exception_handler(function (\Throwable $e) {
         @mkdir($logDir, 0755, true);
     }
     $logFile = $logDir . DIRECTORY_SEPARATOR . date('Y-m-d') . '.log';
-    $logContent = sprintf("[%s] %s in %s:%d\nStack Trace:\n%s\n\n", date('Y-m-d H:i:s'), $e->getMessage(), $e->getFile(), $e->getLine(), $e->getTraceAsString());
+    $logContent = sprintf("[%s] [Trace:%s] %s in %s:%d\nStack Trace:\n%s\n\n", date('Y-m-d H:i:s'), Request::traceId(), $e->getMessage(), $e->getFile(), $e->getLine(), $e->getTraceAsString());
     @file_put_contents($logFile, $logContent, FILE_APPEND | LOCK_EX);
 
     Response::error('系统繁忙，请稍后重试', 500);
@@ -93,7 +98,7 @@ if (empty($s) && empty($module)) {
 }
 
 if (!empty($s)) {
-    // 鲁棒性自愈防御：若 $s 自身携带问号传参（例如直接透传 ?query），安全剥离并将附加参数合并注入 $_GET
+    // 若 $s 自身携带问号传参，剥离并将附加参数合并至 $_GET
     if (strpos($s, '?') !== false) {
         [$cleanS, $queryString] = explode('?', $s, 2);
         parse_str($queryString, $extraParams);
@@ -139,23 +144,29 @@ if (!class_exists($class)) {
 }
 
 $instance = new $class();
-if (!method_exists($instance, $action)) {
+if (!is_callable([$instance, $action])) {
     // 兼容短横线命名转驼峰命名 (如 apply-deregister => applyDeregister, unbind-wechat => unbindWechat)
     $camelAction = lcfirst(str_replace(' ', '', ucwords(str_replace('-', ' ', $action))));
-    if (method_exists($instance, $camelAction)) {
+    if (is_callable([$instance, $camelAction])) {
         $action = $camelAction;
     } else {
-        Response::error("路由操作不存在 [{$action}]", 404);
+        Response::error("路由操作不存在或受保护 [{$action}]", 404);
     }
 }
 
+// 严禁调用魔术方法或私有/受保护的方法
+if (strpos($action, '__') === 0 || !is_callable([$instance, $action])) {
+    Response::error("路由操作非法或受保护 [{$action}]", 403);
+}
+
 // 4.2 商业正版授权守卫 (保护核心商业业务与资金放款链路)
-// 本地及局域网开发环境 (isLocalDevDomain) 自动放行
-// 生产环境未激活正版授权时，拦截前台回收业务请求 (ping 心跳与顺丰轨迹推送 sf 保持通畅)
-if (strtolower($module) === 'api' && !in_array(strtolower($controller), ['ping', 'sf'], true)) {
+// 本地及局域网开发环境与官方研发根域 (isLocalDevDomain) 自动放行
+// 生产环境允许前台公开只读浏览 (商品目录、分类、生活服务、文章等)，未激活正版授权时严格管控商业下单与资金放款
+$isProtectedOrderApi = (strtolower($module) === 'api' && strtolower($controller) === 'order' && in_array(strtolower($action), ['create'], true));
+if ($isProtectedOrderApi) {
     $licenseService = \App\Service\LicenseService::getInstance();
     if (!$licenseService->checkStatus()) {
-        Response::error('当前回收系统尚未激活正版授权，请联系管理员配置商业授权码', 403, [
+        Response::error('当前回收系统尚未激活正版授权，暂无法提交商业回收订单，请联系管理员配置商业授权码', 403, [
             'license_required' => true,
             'status'           => 'unauthorized'
         ]);

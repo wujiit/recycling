@@ -58,7 +58,7 @@ class Database
         try {
             $this->pdo = new \PDO($dsn, $config['username'] ?? '', $config['password'] ?? '', $options);
         } catch (\PDOException $e) {
-            // 容灾自愈：若主配置连接失败且存在 runtime 安装备份，尝试使用备份配置连通并自动回写修复
+            // 备选尝试：若主配置连接失败且存在 runtime 安装备份，尝试使用备份配置连接并修复主配置
             if (is_file($runtimeConfigFile)) {
                 $backupData = include $runtimeConfigFile;
                 $backupConfig = is_array($backupData) ? $backupData : [];
@@ -75,7 +75,7 @@ class Database
                         $this->prefix = $backupConfig['prefix'] ?? 'ql_';
 
                         // 备份连通成功，尝试将正确配置回写至主配置文件
-                        $healCode = "<?php\n// 自动自愈回写的数据库配置\nreturn [\n"
+                        $healCode = "<?php\n// 自动修复回写的数据库配置\nreturn [\n"
                             . "    'host'     => " . var_export($backupConfig['host'] ?? '127.0.0.1', true) . ",\n"
                             . "    'port'     => " . (int)($backupConfig['port'] ?? 3306) . ",\n"
                             . "    'database' => " . var_export($backupConfig['database'], true) . ",\n"

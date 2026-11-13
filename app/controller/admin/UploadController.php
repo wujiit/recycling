@@ -92,6 +92,10 @@ class UploadController extends AdminBaseController
             $this->error('保存图片文件失败，请检查目录权限');
         }
 
+        // 6. 防御性工程：敏感隐私元数据清洗 (EXIF Stripping)
+        // 彻底擦除手机拍照包含的 GPS 定位经纬度、拍摄设备型号与时间等敏感元数据
+        $this->stripExifMetadata($destPath, $ext);
+
         $url = $saveRelDir . $filename;
         $this->success([
             'url'      => $url,
@@ -99,5 +103,63 @@ class UploadController extends AdminBaseController
             'size'     => (int)$file['size'],
             'ext'      => $ext
         ], '图片上传成功');
+    }
+
+    /**
+     * 清洗图片 EXIF 隐私元数据 (防止拍摄设备/GPS定位泄漏)
+     *
+     * @param string $filePath 图片绝对路径
+     * @param string $ext 图片后缀
+     * @return void
+     */
+    private function stripExifMetadata(string $filePath, string $ext): void
+    {
+        // 仅对包含 EXIF 信息的位图格式进行清洗，SVG/GIF 保持原有结构
+        if (!in_array($ext, ['jpg', 'jpeg', 'png', 'webp'], true)) {
+            return;
+        }
+
+        // 检查 GD 扩展是否可用
+        if (!extension_loaded('gd') || !function_exists('imagecreatefromjpeg')) {
+            return;
+        }
+
+        try {
+            $img = null;
+            switch ($ext) {
+                case 'jpg':
+                case 'jpeg':
+                    if (function_exists('imagecreatefromjpeg') && function_exists('imagejpeg')) {
+                        $img = @imagecreatefromjpeg($filePath);
+                        if ($img) {
+                            @imagejpeg($img, $filePath, 90);
+                            @imagedestroy($img);
+                        }
+                    }
+                    break;
+                case 'png':
+                    if (function_exists('imagecreatefrompng') && function_exists('imagepng')) {
+                        $img = @imagecreatefrompng($filePath);
+                        if ($img) {
+                            @imagealphablending($img, false);
+                            @imagesavealpha($img, true);
+                            @imagepng($img, $filePath);
+                            @imagedestroy($img);
+                        }
+                    }
+                    break;
+                case 'webp':
+                    if (function_exists('imagecreatefromwebp') && function_exists('imagewebp')) {
+                        $img = @imagecreatefromwebp($filePath);
+                        if ($img) {
+                            @imagewebp($img, $filePath, 90);
+                            @imagedestroy($img);
+                        }
+                    }
+                    break;
+            }
+        } catch (\Throwable $e) {
+            // 静默容错，不阻断上传主流程
+        }
     }
 }

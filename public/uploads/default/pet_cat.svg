@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+  <defs>
+    <linearGradient id="catBg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fdf4ff"/>
+      <stop offset="100%" stop-color="#fae8ff"/>
+    </linearGradient>
+    <linearGradient id="catFur" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#fb923c"/>
+      <stop offset="100%" stop-color="#ea580c"/>
+    </linearGradient>
+  </defs>
+  <rect width="200" height="200" rx="20" fill="url(#catBg)"/>
+  <!-- Circular soft backdrop -->
+  <circle cx="100" cy="115" r="60" fill="#fdf2f8"/>
+  <!-- Cat Body -->
+  <ellipse cx="95" cy="128" rx="36" ry="26" fill="url(#catFur)"/>
+  <!-- Cat Head -->
+  <circle cx="112" cy="94" r="24" fill="url(#catFur)"/>
+  <!-- Ears -->
+  <polygon points="98,82 104,60 114,75" fill="#ea580c"/>
+  <polygon points="101,80 105,66 112,76" fill="#fbcfe8"/>
+  <polygon points="118,75 128,60 134,82" fill="#ea580c"/>
+  <polygon points="120,76 127,66 131,80" fill="#fbcfe8"/>
+  <!-- Snout -->
+  <ellipse cx="115" cy="102" rx="9" ry="6" fill="#ffedd5"/>
+  <polygon points="113,99 117,99 115,102" fill="#ec4899"/>
+  <!-- Happy Closed Eyes -->
+  <path d="M104 93 Q109 90 112 93" stroke="#431407" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+  <path d="M118 93 Q123 90 126 93" stroke="#431407" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+  <!-- Whiskers -->
+  <line x1="94" y1="100" x2="105" y2="101" stroke="#fed7aa" stroke-width="1.8"/>
+  <line x1="93" y1="104" x2="105" y2="103" stroke="#fed7aa" stroke-width="1.8"/>
+  <line x1="125" y1="101" x2="136" y2="100" stroke="#fed7aa" stroke-width="1.8"/>
+  <line x1="125" y1="103" x2="137" y2="104" stroke="#fed7aa" stroke-width="1.8"/>
+  <!-- Cat Tail curled -->
+  <path d="M60 126 C50 110 52 90 62 88 C66 87 68 91 65 96 C58 106 64 120 70 125" fill="none" stroke="#ea580c" stroke-width="6.5" stroke-linecap="round"/>
+  <!-- Food Bowl -->
+  <ellipse cx="150" cy="144" rx="20" ry="8" fill="#38bdf8"/>
+  <path d="M130 144 L134 154 Q150 159 166 154 L170 144 Z" fill="#0284c7"/>
+  <!-- Food in bowl with fish treat -->
+  <ellipse cx="150" cy="142" rx="15" ry="5" fill="#f59e0b"/>
+  <!-- Heart icon -->
+  <path d="M152 74 C152 70 148 66 144 66 C140 66 138 69 138 72 C138 69 136 66 132 66 C128 66 124 70 124 74 C124 80 138 88 138 88 C138 88 152 80 152 74 Z" fill="#f43f5e"/>
+</svg>

@@ -22,7 +22,7 @@ class StoreModel
     }
 
     /**
-     * 自愈式初始化检测门店数据表与预置默认门店
+     * 初始化检测门店数据表并预置默认门店
      */
     private function ensureTable(): void
     {

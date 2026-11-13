@@ -1,5 +1,5 @@
 /**
- * 启灵回收系统 - 系统设置交互与辅助事件处理器
+ * 启灵同城服务系统 - 系统设置交互与辅助事件处理器
  * 负责测试打款、余额查询、顺丰连通性测试、接口报文预览与证书上传等事件绑定
  */
 (function(window) {
@@ -9,6 +9,88 @@
     const escapeHtml = window.escapeHtml || function(s) { return s; };
 
     window.bindSettingsAuxHandlers = function(container) {
+        // 动态展示当前域名的微信/支付宝异步通知 URL
+        const wechatNotifyElem = document.getElementById('display-wechat-notify-url');
+        if (wechatNotifyElem) {
+            wechatNotifyElem.innerText = window.location.origin + '/api/payment/notifyWechat';
+        }
+        const alipayNotifyElem = document.getElementById('display-alipay-notify-url');
+        if (alipayNotifyElem) {
+            alipayNotifyElem.innerText = window.location.origin + '/api/payment/notifyAlipay';
+        }
+
+        // 一键复制微信回调 URL
+        document.getElementById('btn-copy-wechat-notify')?.addEventListener('click', function() {
+            const url = window.location.origin + '/api/payment/notifyWechat';
+            if (navigator.clipboard) {
+                navigator.clipboard.writeText(url).then(() => {
+                    SysUI.toast('已复制微信支付异步通知地址到剪贴板！', 'success');
+                }).catch(() => {
+                    prompt('请手动复制微信异步通知地址：', url);
+                });
+            } else {
+                prompt('请手动复制微信异步通知地址：', url);
+            }
+        });
+
+        // 一键复制支付宝回调 URL
+        document.getElementById('btn-copy-alipay-notify')?.addEventListener('click', function() {
+            const url = window.location.origin + '/api/payment/notifyAlipay';
+            if (navigator.clipboard) {
+                navigator.clipboard.writeText(url).then(() => {
+                    SysUI.toast('已复制支付宝异步通知地址到剪贴板！', 'success');
+                }).catch(() => {
+                    prompt('请手动复制支付宝异步通知地址：', url);
+                });
+            } else {
+                prompt('请手动复制支付宝异步通知地址：', url);
+            }
+        });
+
+        // 从财务打款中一键同步微信商户收款参数
+        document.getElementById('btn-sync-pay-wechat-from-payout')?.addEventListener('click', function() {
+            const mchId = document.getElementById('cfg-wx-mchid')?.value.trim();
+            const appId = document.getElementById('cfg-wx-appid')?.value.trim();
+            const v3key = document.getElementById('cfg-wx-v3key')?.value.trim();
+            const serial = document.getElementById('cfg-wx-cert-serial-no')?.value.trim();
+            const privKey = document.getElementById('cfg-wx-private-key')?.value.trim();
+            const pubKey = document.getElementById('cfg-wx-platform-public-key')?.value.trim();
+
+            if (!mchId && !privKey) {
+                SysUI.toast('财务打款面板中暂未配置微信商户参数，无法同步', 'warning');
+                return;
+            }
+
+            if (mchId) document.getElementById('cfg-pay-wechat-mchid').value = mchId;
+            if (appId) document.getElementById('cfg-pay-wechat-appid').value = appId;
+            if (v3key) document.getElementById('cfg-pay-wechat-v3key').value = v3key;
+            if (serial) document.getElementById('cfg-pay-wechat-cert-serial-no').value = serial;
+            if (privKey) document.getElementById('cfg-pay-wechat-private-key').value = privKey;
+            if (pubKey) document.getElementById('cfg-pay-wechat-platform-public-key').value = pubKey;
+
+            SysUI.toast('已成功从财务打款配置中复用微信商户号与证书私钥！请检查后点击保存', 'success');
+        });
+
+        // 从财务打款中一键同步支付宝收款参数
+        document.getElementById('btn-sync-pay-alipay-from-payout')?.addEventListener('click', function() {
+            const appId = document.getElementById('cfg-alipay-appid')?.value.trim();
+            const signType = document.getElementById('cfg-alipay-sign-type')?.value;
+            const privKey = document.getElementById('cfg-alipay-private-key')?.value.trim();
+            const pubKey = document.getElementById('cfg-alipay-public-key')?.value.trim() || document.getElementById('cfg-alipay-public-cert')?.value.trim();
+
+            if (!appId && !privKey) {
+                SysUI.toast('财务打款面板中暂未配置支付宝 AppID 与私钥，无法同步', 'warning');
+                return;
+            }
+
+            if (appId) document.getElementById('cfg-pay-alipay-appid').value = appId;
+            if (signType) document.getElementById('cfg-pay-alipay-sign-type').value = signType;
+            if (privKey) document.getElementById('cfg-pay-alipay-private-key').value = privKey;
+            if (pubKey) document.getElementById('cfg-pay-alipay-public-key').value = pubKey;
+
+            SysUI.toast('已成功从财务打款配置中复用支付宝 AppID 与私钥！请检查后点击保存', 'success');
+        });
+
         // 密钥密码框显示 / 隐藏切换
         const btnToggleSettingsKey = document.getElementById('btn-toggle-settings-ip-key');
         btnToggleSettingsKey?.addEventListener('click', function() {

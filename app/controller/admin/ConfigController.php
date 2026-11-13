@@ -126,6 +126,20 @@ class ConfigController extends AdminBaseController
     }
 
     /**
+     * 依据当前生效的行业模板一键同步小程序端装修参数
+     */
+    public function syncMiniappTemplate(): void
+    {
+        $svc = new \App\Service\TemplateService();
+        $res = $svc->syncMiniappToCurrentTemplate();
+        if ($res['code'] === 200) {
+            $this->success($res['data'], $res['msg']);
+        } else {
+            $this->error($res['msg'], $res['code'] ?? 500);
+        }
+    }
+
+    /**
      * 获取全套视觉主题风格模版列表及当前生效风格
      */
     public function getThemeStyles(): void
@@ -216,6 +230,65 @@ class ConfigController extends AdminBaseController
             $this->success($res['data'] ?? null, $res['msg']);
         } else {
             $this->error($res['msg'], $res['code'], $res['data'] ?? null);
+        }
+    }
+
+    /**
+     * 获取行业模板列表与当前配置
+     */
+    public function getIndustryScenarios(): void
+    {
+        $svc = new \App\Service\TemplateService();
+        $this->success([
+            'current'   => $svc->getCurrentIndustryScenario(),
+            'scenarios' => $svc->getIndustryScenarios(),
+        ], '获取行业配置成功');
+    }
+
+    /**
+     * 应用行业模板与示范数据
+     */
+    public function applyIndustryScenario(): void
+    {
+        try {
+            $scenarioKey = (string)Request::post('scenario_key', '');
+            $seedData = (bool)Request::post('seed_data', true);
+
+            if (empty($scenarioKey)) {
+                $this->error('请选择要应用的行业模板');
+            }
+
+            $svc = new \App\Service\TemplateService();
+            $res = $svc->applyIndustryScenario($scenarioKey, $seedData);
+            if ($res['code'] === 200) {
+                $this->success($res['data'], $res['msg']);
+            } else {
+                $this->error($res['msg'], $res['code']);
+            }
+        } catch (\Throwable $e) {
+            $this->error('套用模板失败: ' . $e->getMessage() . ' (' . basename($e->getFile()) . ':' . $e->getLine() . ')', 500);
+        }
+    }
+
+    /**
+     * 保存业务功能开关、角色称谓与自定义表单字段
+     */
+    public function saveDynamicBlocks(): void
+    {
+        $toggles = Request::post('toggles', []);
+        $terminology = Request::post('terminology', []);
+        $customFields = Request::post('custom_fields', []);
+
+        if (!is_array($toggles)) $toggles = [];
+        if (!is_array($terminology)) $terminology = [];
+        if (!is_array($customFields)) $customFields = [];
+
+        $svc = new \App\Service\TemplateService();
+        $res = $svc->saveDynamicBlocks($toggles, $terminology, $customFields);
+        if ($res['code'] === 200) {
+            $this->success($res['data'], $res['msg']);
+        } else {
+            $this->error($res['msg'], $res['code']);
         }
     }
 }

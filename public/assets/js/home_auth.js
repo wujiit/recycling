@@ -1,5 +1,5 @@
-/**
- * 启灵回收系统 - 前台会员认证与用户中心模块
+﻿/**
+ * 启灵同城服务系统 - 前台会员认证与用户中心模块
  * 包含用户登录注册、个人资料、收款方式、账号注销与订单追踪
  */
 (function(window) {
@@ -95,30 +95,24 @@
                 loadUserCoupons();
             }
 
-            window.openAuthModal = function(preferredTab = 'login') {
+                        window.openAuthModal = function(preferredTab = 'login') {
                 const meta = state.platformMeta || {};
                 const passwordEnabled = meta.user_auth_password_enabled !== false;
                 const registerEnabled = meta.user_register_enabled !== false;
-                const fastEnabled = meta.user_auth_fast_enabled !== false;
 
                 // 动态控制各 Tab 按钮显隐
                 const tabLogin = document.getElementById('tab-auth-login');
                 const tabRegister = document.getElementById('tab-auth-register');
-                const tabFast = document.getElementById('tab-auth-fast');
 
                 if (tabLogin) tabLogin.style.display = passwordEnabled ? 'block' : 'none';
                 if (tabRegister) tabRegister.style.display = registerEnabled ? 'block' : 'none';
-                if (tabFast) tabFast.style.display = fastEnabled ? 'block' : 'none';
 
-                let activeTab = preferredTab;
-                if (activeTab === 'fast' && !fastEnabled) {
-                    activeTab = passwordEnabled ? 'login' : (registerEnabled ? 'register' : '');
-                }
+                let activeTab = preferredTab === 'register' ? 'register' : 'login';
                 if (activeTab === 'login' && !passwordEnabled) {
-                    activeTab = fastEnabled ? 'fast' : (registerEnabled ? 'register' : '');
+                    activeTab = registerEnabled ? 'register' : '';
                 }
                 if (activeTab === 'register' && !registerEnabled) {
-                    activeTab = passwordEnabled ? 'login' : (fastEnabled ? 'fast' : '');
+                    activeTab = passwordEnabled ? 'login' : '';
                 }
 
                 if (!activeTab) {
@@ -131,7 +125,7 @@
             };
 
             window.switchAuthTab = function(tab) {
-                const tabs = ['login', 'register', 'fast'];
+                const tabs = ['login', 'register'];
                 tabs.forEach(t => {
                     const btn = document.getElementById('tab-auth-' + t);
                     const form = document.getElementById('form-auth-' + t);
@@ -203,32 +197,6 @@
                     applyUserDefaultToForm();
                 } else {
                     SysUI.toast(res ? res.msg : '注册失败', 'error');
-                }
-            });
-
-            // 监听表单：免密快捷登录
-            document.getElementById('form-auth-fast')?.addEventListener('submit', async function(e) {
-                e.preventDefault();
-                const m = document.getElementById('auth-fast-mobile')?.value.trim();
-                const n = document.getElementById('auth-fast-name')?.value.trim();
-                const btn = document.getElementById('btn-submit-fast');
-                btn.innerText = '极速接入中...';
-
-                const res = await api.request('/api/user/phoneLogin', 'POST', { mobile: m, name: n });
-                btn.innerText = '一键免密快捷进入';
-                if (res && res.code === 200) {
-                    state.userToken = res.data.token;
-                    state.userInfo = res.data.userinfo;
-                    state.userMobile = res.data.userinfo.mobile || m;
-                    localStorage.setItem('ql_user_token', state.userToken);
-                    localStorage.setItem('ql_user_info', JSON.stringify(state.userInfo));
-                    localStorage.setItem('ql_user_mobile', state.userMobile);
-                    document.getElementById('modal-user-auth').style.display = 'none';
-                    renderUserNav();
-                    SysUI.toast('登录成功！', 'success');
-                    applyUserDefaultToForm();
-                } else {
-                    SysUI.toast(res ? res.msg : '登录失败', 'error');
                 }
             });
 
@@ -553,8 +521,8 @@
                                     statusTag = '<span class="negotiation-rp-badge">待您决策</span>';
                                     btns = `
                                         <div class="negotiation-rp-actions" style="margin-top:8px;">
-                                            <button class="btn btn-primary" style="height:32px;padding:0 14px;font-size:12px;background:#ea580c;border-color:#ea580c;flex:1;" onclick="window.confirmOrderPrice(${o.id}, 'agree', '${escapeHtml(o.order_sn)}', '${escapeHtml(o.contact_mobile)}')">
-                                                🎁 接受补贴并成交 (¥${escapeHtml(o.final_price || o.estimate_price)})
+                                            <button class="btn btn-primary" style="height:32px;padding:0 14px;font-size:12px;background:#ea580c;border-color:#ea580c;flex:1;" onclick="window.confirmOrderPrice(${o.id}, 'agree', '${escapeHtml(o.order_sn)}', '${escapeHtml(o.contact_mobile || '')}')">
+                                                接受补贴并成交 (¥${escapeHtml(o.final_price || o.estimate_price)})
                                             </button>
                                             <button class="btn btn-outline" style="height:32px;padding:0 12px;font-size:12px;border-color:#cbd5e1;color:#64748b;" onclick="window.confirmOrderPrice(${o.id}, 'reject', '${escapeHtml(o.order_sn)}', '${escapeHtml(o.contact_mobile)}')">
                                                 拒绝退回
@@ -591,8 +559,8 @@
                         }
 
                         const modeBadge = o.appraisal_mode === 'quick'
-                            ? `<span style="font-size:11px;background:#fef3c7;color:#b45309;padding:1px 6px;border-radius:4px;margin-left:6px;">⚡ ${escapeHtml(o.quick_tier_name || '极速成色')}</span>`
-                            : `<span style="font-size:11px;background:#e0f2fe;color:#0369a1;padding:1px 6px;border-radius:4px;margin-left:6px;">🔬 专业精评</span>`;
+                            ? `<span style="font-size:11px;background:#fef3c7;color:#b45309;padding:1px 6px;border-radius:4px;margin-left:6px;">${escapeHtml(o.quick_tier_name || '极速成色')}</span>`
+                            : `<span style="font-size:11px;background:#e0f2fe;color:#0369a1;padding:1px 6px;border-radius:4px;margin-left:6px;">专业精评</span>`;
 
                         html += `
                             <div style="background:#f8fafc;border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:12px;">
@@ -778,8 +746,8 @@
                             : '';
 
                         const modeBadge = o.appraisal_mode === 'quick'
-                            ? `<span style="font-size:11px;background:#fef3c7;color:#b45309;padding:1px 6px;border-radius:4px;margin-left:6px;">⚡ ${escapeHtml(o.quick_tier_name || '极速成色')}</span>`
-                            : `<span style="font-size:11px;background:#e0f2fe;color:#0369a1;padding:1px 6px;border-radius:4px;margin-left:6px;">🔬 专业精评</span>`;
+                            ? `<span style="font-size:11px;background:#fef3c7;color:#b45309;padding:1px 6px;border-radius:4px;margin-left:6px;">${escapeHtml(o.quick_tier_name || '极速成色')}</span>`
+                            : `<span style="font-size:11px;background:#e0f2fe;color:#0369a1;padding:1px 6px;border-radius:4px;margin-left:6px;">专业精评</span>`;
 
                         let actionBtn = '';
                         let negotiationCard = '';
@@ -806,8 +774,8 @@
                                     statusTag = '<span class="negotiation-rp-badge">待您确认</span>';
                                     btns = `
                                         <div class="negotiation-rp-actions" style="margin-top:8px;">
-                                            <button class="btn btn-primary" style="height:32px;padding:0 14px;font-size:12px;background:#ea580c;border-color:#ea580c;flex:1;" onclick="window.confirmOrderPrice(${o.id}, 'agree', '${escapeHtml(o.order_sn)}', '${escapeHtml(o.contact_mobile)}')">
-                                                🎁 接受补贴并成交 (¥${escapeHtml(o.final_price || o.estimate_price)})
+                                            <button class="btn btn-primary" style="height:32px;padding:0 14px;font-size:12px;background:#ea580c;border-color:#ea580c;flex:1;" onclick="window.confirmOrderPrice(${o.id}, 'agree', '${escapeHtml(o.order_sn)}', '${escapeHtml(o.contact_mobile || '')}')">
+                                                接受补贴并成交 (¥${escapeHtml(o.final_price || o.estimate_price)})
                                             </button>
                                             <button class="btn btn-outline" style="height:32px;padding:0 12px;font-size:12px;border-color:#cbd5e1;color:#64748b;" onclick="window.confirmOrderPrice(${o.id}, 'reject', '${escapeHtml(o.order_sn)}', '${escapeHtml(o.contact_mobile)}')">
                                                 拒绝退回
