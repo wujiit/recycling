@@ -161,5 +161,4 @@
 ### 联系与交流（获取小程序源码 / 交流）
 
 - **官方网站**：[qiling.jingxialai.com](https://qiling.jingxialai.com)
-- **在线演示**：[https://huishou.jingxialai.com](https://huishou.jingxialai.com)
 - **官方技术交流群**：16966111（可加群联系作者获取小程序源码）
